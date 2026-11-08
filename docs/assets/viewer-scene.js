@@ -134,35 +134,47 @@ function drawInputs(g, c, n) {
   g.gem([0,1.25,0],.19,mint);
 }
 function drawTokenGT(g, c, n) {
+  g.box([-1.54,.26,.87],[.32,.16,.28],'#c8b5ef');
   nodes.forEach((p,i) => {
     g.gem(p,.18,c);
-    g.box([(i-1.5)*.64,.26,.87],[.43,.16,.28],c);
+    g.box([(i-1.5)*.60+.26,.26,.87],[.43,.16,.28],c);
   });
   links.slice(0,n).forEach(([a,b],i) => {
     g.arrow(nodes[a],nodes[b],mint);
     g.box([(i-2)*.50,.26,1.27],[.35,.16,.24],'#e5c982');
   });
 }
-function drawConvex(g, c, n) {
-  for (let i=0;i<n;i++) {
-    const x = (i - (n-1)/2) * .36;
-    g.box([x,.40,.60],[.28,.34,.42],c);
-    g.box([x,.79,.22],[.28,.20,.25],i%2?'#aecbdd':'#e5c982');
+function drawConvex(g, c, n, model) {
+  const length=model.input.length;
+  const spacing=Math.min(.45,2.95/length);
+  const offset=i=>(i-length/2)*spacing;
+  const rail=Array.from({length:length+1},(_,i)=>[offset(i),.91,-.50]);
+  g.path(rail,c);
+  for (const point of rail) g.gem(point,Math.min(.065,spacing*.25),mint);
+  let i=0;
+  for (const piece of model.pieces) {
+    const j=i+piece.length;
+    g.arrow([offset(i),1.16,-.50],[offset(j),1.16,-.50],mint);
+    g.box([(offset(i)+offset(j))/2,.42,.52],
+      [(j-i)*spacing*.87,.32,.45],piece.length===4?mint:c);
+    g.line(rail[i],[offset(i),.54,.29],'#71959b');
+    i=j;
   }
-  const path = Array.from({length:n+1},(_,i) => [(i-n/2)*.36,1.20,-.44]);
-  path.forEach(point => g.gem(point,.065,mint));
-  g.path(path,mint);
-  g.line([-1.46,.21,-.70],[1.46,.21,-.70],c);
+  g.line(rail[length],[offset(length),.54,.29],'#71959b');
 }
 function drawAttention(g, c, v, model) {
-  const side = 3;
-  for (let x=0;x<side;x++) for (let z=0;z<side;z++) {
-    const win = model.winners[x] === z;
-    const h = .27 + (win ? .58 : .12) + ((x+z)%3)*.08;
-    g.box([(x-1)*.62,.22+h/2,(z-1)*.66],[.48,h,.50],win?mint:c);
+  const zero=1.23, scale=.25;
+  for (let i=0;i<4;i++) {
+    const line=(i-1.5)*.64;
+    g.line([-1,zero,line],[1,zero,line],'#9bb3a3');
+    g.line([line,zero,-1],[line,zero,1],'#9bb3a3');
   }
-  g.gem([v*.55-.18,1.45,-.82],.19,'#e8d293');
-  for (let x=0;x<side;x++) g.line([v*.55-.18,1.45,-.82],[(x-1)*.62,1.02,(model.winners[x]-1)*.66],mint);
+  for (let x=0;x<3;x++) for (let z=0;z<3;z++) {
+    const a=(x-1)*.64,b=(z-1)*.64;
+    const term=model.terms[x][z], offset=scale*term;
+    g.box([a,zero+offset/2,b],[.33,Math.max(.012,Math.abs(offset)),.33],term<0?c:'#9bdaef');
+    if (model.winners[x].includes(z)) g.gem([a,zero+offset+.055,b],.052,mint);
+  }
 }
 function drawConcepts(g, c, v, model) {
   const origin = [-.55,.40,.35];
@@ -248,9 +260,15 @@ function drawTeachers(g, c, v, model) {
     g.box([x,1.29,-.42],[.97,.12,.83],i?c:mint);
     g.path([[x,.36,0],[x,.42,.52],[0,.42,.76]],c);
   }
-  const points=Array.from({length:17},(_,i) => {const x=(i-8)*.18;return [x,.37+x*x*.36,.85];});
+  const plotted=(x,energy)=>[x*1.35,.37+energy*2.6,.85];
+  const points=Array.from({length:25},(_,i) => {
+    const x=(i-12)/12;
+    return plotted(x,harmonic(x).energy);
+  });
   g.path(points,mint);
-  g.gem([v*1.35,.37+model.energy*2.6,.85],.14,mint);
+  const point=plotted(v,model.energy);
+  g.gem(point,.11,mint);
+  if (v!==0) g.arrow(add(point,[0,.12,0]),add(point,[model.force*1.45,.12,0]),'#edc579');
 }
 function drawTraining(g, c, n) {
   for(let i=0;i<n;i++) for(let j=0;j<4;j++) {
@@ -261,7 +279,26 @@ function drawTraining(g, c, n) {
 }
 const drawers=[drawInputs,drawTokenGT,drawConvex,drawAttention,drawConcepts,drawGFN,drawForest,drawAnalogy,drawStructure,drawDynamics,drawTeachers,drawTraining];
 
+function harmonic(x) {
+  const k=.4;
+  return {energy:.5*k*x*x,force:-k*x};
+}
+
 export function toyModel(index, value) {
+  if (index===2) {
+    const input='AC'.repeat(value), vocabulary=['ACAC','AC','A','C'];
+    const paths=Array(input.length+1).fill(null);
+    paths[0]=[];
+    for (let i=0;i<input.length;i++) {
+      if (!paths[i]) continue;
+      for (const piece of vocabulary) {
+        if (!input.startsWith(piece,i)) continue;
+        const end=i+piece.length;
+        if (!paths[end] || paths[end].length>paths[i].length+1) paths[end]=[...paths[i],piece];
+      }
+    }
+    return {input,pieces:paths.at(-1)};
+  }
   if (index===3) {
     const query=[value,.3,-.25];
     const keys=[[0,.1,.4],[.7,.4,-.1],[1.3,-.25,.35]];
@@ -272,7 +309,8 @@ export function toyModel(index, value) {
     });
     const terms=query.map((_,i)=>keys.map((_,j)=>scores[j]+values[j][i]));
     const result=terms.map(row=>Math.max(...row));
-    return {result,winners:terms.map((row,i)=>row.indexOf(result[i]))};
+    const winners=terms.map((row,i)=>row.flatMap((term,key)=>term===result[i]?[key]:[]));
+    return {result,scores,terms,winners};
   }
   if(index===4) return {direction:norm([.8,.5,-.3])};
   if(index===5) return {masses:[value,(1-value)*value,(1-value)**2]};
@@ -295,7 +333,7 @@ export function toyModel(index, value) {
   }
   if(index===8) return {points:structureA.map((point,i)=>mix(point,structureB[i],value)),reference:structureA};
   if(index===9) return {population:1/(1+Math.exp(.06/(8.617333262e-5*value)))};
-  if(index===10) return {energy:.5*.4*value**2,force:-.4*value};
+  if(index===10) return harmonic(value);
   return {};
 }
 

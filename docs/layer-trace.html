@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Step through a source-faithful TokenGT computation with two layers and two tropical attention heads."><meta name="theme-color" content="#121c1b"><meta property="og:type" content="website"><meta property="og:title" content="Inside a tropical layer · Mora-3"><meta property="og:description" content="Step through a source-faithful TokenGT computation with two layers and two tropical attention heads."><title>Inside a tropical layer · Mora-3</title><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/theme.css"><script src="assets/theme.js"></script><script defer src="assets/site.js"></script><link rel="stylesheet" href="assets/layer-trace.css"><script type="module" src="assets/layer-trace.js"></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Step through TokenGT with two layers and two attention heads using the tropical or ordinary μP kernel."><meta name="theme-color" content="#121c1b"><meta property="og:type" content="website"><meta property="og:title" content="Inside a TokenGT layer · Mora-3"><meta property="og:description" content="Step through TokenGT with two layers and two attention heads using the tropical or ordinary μP kernel."><title>Inside a TokenGT layer · Mora-3</title><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/theme.css"><script src="assets/theme.js"></script><script defer src="assets/site.js"></script><link rel="stylesheet" href="assets/layer-trace.css"><script type="module" src="assets/layer-trace.js"></script></head>
 <body><a class="skip" href="#main">Skip to content</a><header class="site-header"><div class="wrap header-inner"><div class="header-brand"><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><button type="button" class="theme-toggle" id="theme-toggle" hidden>Light mode</button></div><nav class="nav" aria-label="Primary"><a class="nav-cta" href="paper.html">Live paper</a><a href="architecture.html">Architecture</a><a href="architecture-3d.html">3D atlas</a><a href="data.html">Data</a><a href="training.html">Training</a><a href="modalities.html">Modalities</a><a href="outputs.html">Outputs</a><a href="applications.html">Applications</a></nav></div></header>
 <main id="main" class="wrap" tabindex="-1">
 <header class="section-intro trace-intro">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="architecture-3d.html">3D atlas</a><span aria-hidden="true">/</span><span aria-current="page">Layer trace</span></nav>
   <p class="eyebrow">Architecture internals · Computed example</p>
-  <h1>Inside a tropical layer</h1>
-  <p class="lead">Follow a graph through two TokenGT encoder layers. Open any computation in the tensor map, then select a head, query, key, and channel to inspect the arithmetic.</p>
-  <p>The browser computes a 4-channel, 2-head miniature with fixed demonstration weights. The equations follow the finite tropical code path. The wider model and its task heads have separate training configurations.</p>
+  <h1>Inside a TokenGT layer</h1>
+  <p class="lead">Follow a graph through two encoder layers. Open any operation in the tensor map, then select a head, query, key, and channel to inspect its arithmetic.</p>
+  <p>The browser computes a 4-channel, 2-head example with fixed demonstration weights. It implements the finite tropical kernel and the ordinary softmax kernel with the μP query scaling used in the training configuration.</p>
 </header>
 <div class="trace" data-trace>
   <aside class="trace-controls" aria-label="Trace inputs">
@@ -15,7 +15,7 @@
     <label for="trace-input">Graph preset</label>
     <select id="trace-input"><option value="junction">Two cells and a junction</option><option value="chain">Three-cell chain</option><option value="contact">Protein contact motif</option></select>
     <label for="trace-strength">First edge feature <output for="trace-strength" id="trace-strength-value"></output></label>
-    <input id="trace-strength" type="range" min="-1" max="1" step=".05" value=".4">
+    <input id="trace-strength" type="range" min="-4" max="4" step=".05" value=".4">
     <details class="trace-custom"><summary>Edit graph input</summary>
       <label for="trace-json">Node names, directed edges and feature rows as JSON</label>
       <textarea id="trace-json" rows="8" spellcheck="false" autocapitalize="off"></textarea>
@@ -26,12 +26,24 @@
     <select id="trace-token"></select>
     <label for="trace-key">Key token to inspect</label>
     <select id="trace-key"></select>
-    <label for="trace-head">Tropical head</label>
+    <label for="trace-head">Attention head</label>
     <select id="trace-head"><option value="0">Head 1 · channels 1–2</option><option value="1">Head 2 · channels 3–4</option></select>
     <label for="trace-channel">Head-local channel</label>
     <select id="trace-channel"><option value="0">Channel 1</option><option value="1">Channel 2</option></select>
-    <label for="trace-reduction">Key reduction</label>
-    <select id="trace-reduction"><option value="full">All keys together</option><option value="2">Blockwise · 2 keys per block</option></select>
+    <div class="trace-setting" id="trace-hidden-setting" hidden>
+      <label for="trace-hidden-channel">FFN hidden feature</label>
+      <select id="trace-hidden-channel"><option value="0">Feature 1</option><option value="1">Feature 2</option><option value="2">Feature 3</option><option value="3">Feature 4</option><option value="4">Feature 5</option><option value="5">Feature 6</option></select>
+    </div>
+    <label for="trace-kernel">Attention kernel</label>
+    <select id="trace-kernel"><option value="tropical">Finite tropical</option><option value="dense">Ordinary softmax · μP scale</option></select>
+    <div class="trace-setting" id="trace-block-setting">
+      <label for="trace-reduction">Key reduction</label>
+      <select id="trace-reduction"><option value="full">All keys together</option><option value="2">Blockwise · 2 keys per block</option></select>
+    </div>
+    <div class="trace-setting" id="trace-multiplier-setting" hidden>
+      <label for="trace-multiplier">μP attention multiplier <output for="trace-multiplier" id="trace-multiplier-value">1.00</output></label>
+      <input id="trace-multiplier" type="range" min=".25" max="4" step=".25" value="1">
+    </div>
     <details class="trace-index"><summary>All computation steps</summary><nav id="trace-steps" class="trace-steps" aria-label="Computation steps"></nav></details>
   </aside>
   <section class="trace-work" aria-labelledby="trace-title">
@@ -42,12 +54,12 @@
     <p id="trace-equation" class="trace-equation"></p>
     <figure class="trace-scene">
       <svg id="trace-scene" viewBox="0 0 740 204" role="img"></svg>
-      <figcaption><label for="trace-angle">Orbit tensor grids</label><input id="trace-angle" type="range" min="-45" max="45" step="1" value="-16"><span>Height shows magnitude. Green marks the selected cells. Gray marks masked keys.</span></figcaption>
+      <figcaption><label for="trace-angle">Orbit</label><input id="trace-angle" type="range" min="-55" max="55" step="1" value="-16"><label for="trace-pitch">Tilt</label><input id="trace-pitch" type="range" min="18" max="65" step="1" value="31"><span>Click a cell to inspect it. Height shows magnitude. Gold is negative. Green marks selection. Gray marks masked keys.</span></figcaption>
     </figure>
     <div id="trace-numerical" class="trace-numerical" aria-live="polite"></div>
     <div id="trace-tensors" class="trace-tensors"></div>
   </section>
 </div>
-<p class="trace-foot">The graph token, feature and incidence projections, LayerNorm, finite max-plus attention, residuals and GELU match the source operations. The final scalar readout is an illustrative head. <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tokengt.py">TokenGT source</a> · <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tropical.py">Tropical attention source</a></p>
+<p class="trace-foot">The trace covers the encoder forward pass. The final scalar is an illustrative readout. Task-specific decoders, optimizer updates, and checkpoint inference have separate interfaces. <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tokengt.py">TokenGT source</a> · <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tropical.py">Tropical attention source</a></p>
 <noscript><p>Enable JavaScript to evaluate the trace. <a href="architecture.html">Read the architecture chapter</a> for the text explanation.</p></noscript>
 </main><footer class="footer"><div class="wrap footer-inner"><div><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><p>Biomedical graph modeling · Research in development</p></div><nav class="footer-nav" aria-label="Footer"><a href="paper.html">Live paper</a><a href="applications.html">Applications</a><a href="index.html#releases">Release status</a></nav></div></footer></body></html>

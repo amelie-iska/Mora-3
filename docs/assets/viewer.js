@@ -33,32 +33,12 @@ const labels = stages.map((stage,i)=>{
   return label;
 });
 
-function tokenize(text) {
-  const pieces=['ACAC','AC','A','C'];
-  const paths=Array(text.length+1).fill(null);
-  paths[0]=[];
-  for(let i=0;i<text.length;i++) {
-    if(!paths[i]) continue;
-    for(const piece of pieces) {
-      if(!text.startsWith(piece,i)) continue;
-      const end=i+piece.length;
-      if(paths[end]===null || paths[end].length>paths[i].length+1) paths[end]=[...paths[i],piece];
-    }
-  }
-  return paths.at(-1);
-}
-
-function example(index,value) {
-  const model=toyModel(index,value);
+function example(index,value,model) {
   switch (index) {
     case 0: return {rows:[['Observed',`${value} / 6`],['Unavailable',6-value]],math:'Only observed and permitted inputs enter the toy condition.'};
-    case 1: return {rows:[['Node tokens',4],['Total graph tokens',4+value]],math:'One token per node plus one per directed edge. Control and payload tokens are omitted here.'};
-    case 2: {
-      const motif='AC'.repeat(value);
-      const result=tokenize(motif);
-      return {rows:[['Input bytes',motif.length],['Shortest path tokens',result.length]],math:`Fixed toy vocabulary: A, C, AC, ACAC. Encoding: ${result.join(' · ')}`};
-    }
-    case 3: return {rows:[['Winning keys',model.winners.map(v=>`K${v+1}`).join(' · ')],['Output vector',vector(model.result)]],math:'score(q,k) = min(q−k) − max(q−k). Each output takes maxₖ(score + Vₖ).'};
+    case 1: return {rows:[['Node tokens',4],['Directed edge tokens',value],['Learned graph token',1],['Rows before padding',5+value]],math:'Feature + ordered endpoint IDs + role form each entity row. The graph token is prepended separately.'};
+    case 2: return {rows:[['Input bytes',model.input.length],['Shortest path tokens',model.pieces.length]],math:`Fixed vocabulary: A, C, AC, ACAC. Encoding: ${model.pieces.join(' · ')}`};
+    case 3: return {rows:[['Winning keys by channel',model.winners.map(keys=>keys.map(k=>`K${k+1}`).join('/')).join(' · ')],['Output vector',vector(model.result)]],math:'score(q,k) = min(q−k) − max(q−k). Each output takes maxₖ(score + Vₖ).'};
     case 4: return {rows:[['Edit Δz',vector(model.direction.map(v=>v*value))],['Edit length',fixed(Math.hypot(...model.direction)*Math.abs(value))]],math:'z′ = z + αd, with unit d = '+vector(model.direction)+'.'};
     case 5: return {rows:[['Exit at steps 1 / 2 / 3',model.masses.map(percent).join(' / ')],['Total exit mass',percent(model.masses.reduce((a,b)=>a+b,0))]],math:'Stop masses are p, (1−p)p, and (1−p)². The last stop is forced. Continuous move densities are separate.'};
     case 6: return {rows:model.selected.map((ids,i)=>['Tree '+(i+1)+' selected scores',ids.map(id=>fixed(model.scores[i][id])).join(' · ')]),math:'Each toy tree has three eligible branches. Keep the highest-scoring K per tree.'};
@@ -74,15 +54,45 @@ function example(index,value) {
   }
 }
 
+function renderAttentionTerms(model) {
+  const container=root.querySelector('#atlas-terms');
+  if (!container) return;
+  container.replaceChildren();
+  container.hidden=selected!==3;
+  if (container.hidden) return;
+  const table=document.createElement('table');
+  table.createCaption().textContent='Score + value by key and channel';
+  const header=table.createTHead().insertRow();
+  for (const label of ['Key','Score','C1','C2','C3']) {
+    const cell=document.createElement('th');
+    cell.scope='col'; cell.textContent=label; header.append(cell);
+  }
+  const body=table.createTBody();
+  model.scores.forEach((score,key)=>{
+    const row=body.insertRow();
+    const label=document.createElement('th');
+    label.scope='row'; label.textContent=`K${key+1}`; row.append(label);
+    row.insertCell().textContent=fixed(score);
+    model.terms.forEach((channel,i)=>{
+      const cell=row.insertCell();
+      const winning=model.winners[i].includes(key);
+      cell.textContent=fixed(channel[key])+(winning?' ★':'');
+      if (winning) cell.className='is-winner';
+    });
+  });
+  container.append(table);
+}
+
 function setNumbers() {
   const value=values[selected], stage=stages[selected];
-  const sample=example(selected,value);
+  const model=toyModel(selected,value);
+  const sample=example(selected,value,model);
   text('slider-value',`${Number(value.toFixed(3))}${stage.control.unit}`);
   text('math',sample.math);
+  renderAttentionTerms(model);
   const candidates=root.querySelector('#atlas-candidates');
   candidates.replaceChildren(); candidates.hidden=selected!==7;
   if(selected===7) {
-    const model=toyModel(7,value);
     const heading=document.createElement('h3');heading.textContent='Candidate audit · toy values';candidates.append(heading);
     model.candidates.forEach(item=>{
       const row=document.createElement('div');row.className='atlas-candidate';row.dataset.refused=String(!!item.refusal);

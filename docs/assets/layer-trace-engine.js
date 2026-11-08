@@ -27,7 +27,7 @@ function normalize(rows, {gamma, beta}) {
     (x - stats[i][0]) / Math.sqrt(stats[i][1] + epsilon) * gamma[j] + beta[j]))};
 }
 
-function gelu(x) {
+export function cdf(x) {
   // Bounded toy activations permit an accurate erf series for the exact GELU.
   const z = x / Math.SQRT2;
   let term = z;
@@ -36,7 +36,7 @@ function gelu(x) {
     term *= -z * z / n;
     result += term / (2 * n + 1);
   }
-  return x * (1 + 2 / Math.sqrt(Math.PI) * result) / 2;
+  return (1 + 2 / Math.sqrt(Math.PI) * result) / 2;
 }
 
 export const weights = {
@@ -52,6 +52,12 @@ export const weights = {
       key: matrix(headWidth, headWidth, seed + 6),
       value: matrix(headWidth, headWidth, seed + 8),
       output: matrix(width, width, seed + 10),
+      dense: {
+        qkv: matrix(3 * width, width, seed + 19),
+        qkvBias: vector(3 * width, seed + 20, .09),
+        output: matrix(width, width, seed + 23),
+        outputBias: vector(width, seed + 24, .08),
+      },
       ffnIn: matrix(6, width, seed + 12), ffnInBias: vector(6, seed + 14, .11),
       ffnOut: matrix(width, 6, seed + 16), ffnOutBias: vector(width, seed + 18, .09),
     };
@@ -100,7 +106,7 @@ export function makeGraph(name, edgeStrength) {
   return graphFromInput(graphPreset(name, edgeStrength));
 }
 
-function runAttention(rows, valid, parameters, blockSize) {
+function tropicalAttention(rows, valid, parameters, blockSize) {
   const logValues = rows.map(row => row.map(x => Math.log1p(Math.max(x, 0))));
   const heads = [0, 1].map(head => {
     const start = head * headWidth;
@@ -123,7 +129,29 @@ function runAttention(rows, valid, parameters, blockSize) {
   return {logValues, heads, concatenated, decoded, output};
 }
 
-export function runTrace(graph, blockSize = graph.tokens.length) {
+function denseAttention(rows, valid, {qkv, qkvBias, output, outputBias}, attnMult) {
+  const packed = linear(rows, qkv, qkvBias);
+  const scale = Math.sqrt(attnMult) / headWidth;
+  const heads = [0, 1].map(head => {
+    const start = head * headWidth;
+    const [q, k, v] = [0, 1, 2].map(part => packed.map(row =>
+      row.slice(part * width + start, part * width + start + headWidth)));
+    const scaled = q.map(row => row.map(value => value * scale));
+    const logits = scaled.map(query => k.map(key => dot(query, key)));
+    const scores = logits.map(row => row.map((value, i) => valid[i] ? value : -Infinity));
+    const maxima = scores.map(row => Math.max(...row));
+    const exponentials = scores.map((row, i) => row.map(value => Math.exp(value - maxima[i])));
+    const totals = exponentials.map(row => row.reduce((total, value) => total + value, 0));
+    const probabilities = exponentials.map((row, i) => row.map(value => value / totals[i]));
+    const candidates = probabilities.map(row => row.map((value, j) => v[j].map(channel => value * channel)));
+    const context = candidates.map(row => sum(...row));
+    return {q, k, v, scaled, logits, scores, maxima, exponentials, totals, probabilities, candidates, context};
+  });
+  const concatenated = rows.map((_, i) => heads.flatMap(head => head.context[i]));
+  return {packed, scale, heads, concatenated, output: linear(concatenated, output, outputBias)};
+}
+
+export function runTrace(graph, blockSize = graph.tokens.length, {kind = "tropical", attnMult = 1} = {}) {
   const incidence = graph.endpoints.map(pair => pair.flatMap(node => graph.identifiers[node]));
   const features = linear(graph.features, weights.feature);
   const incidences = linear(incidence, weights.incidence);
@@ -133,11 +161,13 @@ export function runTrace(graph, blockSize = graph.tokens.length) {
   let rows = input;
   const layers = weights.layers.map(parameters => {
     const firstNorm = normalize(rows, parameters.norm1);
-    const attention = runAttention(firstNorm.values, graph.valid, parameters, blockSize);
+    const attention = kind === "dense"
+      ? denseAttention(firstNorm.values, graph.valid, parameters.dense, attnMult)
+      : tropicalAttention(firstNorm.values, graph.valid, parameters, blockSize);
     const residual = rows.map((row, i) => add(row, attention.output[i]));
     const secondNorm = normalize(residual, parameters.norm2);
     const ffnPre = linear(secondNorm.values, parameters.ffnIn, parameters.ffnInBias);
-    const ffnActive = ffnPre.map(row => row.map(gelu));
+    const ffnActive = ffnPre.map(row => row.map(x => x * cdf(x)));
     const ffnOutput = linear(ffnActive, parameters.ffnOut, parameters.ffnOutBias);
     const output = residual.map((row, i) => add(row, ffnOutput[i]));
     const layer = {input: rows, firstNorm, attention, residual, secondNorm, ffnPre, ffnActive, ffnOutput, output};

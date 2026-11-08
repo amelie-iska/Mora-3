@@ -51,3 +51,6 @@
   .lab-audit-notes { grid-template-columns: 1fr; }
   .lab-audit-notes dd { margin-bottom: .25rem; }
 }
+
+.lab-envelope { fill: var(--lab-envelope-fill, #c7954833); stroke: #b88236; stroke-dasharray: 4 3; }
+.lab-envelope.stable { fill: #4f9c8533; stroke: #4f9c85; }

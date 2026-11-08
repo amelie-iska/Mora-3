@@ -120,9 +120,29 @@ export function topologyComparison(radius, scenario=0) {
     preservesEdges:!missing.length && !extra.length};
 }
 
+export function referenceEnvelope(origin, deltas, scale, selected, eligible) {
+  if (deltas.length < 2 || !selected) return null;
+  const bounds = origin.map((value, i) => {
+    const endpoints = deltas.map(delta => value + scale * delta[i]);
+    return [Math.min(...endpoints), Math.max(...endpoints)];
+  });
+  const center = bounds.map(([lo, hi]) => (lo + hi) / 2);
+  const radii = bounds.map(([lo, hi]) => (hi - lo) / 2);
+  const squaredDistance = (a, b) => subtract(a, b).reduce((sum, value) => sum + value ** 2, 0);
+  // The squared-distance gap is affine in q. Its exact range over this
+  // axis-aligned box is the center value plus/minus the support radius.
+  const rivals = eligible.filter(candidate => candidate !== selected).map(candidate => {
+    const gap = squaredDistance(candidate.state, center) - squaredDistance(selected.state, center);
+    const sensitivity = subtract(candidate.state, selected.state)
+      .reduce((sum, value, i) => sum + 2 * Math.abs(value) * radii[i], 0);
+    return {id: candidate.id, minGap: gap - sensitivity, maxGap: gap + sensitivity};
+  });
+  return {bounds, rivals, robust: rivals.every(rival => rival.minGap > 1e-12)};
+}
+
 export function analogy(scale, referenceMode, scenario = 0) {
   if (!Number.isFinite(scale) || !Number.isInteger(referenceMode) || referenceMode < 0 || referenceMode > 3
-      || ![0,1,2,3].includes(scenario)) throw new RangeError("Invalid analogy controls");
+      || ![0,1,2,3,4].includes(scenario)) throw new RangeError("Invalid analogy controls");
   const querySpec = {...matched};
   if (scenario === 1) querySpec.stage = "late epithelial";
   if (scenario === 2) querySpec.relation = "receiver → donor";
@@ -155,7 +175,8 @@ export function analogy(scale, referenceMode, scenario = 0) {
   const {displacement, query, agreement, conflicts, transferReason} = transfer(pairs);
   // These are visible proposal descriptors. Query outcomes are absent from
   // every candidate record and never participate in the distance or gates.
-  const ranked = candidates.map(candidate => {
+  const ranked = candidates.map(base => {
+    const candidate = scenario === 4 && base.id === "E" ? {...base, state:[2.11, 2.75, 1.10, -.07]} : base;
     const difference = subtract(candidate.state, query);
     const targetMotif = candidateMotif(candidate.id);
     const motif = matchMotifByRole(sourceMotif,targetMotif);
@@ -177,7 +198,8 @@ export function analogy(scale, referenceMode, scenario = 0) {
     return {omitted: omitted.id, remaining: remaining.map(item => item.id), selected: pick?.id ?? null,
       distance: pick?.distance ?? null, margin: pick && ranks.length > 1 ? ranks[1].distance - pick.distance : null};
   });
-  return {pairs, referenceAudit, querySpec, queryBefore, displacement, query, ranked, selected, projected, agreement, conflicts, transferReason,
+  const envelope = referenceEnvelope(queryBefore, pairs.map(pair => subtract(pair.after, pair.before)), scale, selected, eligible);
+  return {pairs, referenceAudit, querySpec, queryBefore, displacement, query, ranked, selected, projected, agreement, conflicts, transferReason, envelope,
     projectedEligible, baseline, sensitivity,
     margin: selected && eligible.length > 1 ? eligible[1].full-selected.full : null};
 }
@@ -281,18 +303,16 @@ export function currentVelocity(coupling, frame = 0) {
   // Proper rotation about the chain axis, plus a frame translation.
   const xyz = frame ? original.map(point => rotateQuarterTurn(point).map((value,i)=>value+[.1,-.35,.15][i])) : original;
   const free = [false, true, true, true];
-  const velocities = xyz.map((point, i) => {
-    const contributions = xyz.map((neighbor, j) => {
-      const relative = subtract(neighbor, point);
-      const distance = norm(relative);
-      const scalar = .18 * Math.exp(-distance) + (Math.abs(i-j) === 1 ? coupling : 0);
-      return relative.map(value => scalar * value);
-    });
-    return point.map((_, axis) => free[i]
-      ? contributions.reduce((total, row) => total + row[axis], 0) / xyz.length : 0);
-  });
+  const pairs = xyz.map((point, i) => xyz.map((neighbor, j) => {
+    const relative = subtract(neighbor, point);
+    const distance = norm(relative);
+    const bonded = Math.abs(i-j) === 1;
+    const coefficient = .18 * Math.exp(-distance) + (bonded ? coupling : 0);
+    return {relative, distance, bonded, coefficient, weighted: relative.map(value => coefficient * value)};
+  }));
+  const velocities = pairs.map((row, i) => free[i] ? average(row.map(pair => pair.weighted)) : [0,0,0]);
   const next = xyz.map((point, i) => point.map((value, j) => value + .4 * velocities[i][j]));
-  return {xyz, free, velocities, next, distance: norm(subtract(next[1], next[2]))};
+  return {xyz, free, pairs, velocities, next, distance: norm(subtract(next[1], next[2]))};
 }
 
 export function frameComparison(coupling) {

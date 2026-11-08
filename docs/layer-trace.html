@@ -6,7 +6,7 @@
   <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="architecture-3d.html">3D atlas</a><span aria-hidden="true">/</span><span aria-current="page">Layer trace</span></nav>
   <p class="eyebrow">Architecture internals · Computed example</p>
   <h1>Inside a TokenGT layer</h1>
-  <p class="lead">Follow a graph through two encoder layers, then inspect how a task head separates experimental affinity from teacher energy. Play the forward pass or open any operation. Select a head, token, or channel to follow the arithmetic into its output.</p>
+  <p class="lead">Follow a graph through two encoder layers, then inspect how a task head separates experimental affinity from teacher energy. Play the forward pass or open any operation. Select a head, token, or channel to follow the arithmetic into its output. At the tropical head merge, open the backward trace to follow a unit gradient into the layer input.</p>
   <p>The browser computes a 4-channel, 2-head example with fixed demonstration weights. It implements the finite tropical kernel and the ordinary softmax kernel with the μP query scaling used in the training configuration.</p>
 </header>
 <div class="trace" data-trace>

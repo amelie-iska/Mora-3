@@ -96,6 +96,9 @@ const methods = {
         table:{caption:"Prefix choices at byte offset 0",
           columns:["Prefix", "Next offset", "Suffix cost", "Total tokens", "Choice"],
           rows:firstChoices.map(({token,suffixCost,chosen})=>[token,token.length,suffixCost,1+suffixCost,chosen?"Shortest path":"Alternative"])},
+        notes:[["Byte round trip", path.join("") === payload
+          ? "Concatenating the chosen tokens reconstructs all " + payload.length + " input bytes in order."
+          : "The chosen tokens fail to reconstruct the input."]],
       };
     }
   },
@@ -209,7 +212,9 @@ const methods = {
         table:{caption:"Affine transform and normalization of the fixed basis",
           columns:["Basis", "Affine output", "Raw norm", "Unit direction"],
           rows:[direction,other].map((unit,i)=>[vector(basis[i]),vector(raw[i]),scalar(rawNorm[i],3),vector(unit)])},
-        notes:[["Signed edit", vector(original) + " + " + vector(delta) + " = " + vector(edit) + " (rounded). The step scales the first unit direction."]],
+        notes:[["Signed edit", vector(original) + " + " + vector(delta) + " = " + vector(edit) + " (rounded). The step scales the first unit direction."],
+          ["Cross-talk in latent space", "The signed edit projects " + scalar(value*cosine,3)
+            + " units onto the second normalized direction. Unit normalization permits correlated directions."]],
       };
     }
   },
@@ -233,7 +238,9 @@ const methods = {
         notes:[["Balance", "log Z (" + scalar(model.logZ,3) + ") + path sum (" + scalar(model.pathSum,3)
           + ") + log stop (" + scalar(model.stop,3) + ") − log reward (" + scalar(reward,3) + ") = " + scalar(model.balance,3) + " (rounded)."],
           ["Exit accounting", model.stop === 0 ? "Horizon exit is forced. Its log stop mass is zero." : "Optional exit contributes log stop " + scalar(model.stop,3) + " once."],
-          ["Origin reverse", "Move 1 reverses to a Dirac origin, so its reverse log mass is zero."]],
+          ["Origin reverse", "Move 1 reverses to a Dirac origin, so its reverse log mass is zero."],
+          ["Balance ratio", "exp(residual) = " + scalar(Math.exp(model.balance),3)
+            + ". A ratio of 1 balances this path. A single fixture path cannot establish the terminal distribution."]],
       };
     }
   },
@@ -300,8 +307,10 @@ const methods = {
         table:{caption:"Candidate audit within each independent tree",
           columns:["Candidate", "Depth", "Score", "Nearest retained", "Decision"],
           rows:all.map(item=>[item.id,item.depth,scalar(item.score),Number.isFinite(item.separation)?scalar(item.separation,3):"—",item.disposition])},
-        notes:panels.map(({root,nodes,leaves,reason})=>[root.id, nodes.length + " proposals · stop by " + reason
-          + " · reported leaves " + (leaves.map(item=>item.id).join(", ") || "none") + "."]),
+        notes:[["Budget order", "Roots do not spend proposals. If a depth runs out of budget, earlier retained parents get the remaining expansions first."],
+          ...panels.map(({root,nodes,leaves,reason})=>[root.id, nodes.length + "/" + budget + " proposals · stop by " + reason
+          + " · terminal leaves " + (leaves.filter(item=>item.terminal).map(item=>item.id).join(", ") || "none")
+          + " · unexpanded frontier " + (leaves.filter(item=>!item.terminal).map(item=>item.id).join(", ") || "none") + "."])],
       };
     }
   },
@@ -312,7 +321,7 @@ const methods = {
     source: code + "reasoning/fot_selection.py", sourceLabel: "Implemented eligibility selection (analogy gates here are synthetic)",
     control: {label: "Reference displacement scale β", min: -1, max: 1.5, step: 0.05, value: 1,
       secondaryLabel:"Reference pairs", choices: ["Early-stage reference set", "Matched pair 1", "Matched pair 2", "Later-stage pair 3"],
-      scenarioLabel:"Counterfactual scenario", scenarios:["Original matched query", "Later receiver cell state", "Swap donor and receiver", "Discordant reference cultures"]},
+      scenarioLabel:"Counterfactual scenario", scenarios:["Original matched query", "Later receiver cell state", "Swap donor and receiver", "Discordant reference cultures", "Close eligible proposals"]},
     render(scale, referenceMode, scenario) {
       const m = analogy(scale,referenceMode,scenario);
       const project = ([x,y]) => [56 + 138*x, 286 - 72*y];
@@ -321,25 +330,35 @@ const methods = {
         return arrow(...a,...b) + point(a, pair.id+" pre", "blue") + point(b, pair.id+" post", "blue");
       }).join("");
       const target = project(m.query), start = project(m.queryBefore);
+      const envelope = m.envelope;
+      const robust = envelope?.robust;
+      const bounds = envelope?.bounds;
+      const rectangle = bounds ? (() => {
+        const [x1,y1]=project([bounds[0][0],bounds[1][1]]);
+        const [x2,y2]=project([bounds[0][1],bounds[1][0]]);
+        return box(x1,y1,x2-x1,y2-y1,robust ? "lab-envelope stable" : "lab-envelope");
+      })() : "";
       const offsets={A:[-36,-24], B:[-19,30], C:[25,-17], D:[19,33], E:[15,20], F:[-43,11]};
       const marksById = m.ranked.map(candidate => {
         const [x,y]=project(candidate.state);
-        const style=candidate === m.selected ? "aqua" : candidate.refusal ? "amber" : "mute";
+        const style=candidate === m.selected && robust !== false ? "aqua" : candidate.refusal ? "amber" : "mute";
         const [dx,dy]=offsets[candidate.id];
         return line(x,y,x+dx,y+dy,"grid-line") + dot(x,y,style,candidate === m.selected ? 7 : 4)
           + label(x+dx,y+dy,candidate.id,style);
       }).join("");
-      const summary = m.selected
+      const summary = envelope && !robust
+        ? "Abstain under reference sensitivity · mean-transfer nearest eligible " + m.selected.id + "."
+        : m.selected
         ? "2D nearest " + m.projected.id + " · 4D nearest " + m.ranked[0].id + " · eligible " + m.selected.id + " · no-transfer baseline " + m.baseline.id + "."
         : "Abstain · " + (m.transferReason || "no eligible proposal") + ". Candidate outcomes remain masked.";
       const example = m.selected || m.ranked.find(candidate => candidate.id === "C");
       const walk = edges => edges.map(([i,j,type]) => i + " → " + j + " (" + type + ")").join(", ");
       const pairAudit = m.agreement.map(({references,cosine}) => references.join(" / ") + " "
         + (Number.isFinite(cosine) ? scalar(cosine,3) : "undefined")).join(" · ");
-      return {...result(grid() + label(44, 28, "DISPLAY COORDINATES 1–2 OF 4", "mute") + marks
+      return {...result(grid() + rectangle + label(44, 28, "DISPLAY COORDINATES 1–2 OF 4", "mute") + marks
         + (scale !== 0 && m.displacement ? arrow(...start,...target) : "")
         + point(start,"query pre","blue") + marksById + '<circle cx="'+target[0]+'" cy="'+target[1]+'" r="10" class="target-ring"/>'
-        + label(target[0]+13,target[1]-14,m.displacement ? "q" : "q₀","amber") + label(44, 316, "Blue: reference   Green: selected   Amber: refused", "mute"),
+        + label(target[0]+13,target[1]-14,m.displacement ? "q" : "q₀","amber") + label(44, 316, "Blue refs · Green pick · Gold refused · Box spread", "mute"),
         summary,"Fixture vectors illustrate retrieval. Reference outcomes support the displacement. Candidate descriptors contain only visible proposal inputs. A retrieval result needs independent outcome validation."),
         diagram:motifDiagram(example),
         notes:[
@@ -360,13 +379,22 @@ const methods = {
             : "No compatible reference subset to test."],
           ["Retrieval margin", m.margin === null ? "A runner-up margin requires two eligible proposals and a supported transfer."
             : "Runner-up minus selected distance = " + scalar(m.margin,3) + ". This measures geometric separation. Confidence calibration needs independent outcome data."],
+          ["Reference spread", envelope
+            ? "Projected box uses coordinate-wise minima and maxima of the compatible single-culture transfers. The decision uses all four dimensions. "
+              + (robust ? "The same proposal stays nearest throughout the box." : "At least one eligible rival can tie or outrank the mean-transfer proposal within the box.")
+            : "At least two compatible reference cultures and one eligible proposal are needed for the spread check."],
+          ["Worst-case gap", envelope?.rivals.length
+            ? envelope.rivals.map(rival=>rival.id + " vs " + m.selected.id + " · [" + scalar(rival.minGap,3)
+              + ", " + scalar(rival.maxGap,3) + "]").join(" · ")
+              + " in squared-distance units. The box allows combinations of reference coordinates never observed together."
+            : "A gap interval requires an eligible rival. The spread check is a sensitivity analysis."],
           ["Projection check", m.projectedEligible ? "Among eligible proposals, the 2D view prefers " + m.projectedEligible.id + ". The selection rule uses all four coordinates." : "No eligible 2D comparison."]
         ],
         table: {
           caption: "Candidate audit in 4D distance order · " + (m.displacement ? "transferred q" : "unshifted q₀") + " (" + m.query.map(value=>scalar(value)).join(", ") + ")",
           columns: ["Candidate", "2D distance", "4D distance", "Squared residuals · four axes", "Motif edges", "Gate", "Held-out outcome"],
           rows: m.ranked.map(item => [item.id, scalar(item.projected,3), scalar(item.full,3), item.squared.map(v=>scalar(v,4)).join(" + "), item.motif.matched + "/2",
-            item.refusal || (item === m.selected ? "Selected" : "Passes proposal gates"), "Masked"]),
+            item.refusal || (item === m.selected ? (robust === false ? "Nearest at mean · unstable" : "Selected") : "Passes proposal gates"), "Masked"]),
         }};
     }
   },
@@ -442,6 +470,8 @@ const methods = {
           + (i===stage ? line(x,299,x+54,299,"stroke") : "");
       }).join("");
       const gap = stage ? coolingTemperatures[stage-1]-temperature : null;
+      const entropy = -probabilities.reduce((total,p) => total + (p ? p*Math.log(p) : 0),0);
+      const meanEnergy = probabilities.reduce((total,p,i) => total + p*example.energies[i],0);
       return {...result(label(42,36,"NORMALIZED PROBABILITY BY COOLING STAGE","mute") + plot
         + label(42,324,"Green A   Blue B   Gold C","mute"),
         "Stage " + (stage+1) + " · " + temperature + " K" + (gap === null ? "" : " · drop " + gap + " K")
@@ -455,6 +485,8 @@ const methods = {
           ["Normalization", "The relative base weights sum to 1 after normalization. Log mass adds the log of that normalized base weight to the log reward. The log-sum-exp of the three log masses is " + scalar(logNormalizer,3) + "."],
           ["C to A odds", "Base-weight ratio " + scalar(base[2]/base[0],3) + " × energy factor "
             + scalar(Math.exp(logReward[2]-logReward[0]),3) + " gives p(C)/p(A) = " + scalar(probabilities[2]/probabilities[0],3) + " (rounded)."],
+          ["Ensemble statistics", "The three-state Shannon entropy is " + scalar(entropy,3)
+            + " nats and the probability-weighted mean energy is " + scalar(meanEnergy,4) + " eV."],
           ["Teacher scope", "UMA and eSEN illustrate separate energy vectors. The browser runs no potential, DFT calculation, force evaluation, or kinetic integrator."]],
       };
     }
@@ -465,10 +497,13 @@ const methods = {
     formula: "vᵢ = freeᵢ · (1/N) Σⱼ wᵀfᵢⱼ(xⱼ − xᵢ);  x′ = x + 0.4v",
     source: code + "model/current_frame_velocity.py", sourceLabel: "Coordinate-velocity readout source",
     control: {label: "Bond feature coefficient", min: -0.8, max: 1.6, step: 0.05, value: 0.9,
-      secondaryLabel:"Current frame", choices:["Original coordinates", "Rotate and translate frame"]},
-    render(coupling, frame) {
+      secondaryLabel:"Current frame", choices:["Original coordinates", "Rotate and translate frame"],
+      scenarioLabel:"Atom to inspect", scenarios:["Atom 2 · free", "Atom 1 · anchor", "Atom 3 · free", "Atom 4 · free"]},
+    render(coupling, frame, atomChoice) {
       const {original,transformed,velocityError,distanceError} = frameComparison(coupling);
-      const {xyz,free,velocities,next,distance} = frame ? transformed : original;
+      const {xyz,free,pairs,velocities,next,distance} = frame ? transformed : original;
+      const atom = [1,0,2,3][atomChoice];
+      const vector = values => values.map(value=>scalar(value,3)).join(", ");
       const project = ([x,y,z]) => [79 + 98*x + 23*z, 176 - 100*y + 48*z];
       const bonds = xyz.slice(1).map((point,i) => line(...project(xyz[i]), ...project(point))).join("");
       const ghosts = next.map(point => {
@@ -479,13 +514,18 @@ const methods = {
         + xyz.map((point,i) => {
           const from=project(point);
           return (free[i] ? arrow(...from,...project(point.map((x,j)=>x+1.8*velocities[i][j]))) : "")
-            + dot(...from, free[i] ? "aqua" : "blue", 9) + label(from[0]-5, from[1]+32, String(i+1));
+            + dot(...from, free[i] ? "aqua" : "blue", i === atom ? 13 : 9) + label(from[0]-5, from[1]+32, String(i+1));
         }).join("") + label(42, 291, "PAIR 2–3 AFTER STEP  " + scalar(distance,3) + " Å", "mute"),
         "Atom 1 is fixed. Atom 2 has speed " + scalar(Math.hypot(...velocities[1]),3) + " Å per toy step unit.",
         "Arrows magnify the velocity and rings show the Euler update. The anchor still supplies context to its neighbors. The frame selector applies a quarter-turn about x and a translation. Time uses an illustrative scale."),
-        table:{caption:"Current-frame velocities",columns:["Atom","vₓ","vᵧ","v_z","Mask"],
-          rows:velocities.map((v,i)=>[String(i+1),...v.map(x=>scalar(x,3)),free[i]?"Free":"Fixed"])},
-        notes:[["Rigid-frame check", "Recomputing in the transformed frame gives max ‖v′ − Rv‖ = "
+        table:{caption:"Pair arithmetic for selected atom " + (atom+1),
+          columns:["Neighbor", "Distance (Å)", "Bond", "Scalar coefficient", "Relative xyz (Å)", "Weighted xyz"],
+          rows:pairs[atom].map((pair,i)=>[String(i+1),scalar(pair.distance,3),pair.bonded?"Yes":"No",
+            scalar(pair.coefficient,3),vector(pair.relative),vector(pair.weighted)])},
+        notes:[["Velocity and Euler update", "Selected atom " + (atom+1) + " · " + (free[atom] ? "free" : "fixed")
+          + " · velocity (" + vector(velocities[atom]) + "). Current coordinates (" + vector(xyz[atom])
+          + ") become (" + vector(next[atom]) + "). The self-pair has a zero displacement and is included in the mean."],
+          ["Rigid-frame check", "Recomputing in the transformed frame gives max ‖v′ − Rv‖ = "
           + velocityError.toExponential(2) + ". The maximum change across all six updated pair distances is "
           + distanceError.toExponential(2) + " Å."]],
       };

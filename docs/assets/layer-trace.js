@@ -1,5 +1,5 @@
 import {tensorScene, graphScene} from "./layer-trace-scene.js";
-import {weights, graphPreset, graphFromInput, runTrace, cdf, affinityObjective, feedbackAxes, feedbackWeight} from "./layer-trace-engine.js";
+import {weights, graphPreset, graphFromInput, runTrace, cdf, affinityObjective, feedbackAxes, feedbackWeight, tropicalResidualGradient} from "./layer-trace-engine.js";
 
 const names = ["input","strength","strength-value","token","head","channel","steps","progress","prev","next",
   "title","explanation","equation","numerical","tensors","map","key","reduction","json","apply","input-status","scene","angle","pitch",
@@ -75,6 +75,36 @@ function routingView(c, dense) {
     cols: [dense ? "Weighted terms by valid key" : "Maximizing keys", "Context", "Joined channel", dense ? "Projection input" : "expm1"],
     selected: c.global,
   });
+}
+
+function reverseAttention(c) {
+  const result = tropicalResidualGradient(c.layer, c.parameters, c.query, c.global);
+  const details = node("details");
+  details.className = "trace-reverse";
+  details.id = "trace-reverse";
+  details.append(node("summary", "Step backward through this attention output"));
+  const list = node("ol");
+  const local = result.heads[Math.floor(c.global / 2)];
+  const selected = local.routes[c.channel];
+  [
+    "Seed the selected residual scalar with 1. The skip path sends 1 directly to its layer input coordinate.",
+    "For each head channel, the selected output weight multiplies the derivative exp(context). This gives the incoming gradient for that channel.",
+    "The first maximizing key receives the value gradient. For Q − K, the first minimum gets +g and the first maximum gets −g. K receives the opposite signs. If both indices coincide, the score gradient cancels.",
+    "Each max-plus projection sends its gradient to the first maximizing input coordinate. The finite transform passes g/(1+n) only where n is positive.",
+    "The LayerNorm derivative mixes channels in the same token. Add the skip gradient to obtain the derivative with respect to the layer input."
+  ].forEach(message => list.append(node("li", message)));
+  details.append(node("p", "Reverse-mode derivative of the selected post-attention residual scalar. Select a token and output channel above to change the seed."), list);
+  const rows = result.heads.flatMap(head => head.routes);
+  details.append(
+    matrix("Both heads · first-index gradient routes",
+      rows.map(route => [c.graph.tokens[route.key], route.weight, route.decode, route.seed, route.lo+1, route.hi+1]),
+      {rows:["H1 c1","H1 c2","H2 c1","H2 c2"], cols:["Winning key","Output weight","exp(context)","Incoming g","First min","First max"],selected:c.global}),
+    node("p", "Selected head and channel use " + c.graph.tokens[selected.key] + ". Gradient tables sum contributions from both channels of that head."),
+    ...[["Q gradient",local.dq],["K gradient",local.dk],["V gradient",local.dv],["Head input gradient after QKV",local.dz],
+      ["Normalized token gradient",result.normalized],["Layer input gradient including skip",result.residual]]
+      .map(([title,values]) => matrix(title,values,c.tokenRows))
+  );
+  return details;
 }
 
 const steps = [
@@ -167,6 +197,7 @@ const layerSteps = [
     equation:"a = Wo expm1(concat(c¹,c²)); r = x + a",render(c) {
       const l=c.layer;
       return ["Selected row = " + showRow(l.input[c.query]) + " + " + showRow(l.attention.output[c.query]) + " = " + showRow(l.residual[c.query]) + ".",
+        reverseAttention(c),
         ...l.attention.heads.map((head,i)=>matrix("Head "+(i+1)+" context",head.context,c.tokenRows)),
         matrix("Concatenated heads",l.attention.concatenated,c.tokenRows),
         matrix("Decoded channels",l.attention.decoded,c.tokenRows),
@@ -483,7 +514,9 @@ function render() {
     global,hidden:Number(ui["hidden-channel"].value),
     parameters:weights.layers[step.layer],head:layer?.attention.heads[head]});
   ui.numerical.textContent=note;
+  const reverseOpen = ui.tensors.querySelector(".trace-reverse")?.open;
   ui.tensors.replaceChildren(...figures);
+  if (reverseOpen && ui.tensors.querySelector(".trace-reverse")) ui.tensors.querySelector(".trace-reverse").open = true;
   drawScene();
 }
 function select(i, focus=false, writeHash=focus) {

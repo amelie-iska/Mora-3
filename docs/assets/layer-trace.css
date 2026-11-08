@@ -94,3 +94,8 @@
 .trace-input-graph path[data-token] { fill: none; stroke: var(--muted); stroke-width: 3; }
 .trace-input-graph :is(path.selected, .selected circle) { stroke: var(--pine); stroke-width: 4; }
 .trace-input-graph marker path { fill: var(--muted); }
+
+.trace-reverse { grid-column: 1 / -1; padding: 1rem; border: 1px solid var(--line); border-radius: .6rem; min-width: 0; }
+.trace-reverse summary { cursor: pointer; font-weight: 650; }
+.trace-reverse li { margin-block: .45rem; }
+.trace-reverse .trace-matrix { margin-block: .8rem; }

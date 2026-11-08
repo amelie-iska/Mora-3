@@ -133,6 +133,52 @@ function tropicalAttention(rows, valid, parameters, blockSize) {
   return {logValues, heads, concatenated, decoded, output};
 }
 
+const zeros = (rows, cols) => Array.from({length: rows}, () => Array(cols).fill(0));
+const extremum = (values, reduce) => values.indexOf(reduce(...values));
+
+// Reverse one selected residual scalar. Indices match torch.max/min's first
+// winner, including an exact tie between keys from different blocks.
+export function tropicalResidualGradient(layer, parameters, query, channel) {
+  const attention = layer.attention;
+  const heads = attention.heads.map((head, h) => {
+    const count = head.z.length;
+    const [dq, dk, dv, dz] = Array.from({length: 4}, () => zeros(count, headWidth));
+    const routes = head.context[query].map((context, output) => {
+      const global = h * headWidth + output;
+      const seed = parameters.output[channel][global] * Math.exp(context);
+      const key = head.candidates[query].findIndex(row => row[output] === context);
+      const difference = head.differences[query][key];
+      const lo = extremum(difference, Math.min), hi = extremum(difference, Math.max);
+      dq[query][lo] += seed;
+      dq[query][hi] -= seed;
+      dk[key][lo] -= seed;
+      dk[key][hi] += seed;
+      dv[key][output] += seed;
+      return {key, lo, hi, seed, weight: parameters.output[channel][global], decode: Math.exp(context)};
+    });
+    for (const [gradient, projection] of [[dq, parameters.query], [dk, parameters.key], [dv, parameters.value]]) {
+      gradient.forEach((row, token) => row.forEach((value, output) => {
+        const terms = projection[output].map((weight, i) => weight + head.z[token][i]);
+        dz[token][extremum(terms, Math.max)] += value;
+      }));
+    }
+    return {routes, dq, dk, dv, dz};
+  });
+  const normalized = layer.firstNorm.values.map((row, token) => row.map((value, i) =>
+    value > 0 ? heads[Math.floor(i / headWidth)].dz[token][i % headWidth] / (1 + value) : 0));
+  const residual = layer.input.map((row, token) => {
+    const [mean, variance] = layer.firstNorm.stats[token];
+    const std = Math.sqrt(variance + epsilon);
+    const standardized = row.map(value => (value - mean) / std);
+    const gained = normalized[token].map((value, i) => value * parameters.norm1.gamma[i]);
+    const average = gained.reduce((sum, value) => sum + value, 0) / width;
+    const projection = dot(gained, standardized) / width;
+    return gained.map((value, i) =>
+      (value - average - standardized[i] * projection) / std + Number(token === query && i === channel));
+  });
+  return {heads, normalized, residual};
+}
+
 function denseAttention(rows, valid, {qkv, qkvBias, output, outputBias}, attnMult) {
   const packed = linear(rows, qkv, qkvBias);
   const scale = Math.sqrt(attnMult) / headWidth;
@@ -181,6 +227,20 @@ export function affinityObjective(predictions, coverage) {
   return {rows, experimental, computed, total};
 }
 
+export function runLayer(rows, parameters, valid, blockSize, kind, attnMult) {
+  const firstNorm = normalize(rows, parameters.norm1);
+  const attention = kind === "dense"
+    ? denseAttention(firstNorm.values, valid, parameters.dense, attnMult)
+    : tropicalAttention(firstNorm.values, valid, parameters, blockSize);
+  const residual = rows.map((row, i) => add(row, attention.output[i]));
+  const secondNorm = normalize(residual, parameters.norm2);
+  const ffnPre = linear(secondNorm.values, parameters.ffnIn, parameters.ffnInBias);
+  const ffnActive = ffnPre.map(row => row.map(x => x * cdf(x)));
+  const ffnOutput = linear(ffnActive, parameters.ffnOut, parameters.ffnOutBias);
+  const output = residual.map((row, i) => add(row, ffnOutput[i]));
+  return {input: rows, firstNorm, attention, residual, secondNorm, ffnPre, ffnActive, ffnOutput, output};
+}
+
 export function runTrace(graph, blockSize = graph.tokens.length, {kind = "tropical", attnMult = 1} = {}) {
   const incidence = graph.endpoints.map(pair => pair.flatMap(node => graph.identifiers[node]));
   const features = linear(graph.features, weights.feature);
@@ -190,18 +250,8 @@ export function runTrace(graph, blockSize = graph.tokens.length, {kind = "tropic
   const input = [weights.graph, ...embedded, zero];
   let rows = input;
   const layers = weights.layers.map(parameters => {
-    const firstNorm = normalize(rows, parameters.norm1);
-    const attention = kind === "dense"
-      ? denseAttention(firstNorm.values, graph.valid, parameters.dense, attnMult)
-      : tropicalAttention(firstNorm.values, graph.valid, parameters, blockSize);
-    const residual = rows.map((row, i) => add(row, attention.output[i]));
-    const secondNorm = normalize(residual, parameters.norm2);
-    const ffnPre = linear(secondNorm.values, parameters.ffnIn, parameters.ffnInBias);
-    const ffnActive = ffnPre.map(row => row.map(x => x * cdf(x)));
-    const ffnOutput = linear(ffnActive, parameters.ffnOut, parameters.ffnOutBias);
-    const output = residual.map((row, i) => add(row, ffnOutput[i]));
-    const layer = {input: rows, firstNorm, attention, residual, secondNorm, ffnPre, ffnActive, ffnOutput, output};
-    rows = output;
+    const layer = runLayer(rows, parameters, graph.valid, blockSize, kind, attnMult);
+    rows = layer.output;
     return layer;
   });
   const final = normalize(rows, weights.finalNorm);

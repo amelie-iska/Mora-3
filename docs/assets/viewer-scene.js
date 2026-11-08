@@ -316,11 +316,11 @@ export function toyModel(index, value) {
     return {scores,selected};
   }
   if(index===7) {
-    const {query,ranked,projected,baseline,selected}=analogy(value,0);
+    const {query,ranked,projected,baseline,selected,envelope}=analogy(value,0);
     const candidates=[...ranked].sort((a,b)=>a.id.localeCompare(b.id));
     const matched=selected??candidates.find(item=>item.id==="C");
     return {query,candidates,projected:projected.id,nearest:ranked[0].id,matched,
-      baseline:baseline.id,selected:selected?.id??"Abstain"};
+      baseline:baseline.id,selected:envelope?.robust === false ? "Abstain" : selected?.id??"Abstain",envelope};
   }
   if(index===8) {
     const points=structureA.map((point,i)=>mix(point,structureB[i],value));

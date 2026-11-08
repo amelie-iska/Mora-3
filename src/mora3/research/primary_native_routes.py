@@ -10,6 +10,7 @@ from mora3.data.admet import _json, canonical, digest
 from mora3.data.finite_union_native_rows import FiniteUnionNativeView, SelectedNativeSourceBatch
 from mora3.model.full_owner import SourceBoundOwner
 from .mcsa_campaign_route import MCSACampaignTrainRoute, MCSATrainPassWindow
+from .source_text_campaign import ReviewedTextCampaignRoute
 from .metric_records import MetricRecord
 from .primary_training import NativeMuUpdateEngine
 
@@ -249,17 +250,22 @@ class PreparedNativeTargets:
 
 @dataclass(frozen=True)
 class NativeRouteBinding:
-    route: FiniteNativeTrainRoute | RepeatedFiniteNativeTrainRoute | MCSACampaignTrainRoute
+    route: FiniteNativeTrainRoute | RepeatedFiniteNativeTrainRoute | MCSACampaignTrainRoute | ReviewedTextCampaignRoute
     prepare: Callable
     objective_unit: str
     target_unit: str
 
     def __post_init__(self):
         if (
-            type(self.route) not in (FiniteNativeTrainRoute,RepeatedFiniteNativeTrainRoute,MCSACampaignTrainRoute) or not callable(self.prepare)
+            type(self.route) not in (FiniteNativeTrainRoute,RepeatedFiniteNativeTrainRoute,MCSACampaignTrainRoute,ReviewedTextCampaignRoute) or not callable(self.prepare)
             or not _text(self.objective_unit) or not _text(self.target_unit)
         ):
             raise ValueError('Exact native train route, target preparation and declared metric units required')
+        if type(self.route) is ReviewedTextCampaignRoute and (
+            not inspect.ismethod(self.prepare) or self.prepare.__self__ is not self.route
+            or self.prepare.__func__ is not ReviewedTextCampaignRoute.prepare
+            or (self.objective_unit,self.target_unit)!=(self.route.loss_unit,self.route.target_unit)):
+            raise ValueError('Exact reviewed native text train method and metric units required')
         if type(self.route) is MCSACampaignTrainRoute and (
             not inspect.ismethod(self.prepare) or self.prepare.__self__ is not self.route
             or self.prepare.__func__ is not MCSACampaignTrainRoute.prepare

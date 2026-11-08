@@ -17,9 +17,10 @@ from mora3.data.admet import _json, canonical, digest
 from mora3.data.finite_union_native_rows import full9
 from mora3.model.full_owner import SourceBoundOwner, unique_parameter_inventory
 from .matched_validation import (
-    CampaignValidationSources, MatchedValidationCohort, MatchedValidationTask, matched_validation_source_policy_sha256,
+    CampaignValidationSources, TextCampaignValidationSources, MatchedValidationCohort, MatchedValidationTask, matched_validation_source_policy_sha256,
 )
 from .mcsa_campaign_route import MCSACampaignTrainRoute, MCSAValidationBatch
+from .source_text_campaign import ReviewedTextCampaignRoute,TextWindow
 from .metric_records import MetricRecord
 from .mup_campaign_schedule import NativeMuWarmupCosine
 from .mup_sweep_selection import (
@@ -280,6 +281,7 @@ def executable_adapter_sha256(adapter, *, root):
     from .native_prior_campaign import NativePriorCampaignAdapter
     from .tox21_campaign_routes import Tox21CampaignAdapter
 
+    from .source_text_campaign import ReviewedTextCampaignRoute
     binding = None
     if inspect.isfunction(adapter):
         function = adapter
@@ -311,6 +313,11 @@ def executable_adapter_sha256(adapter, *, root):
         if function is not type(adapter.__self__).prepare:
             raise ValueError('Exact train-only annotation preparation method required')
         binding = adapter.__self__.executable_binding()
+    elif inspect.ismethod(adapter) and type(adapter.__self__) is ReviewedTextCampaignRoute:
+        function=adapter.__func__
+        if function not in (ReviewedTextCampaignRoute.prepare,ReviewedTextCampaignRoute.evaluate_validation):
+            raise ValueError('Exact reviewed text executable method required')
+        binding=adapter.__self__.executable_binding()
     elif inspect.ismethod(adapter) and type(adapter.__self__) is MCSACampaignTrainRoute:
         function = adapter.__func__
         if function not in (MCSACampaignTrainRoute.prepare,MCSACampaignTrainRoute.evaluate_validation):
@@ -423,10 +430,18 @@ def _require_runtime(engine,campaign,trial,bindings,validation_view,validation_e
         raise ValueError('Exact live original validation source and executable task evaluators required')
     mcsa_validation_keys = {key for key,binding in bindings.items()
                             if type(binding.route) is MCSACampaignTrainRoute and key in validation_evaluators}
-    if mcsa_validation_keys and type(validation_view) is not CampaignValidationSources:
+    legacy_view=validation_view.legacy if type(validation_view) is TextCampaignValidationSources else validation_view
+    if type(validation_view) is TextCampaignValidationSources:
+        for route in validation_view.text_routes:
+            evaluator=validation_evaluators.get(route.task_key)
+            if (route.task_key not in bindings or bindings[route.task_key].route is not route
+                or not inspect.ismethod(evaluator) or evaluator.__self__ is not route
+                or evaluator.__func__ is not ReviewedTextCampaignRoute.evaluate_validation):
+                raise ValueError('Exact common reviewed text train and validation route required')
+    if mcsa_validation_keys and type(legacy_view) is not CampaignValidationSources:
         raise ValueError('Matched M-CSA evaluation requires the exact mixed validation source')
-    if type(validation_view) is CampaignValidationSources:
-        route = validation_view.mcsa
+    if type(legacy_view) is CampaignValidationSources:
+        route = legacy_view.mcsa
         evaluator = validation_evaluators.get(route.task_key)
         if (route.task_key not in bindings or bindings[route.task_key].route is not route
                 or not inspect.ismethod(evaluator) or evaluator.__self__ is not route
@@ -484,7 +499,7 @@ def _evaluate(model,cohort,view,evaluators):
                 reductions = tuple(evaluators[task.task_key](model,batch) for batch in batches)
                 coordinate = reduce_matched_validation(task,reductions)
                 results.append(ValidationTaskExecution(
-                    coordinate,sum(batch.original_source_rows if type(batch) is MCSAValidationBatch
+                    coordinate,sum(batch.original_source_rows if type(batch) in (MCSAValidationBatch,TextWindow)
                                    else batch.native_rows.num_rows for batch in batches),reductions,
                 ))
             return tuple(results)

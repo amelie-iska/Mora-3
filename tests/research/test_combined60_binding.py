@@ -10,7 +10,12 @@ from mora3.research.finite_view_compatibility import ENROLLMENT,SOURCE
 
 @pytest.fixture(scope='module')
 def finite_fixture():
-    root=Path.cwd();out=Path(tempfile.mkdtemp(prefix='TEST_ONLY_NOT_AUTHORITY_',dir=root/'outputs/implementation/readiness-20261108-runtime-capacity-integration-v2'))
+    root = Path.cwd()
+    if not (root / ENROLLMENT[0]).is_file():
+        pytest.skip('Separately provisioned native enrollment artifacts are required')
+    output_root = root / 'outputs/implementation/readiness-20261108-runtime-capacity-integration-v2'
+    output_root.mkdir(parents=True, exist_ok=True)
+    out = Path(tempfile.mkdtemp(prefix='TEST_ONLY_NOT_AUTHORITY_', dir=output_root))
     def pin(name,raw):
         path=out/name;path.write_bytes(raw);return dict(path=str(path.relative_to(root)),sha256=m.digest(raw))
     sr=pin('TEST_ONLY_source_snapshot.json',m.canonical(dict(schema='TEST_ONLY_NOT_A_FULL_SOURCE_SNAPSHOT',training_authorized=False)))

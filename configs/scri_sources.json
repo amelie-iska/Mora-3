@@ -1,0 +1,920 @@
+{
+  "schema": "Mora3.SCRISourceCatalog/v1",
+  "retrieved_at_utc": "2026-11-08T18:41:43.895260Z",
+  "catalog_status": "candidate_metadata_only",
+  "description": "Primary-source review of proposed SCRI data and method candidates. No row represents downloaded, licensed, quality-controlled, or admitted training data.",
+  "admission_requirements": [
+    "Resolve exact immutable artifact revision, checksum, access authorization, and data/model reuse terms before download or use.",
+    "Verify sample-level organism, assay, donor/animal or pool, study, intervention, timepoint, units, processing, and outcome provenance.",
+    "Record pairing only at the demonstrated level: same cell, same specimen, same donor, matched condition, or unpaired.",
+    "Keep experimental measurements, simulations, and model imputations distinct.",
+    "Deduplicate source cohorts across aggregate corpora and freeze donor/study/intervention holdouts before training.",
+    "Use an objective compatible with the assay and numeric representation; do not reinterpret FPKM as counts or bulk as single-cell data.",
+    "Require relevant evaluation and implementation checks before accepting model-derived targets or planner-generated outcomes."
+  ],
+  "coverage_gaps": [
+    "No protein measurement dataset has been verified among these named candidates.",
+    "No experimental membrane-voltage dataset has been verified among these named candidates; BETSE is a simulator.",
+    "Cross-assay same-cell pairing is not established by a shared study title or multi-omic publication.",
+    "A typed biological graph is a design representation; causal edges and outcomes need their own evidence.",
+    "Animal and cell-culture regeneration evidence does not establish human clinical efficacy."
+  ],
+  "sources": [
+    {
+      "dataset_id": "GSE305170",
+      "title": "Maintenance of Fibroblast Identity During Cardiac Reprogramming and Heart Repair [RNA-seq]",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE305170",
+      "revision": null,
+      "organisms": [
+        "Mus musculus"
+      ],
+      "modalities": [
+        "rna",
+        "perturbation"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Bulk RNA samples; study/condition alignment with GSE305166 does not establish same-cell or same-sample RNA/ATAC pairing.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE305170",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1304539"
+      ],
+      "notes": [
+        "GEO reports 18 bulk RNA samples: siControl or siChst7, days 0/1/3, three biological replicates per condition and time.",
+        "The system is iMGT (Mef2c, Gata4, Tbx5)-Myh6-eGFP mouse embryonic fibroblast cardiac reprogramming.",
+        "Processed counts_Romero.txt.gz (663.7 KB) is listed; raw reads are linked through SRA. Neither artifact was downloaded or inspected.",
+        "GEO links the 2026 Nature Communications publication PMID 42469251 and BioProject PRJNA1304539; public release 2025-08-19, metadata updated 2026-09-23.",
+        "Mouse reprogramming outcomes do not establish clinical efficacy. Data reuse terms and sample-level provenance remain unresolved."
+      ],
+      "assays": [
+        "bulk RNA-seq"
+      ],
+      "sample_count_reported": 18,
+      "intended_roles": [
+        "cardiac perturbation-response candidate",
+        "bulk RNA auxiliary objective"
+      ],
+      "related_dataset_ids": [
+        "GSE305166"
+      ],
+      "holdout_units_required": [
+        "study",
+        "biological_replicate",
+        "intervention",
+        "timepoint"
+      ]
+    },
+    {
+      "dataset_id": "GSE305166",
+      "title": "Maintenance of Fibroblast Identity During Cardiac Reprogramming and Heart Repair [ATAC-seq]",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE305166",
+      "revision": null,
+      "organisms": [
+        "Mus musculus"
+      ],
+      "modalities": [
+        "atac",
+        "perturbation"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Bulk ATAC samples; related RNA study GSE305170 provides study/condition context, not demonstrated joint single-cell multiome pairing.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE305166",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1304533"
+      ],
+      "notes": [
+        "GEO reports four bulk ATAC samples, two biological replicates per siControl or siChst7 condition.",
+        "The experiment concerns day-one MGT cardiac reprogramming in the mouse embryonic fibroblast system.",
+        "Processed narrowPeak files and raw SRA links are listed. Peak calls are not raw fragment matrices and require an explicit adapter.",
+        "GEO links PMID 42469251 and BioProject PRJNA1304533; public release 2025-08-19, metadata updated 2026-09-23.",
+        "No data artifact, sample pairing, or reuse license has been validated locally."
+      ],
+      "assays": [
+        "bulk ATAC-seq"
+      ],
+      "sample_count_reported": 4,
+      "intended_roles": [
+        "cardiac chromatin-response candidate"
+      ],
+      "related_dataset_ids": [
+        "GSE305170"
+      ],
+      "holdout_units_required": [
+        "study",
+        "biological_replicate",
+        "intervention"
+      ]
+    },
+    {
+      "dataset_id": "GSE261307",
+      "title": "Macrophages suppress cardiac reprogramming of fibroblasts in vivo via IFN-mediated intercellular self-stimulating circuit (RNA-Seq)",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE261307",
+      "revision": null,
+      "organisms": [
+        "Mus musculus"
+      ],
+      "modalities": [
+        "rna"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Bulk RNA comparisons across in-vivo and in-vitro reprogramming; not paired single-cell measurements.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE261307",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1086465",
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE261309",
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM8140349"
+      ],
+      "notes": [
+        "GEO reports eight samples: in vivo or in vitro, one or two weeks, with two replicates per setting and time.",
+        "The processed gene_fpkm_group.xls.gz file is FPKM-normalized expression. It must not be treated as raw counts for a count likelihood.",
+        "Raw SRA data are linked; raw-read reprocessing is a separate, unperformed curation step.",
+        "GEO links PMID 38530808 and BioProject PRJNA1086465. The broader GSE261309 study includes CUT&Tag under a separate accession.",
+        "The experimental system is mouse fibroblast reprogramming, including transplanted cells after myocardial infarction; it is not human clinical evidence.",
+        "Reuse license, biological-replicate identity, processing compatibility, and complete sample metadata remain unresolved."
+      ],
+      "assays": [
+        "bulk RNA-seq"
+      ],
+      "sample_count_reported": 8,
+      "intended_roles": [
+        "cardiac context-response candidate",
+        "bulk normalized-expression auxiliary evaluation"
+      ],
+      "holdout_units_required": [
+        "study",
+        "biological_replicate",
+        "environment",
+        "timepoint"
+      ]
+    },
+    {
+      "dataset_id": "GSE185265",
+      "title": "Direct In Vivo Cardiac Reprogramming as a Novel Therapeutic Strategy for Chronic Myocardial Infarction [scRNA-Seq]",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE185265",
+      "revision": null,
+      "organisms": [
+        "Mus musculus"
+      ],
+      "modalities": [
+        "rna"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Dissociated single-cell RNA from non-cardiomyocytes; no paired ATAC, protein, voltage, or spatial measurement is established by this accession.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE185265",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA768422",
+        "https://www.ahajournals.org/doi/pdf/10.1161/CIRCULATIONAHA.121.058655"
+      ],
+      "notes": [
+        "GEO reports four samples: Sham, Ctrl-MI, TTg-MI, and Sham2, from mouse hearts in a chronic myocardial-infarction study.",
+        "The accession describes non-cardiomyocytes three months after myocardial infarction; it must not be relabeled a cardiomyocyte expression cohort.",
+        "Processed CSV files and raw SRA links are listed; animal pooling and independent biological-replicate counts require a sample-level audit.",
+        "The publication is Tani et al., Direct Reprogramming Improves Cardiac Function and Reverses Fibrosis in Chronic Myocardial Infarction, Circulation (PMID 36503256).",
+        "GEO public release was 2022-12-12; data reuse terms are not verified. Mouse results do not establish clinical efficacy."
+      ],
+      "assays": [
+        "single-cell RNA-seq"
+      ],
+      "sample_count_reported": 4,
+      "intended_roles": [
+        "cardiac stromal and immune context candidate"
+      ],
+      "holdout_units_required": [
+        "study",
+        "animal_or_pool",
+        "intervention"
+      ]
+    },
+    {
+      "dataset_id": "GSE241132",
+      "title": "Spatiotemporal Single-Cell Roadmap of Human Skin Wound Healing (Single-cell-Wound)",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE241132",
+      "revision": null,
+      "organisms": [
+        "Homo sapiens"
+      ],
+      "modalities": [
+        "rna"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Dissociated RNA from donors 3/4/5 over intact skin and days 1/7/30. Donors 3/4 overlap GSE241124; donor/time correspondence is not same-cell pairing.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "gated",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE241132",
+        "https://ega-archive.org/studies/EGAS50000000571",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1006449"
+      ],
+      "notes": [
+        "GEO reports 12 samples spanning three donors and four wound-healing states.",
+        "Processed data and metadata are publicly listed in GEO; raw reads are controlled through EGA accession EGAS50000000571.",
+        "A GEO archive named RAW.tar contains submitted processed files and is not evidence that controlled raw sequencing reads are publicly available.",
+        "Group related RNA/spatial samples by donor and study before splitting to prevent cross-modality donor leakage.",
+        "GEO public release was 2024-09-04, updated 2025-01-07; linked PMIDs include 39468077 and 39729995.",
+        "Neither controlled access authorization nor data reuse rights have been established."
+      ],
+      "assays": [
+        "single-cell RNA-seq"
+      ],
+      "sample_count_reported": 12,
+      "intended_roles": [
+        "human wound-healing RNA candidate"
+      ],
+      "related_dataset_ids": [
+        "GSE241124"
+      ],
+      "access_detail": {
+        "metadata": "public",
+        "submitted_processed_data": "public",
+        "raw_reads": "controlled_EGA"
+      },
+      "holdout_units_required": [
+        "donor",
+        "study",
+        "timepoint"
+      ]
+    },
+    {
+      "dataset_id": "GSE241124",
+      "title": "Spatiotemporal Single-Cell Roadmap of Human Skin Wound Healing (Spatial)",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE241124",
+      "revision": null,
+      "organisms": [
+        "Homo sapiens"
+      ],
+      "modalities": [
+        "rna",
+        "spatial"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Spatial expression and positions within tissue sections; donors 1/2/3/4 over intact skin and days 1/7/30. Related dissociated RNA is not same-cell paired.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "gated",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE241124",
+        "https://ega-archive.org/studies/EGAS50000000571",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1006428"
+      ],
+      "notes": [
+        "GEO reports 16 samples spanning four donors and four wound-healing states.",
+        "Processed H5/ZIP files and metadata are publicly listed; raw reads are controlled in EGA EGAS50000000571.",
+        "Donors 3/4 overlap GSE241132. Split jointly by donor and study before any RNA/spatial alignment.",
+        "Spatial observations do not imply paired ATAC, protein, or voltage measurements. Image availability and expression-image registration require artifact-level verification.",
+        "GEO public release was 2024-09-04, updated 2025-01-07; linked PMIDs include 39366968, 39468077, and 39729995.",
+        "Access authorization and data reuse rights remain unresolved."
+      ],
+      "assays": [
+        "spatial transcriptomics"
+      ],
+      "sample_count_reported": 16,
+      "intended_roles": [
+        "human wound-healing spatial-context candidate"
+      ],
+      "related_dataset_ids": [
+        "GSE241132"
+      ],
+      "access_detail": {
+        "metadata": "public",
+        "submitted_processed_data": "public",
+        "raw_reads": "controlled_EGA"
+      },
+      "holdout_units_required": [
+        "donor",
+        "study",
+        "tissue_section",
+        "timepoint"
+      ]
+    },
+    {
+      "dataset_id": "GSE278069",
+      "title": "Multi-omic analysis reveals retinoic acid molecular drivers for fibrosis and regenerative repair in skin fibrosis [scATAC-seq]",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE278069",
+      "revision": null,
+      "organisms": [
+        "Mus musculus"
+      ],
+      "modalities": [
+        "atac"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Single-cell ATAC arm of a broader multi-assay study; same-cell RNA/ATAC or spatial pairing is not established for this accession.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE278069",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1165329"
+      ],
+      "notes": [
+        "This accession contains scATAC data from a mouse bleomycin-induced skin-fibrosis study, not all modalities reported in the paper.",
+        "GEO reports four samples: unwounded and postoperative days 12/21/28.",
+        "The broader study includes RNA and Visium assays; its CYP26B1-inhibition RNA arm must not be transferred as a treatment annotation to this ATAC arm without sample evidence.",
+        "Processed BED/MTX/TSV files and raw SRA links are listed; pooling and biological-replicate structure require validation.",
+        "The linked publication is Griffin et al., Cell Stem Cell (2025), PMID 40816279; BioProject PRJNA1165329.",
+        "Sibling accessions GSE278169 and GSE277998 are unresolved leads from the broader study, not verified assay coverage in this catalog.",
+        "GEO public release was 2025-08-13, updated 2026-02-18. Reuse rights remain unresolved."
+      ],
+      "assays": [
+        "single-cell ATAC-seq"
+      ],
+      "sample_count_reported": 4,
+      "intended_roles": [
+        "skin chromatin and fibrosis-context candidate"
+      ],
+      "unresolved_related_accessions": [
+        "GSE278169",
+        "GSE277998"
+      ],
+      "holdout_units_required": [
+        "study",
+        "animal_or_pool",
+        "timepoint"
+      ]
+    },
+    {
+      "dataset_id": "GSE245320",
+      "title": "Characterization of regeneration initiating cells during Xenopus laevis tail regeneration",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE245320",
+      "revision": null,
+      "organisms": [
+        "Xenopus laevis"
+      ],
+      "modalities": [
+        "rna",
+        "spatial"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Mixed-assay SuperSeries. Resolve child accessions and sample relationships before assigning assay pairing.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE245320",
+        "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1027815"
+      ],
+      "notes": [
+        "GEO reports 63 samples across children GSE245312 (single-cell RNA), GSE245313 (spatial), GSE245317 (bulk RNA 1), and GSE245318 (bulk RNA 2).",
+        "Regenerating and refractory tadpole-tail contexts span minute/hour/day post-amputation states; normalize temporal units from sample metadata.",
+        "The processed archive lists heterogeneous expression, image, and metadata formats. Listed images do not establish registered expression-image pairs.",
+        "Do not ingest the SuperSeries as one homogeneous count matrix or count it again after admitting its children.",
+        "GEO links PMID 39350302 and BioProject PRJNA1027815; public release 2023-11-30, updated 2024-10-15.",
+        "Cross-species regeneration transfer requires explicit evaluation. Reuse rights and raw-data access have not been verified."
+      ],
+      "assays": [
+        "single-cell RNA-seq",
+        "spatial transcriptomics",
+        "bulk RNA-seq"
+      ],
+      "sample_count_reported": 63,
+      "child_accessions": [
+        "GSE245312",
+        "GSE245313",
+        "GSE245317",
+        "GSE245318"
+      ],
+      "intended_roles": [
+        "cross-species regeneration context candidate"
+      ],
+      "holdout_units_required": [
+        "study",
+        "animal_or_pool",
+        "developmental_state",
+        "timepoint",
+        "assay"
+      ]
+    },
+    {
+      "dataset_id": "GSE220817",
+      "title": "neuroendocrine control of planarian regeneration (Spatial transcriptome)",
+      "primary_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE220817",
+      "revision": null,
+      "organisms": [
+        "Schmidtea mediterranea"
+      ],
+      "modalities": [
+        "rna",
+        "spatial"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Spatial transcriptomics from asexual CIW4 planarians; Stereo-seq and Visium arms are separate unless specimen correspondence is documented.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE220817"
+      ],
+      "notes": [
+        "The accession describes intact, amputated, and RNAi-related regeneration contexts, including tail samples.",
+        "Stereo-seq times include 0 h, 12 h, 1.5 d, 3 d, 5 d, and 10 d. The Visium overview and a raw-mixing note disagree on 3 d versus 2.5 d; resolve this before assigning time labels.",
+        "The processed listing includes expression and image files; anatomical registration and expression-image linkage remain unverified.",
+        "GEO was submitted in 2022 and became public on 2025-09-01; the retrieved record has no publication citation, so peer-reviewed validation is unresolved.",
+        "The referenced transcriptome is GSE72389_smed_20140614.fa.gz; identifier mapping and assembly compatibility require explicit curation.",
+        "Raw-data accessibility, reuse terms, replicate structure, and outcome labels remain unverified."
+      ],
+      "assays": [
+        "Stereo-seq",
+        "Visium"
+      ],
+      "intended_roles": [
+        "cross-species spatial regeneration candidate"
+      ],
+      "admission_blockers": [
+        "Resolve 2.5-day versus 3-day Visium metadata discrepancy",
+        "Verify publication and biological-replicate provenance"
+      ],
+      "holdout_units_required": [
+        "study",
+        "animal_or_pool",
+        "intervention",
+        "timepoint",
+        "assay"
+      ]
+    },
+    {
+      "dataset_id": "ARC_VIRTUAL_CELL_ATLAS",
+      "title": "Arc Virtual Cell Atlas collection index",
+      "primary_url": "https://arcinstitute.org/tools/virtualcellatlas",
+      "revision": null,
+      "organisms": [],
+      "modalities": [
+        "rna",
+        "perturbation"
+      ],
+      "data_kind": "reference",
+      "pairing_scope": "Collection index spanning observational and perturbational resources; no universal same-cell, donor, or multimodal pairing.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "unverified",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://arcinstitute.org/tools/virtualcellatlas",
+        "https://github.com/ArcInstitute/arc-virtual-cell-atlas/"
+      ],
+      "notes": [
+        "The collection includes Tahoe-100M, scBaseCount, and Virtual Cell Challenge data; the umbrella is not an independent cohort.",
+        "Do not count the umbrella and its component datasets as separate training examples.",
+        "Collection size and releases change. Select immutable component releases and record artifact checksums before curation.",
+        "The repository describes Google Cloud Marketplace subscription and billing-project requirements for download credits; public metadata does not establish cost-free or authorized artifact access.",
+        "No billing project, subscription, bulk download, or cloud transfer was initiated.",
+        "Organism coverage, input-study licenses, and permitted downstream use must be resolved per component and source study."
+      ],
+      "intended_roles": [
+        "discovery index only"
+      ],
+      "child_dataset_ids": [
+        "TAHOE_100M",
+        "SCBASECOUNT",
+        "VCC_2025"
+      ],
+      "artifact_admission_allowed": false
+    },
+    {
+      "dataset_id": "TAHOE_100M",
+      "title": "Tahoe-100M perturbational single-cell expression collection",
+      "primary_url": "https://arcinstitute.org/tools/virtualcellatlas",
+      "revision": null,
+      "organisms": [
+        "Homo sapiens"
+      ],
+      "modalities": [
+        "rna",
+        "perturbation"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Drug-perturbed cancer cell-line RNA profiles; treatment/control relationships require sample metadata and are not same-cell longitudinal pairs.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "unverified",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://arcinstitute.org/tools/virtualcellatlas",
+        "https://github.com/ArcInstitute/arc-virtual-cell-atlas/"
+      ],
+      "notes": [
+        "The official Atlas page describes approximately 60,000 drug experiments, 50 cancer models, and more than 1,100 drugs.",
+        "Tahoe is an Arc Atlas component and must be deduplicated against aggregate Atlas ingestion.",
+        "Hold out interventions and cellular contexts to evaluate transfer; random cell splits alone cannot establish generalization.",
+        "Dose, duration, replicate, treatment/control mapping, exact release, and artifact checksums remain unverified.",
+        "The Atlas repository describes billing-project and Marketplace download requirements. Artifact access and data reuse license remain unresolved.",
+        "Cancer cell-line perturbations do not establish regeneration outcomes or measured bioelectric states."
+      ],
+      "assays": [
+        "single-cell RNA-seq",
+        "drug perturbation"
+      ],
+      "intended_roles": [
+        "perturbation-response pretraining candidate"
+      ],
+      "parent_dataset_id": "ARC_VIRTUAL_CELL_ATLAS",
+      "holdout_units_required": [
+        "source_study",
+        "cell_line",
+        "intervention",
+        "dose",
+        "timepoint",
+        "biological_replicate"
+      ]
+    },
+    {
+      "dataset_id": "SCBASECOUNT",
+      "title": "scBaseCount uniformly processed public single-cell RNA collection",
+      "primary_url": "https://github.com/ArcInstitute/arc-virtual-cell-atlas/blob/main/scBaseCount/README.md",
+      "revision": null,
+      "organisms": [],
+      "modalities": [
+        "rna"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Aggregated dissociated RNA studies with heterogeneous source metadata; no universal pairing or longitudinal correspondence.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "unverified",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://github.com/ArcInstitute/arc-virtual-cell-atlas/blob/main/scBaseCount/README.md",
+        "https://github.com/ArcInstitute/arc-virtual-cell-atlas/",
+        "https://arcinstitute.org/tools/virtualcellatlas"
+      ],
+      "notes": [
+        "The retrieved official README reports more than 502 million cells from 27 organisms and 75 tissues; the collection is continuously updated.",
+        "Automated discovery and metadata extraction with uniform SRA processing do not replace source metadata audit.",
+        "Select an immutable release and preserve source accession, donor/animal, study, batch, and processing provenance for every admitted item.",
+        "Organism membership must be resolved from that release; this catalog does not enumerate unverified taxa.",
+        "Deduplicate source studies and observations against CellxGene-derived corpora, SpatialCorpus-110M, and other Atlas inputs before splitting.",
+        "Public hosting and uniform processing do not establish downstream reuse rights or scientific suitability. Actual download access remains unverified."
+      ],
+      "assays": [
+        "single-cell RNA-seq"
+      ],
+      "intended_roles": [
+        "broad RNA pretraining candidate"
+      ],
+      "parent_dataset_id": "ARC_VIRTUAL_CELL_ATLAS",
+      "holdout_units_required": [
+        "source_study",
+        "donor_or_animal",
+        "batch",
+        "organism"
+      ]
+    },
+    {
+      "dataset_id": "VCC_2025",
+      "title": "Arc Virtual Cell Challenge 2025 perturbation dataset and benchmark splits",
+      "primary_url": "https://github.com/ArcInstitute/arc-virtual-cell-atlas/blob/main/virtual-cell-challenge/README.md",
+      "revision": null,
+      "organisms": [
+        "Homo sapiens"
+      ],
+      "modalities": [
+        "rna",
+        "perturbation"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Perturbational single-cell RNA in the H1 human embryonic stem-cell context; treatment/control samples are not same-cell pre/post measurements.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "unverified",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://github.com/ArcInstitute/arc-virtual-cell-atlas/blob/main/virtual-cell-challenge/README.md",
+        "https://arcinstitute.org/tools/virtualcellatlas",
+        "https://arcinstitute.org/news/virtual-cell-challenge-2026",
+        "https://github.com/ArcInstitute/arc-virtual-cell-atlas/"
+      ],
+      "notes": [
+        "The official Atlas repository documents the Virtual Cell Challenge component and train/validation/test resources.",
+        "The 2025 evaluation splits are now public; training on them removes their status as an unseen evaluation set.",
+        "Preserve intervention and replicate groupings and freeze benchmark exclusions before assembling pretraining mixtures.",
+        "Do not merge challenge years as one benchmark; later challenges can change cell contexts and evaluation rules.",
+        "Exact artifacts, releases, permissions, and license terms remain unresolved. Cloud download access has not been tested."
+      ],
+      "assays": [
+        "single-cell RNA-seq",
+        "genetic perturbation"
+      ],
+      "intended_roles": [
+        "perturbation-response benchmark candidate"
+      ],
+      "parent_dataset_id": "ARC_VIRTUAL_CELL_ATLAS",
+      "holdout_units_required": [
+        "intervention",
+        "biological_replicate",
+        "batch",
+        "challenge_release"
+      ]
+    },
+    {
+      "dataset_id": "SPATIALCORPUS_110M",
+      "title": "SpatialCorpus-110M dissociated and spatial RNA corpus",
+      "primary_url": "https://huggingface.co/datasets/theislab/SpatialCorpus-110M",
+      "revision": null,
+      "organisms": [
+        "Homo sapiens",
+        "Mus musculus"
+      ],
+      "modalities": [
+        "rna",
+        "spatial"
+      ],
+      "data_kind": "experimental",
+      "pairing_scope": "Dissociated and spatial RNA datasets; spatial observations have assay-local positions, while dissociated cells are not generally paired to the spatial cells.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "unverified",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://huggingface.co/datasets/theislab/SpatialCorpus-110M",
+        "https://www.nature.com/articles/s41592-025-02814-z",
+        "https://github.com/theislab/nicheformer-data/"
+      ],
+      "notes": [
+        "The primary paper reports 57.06 million dissociated and 53.83 million spatial observations across 73 tissues and more than 6,000 donors or replicates.",
+        "The source paper describes RNA assays including CosMx, ISS, MERFISH, and Xenium; this does not establish ATAC, protein, or voltage measurements.",
+        "The authors state that images and segmentation masks were not collected or curated for this corpus.",
+        "Dissociated inputs include CellxGene Census and other sources. Deduplicate overlapping corpora at source-study and observation level.",
+        "Retain original donor/replicate, study, organism, assay, gene-panel, and coordinate provenance. Inferred spatial context is not a measured coordinate.",
+        "The article license does not establish component-dataset or model-weight licenses. Corpus reuse terms, revision, access, and artifact hashes remain unverified."
+      ],
+      "assays": [
+        "dissociated single-cell RNA-seq",
+        "targeted spatial transcriptomics"
+      ],
+      "intended_roles": [
+        "RNA and spatial-context pretraining candidate"
+      ],
+      "holdout_units_required": [
+        "source_study",
+        "donor_or_replicate",
+        "organism",
+        "assay",
+        "tissue_section"
+      ]
+    },
+    {
+      "dataset_id": "STATE_REFERENCE",
+      "title": "STATE perturbation-response model reference",
+      "primary_url": "https://github.com/ArcInstitute/state",
+      "revision": null,
+      "organisms": [],
+      "modalities": [
+        "rna",
+        "perturbation"
+      ],
+      "data_kind": "reference",
+      "pairing_scope": "Model predictions are inferred responses, not experimental paired measurements or new biological ground truth.",
+      "license_status": "restricted",
+      "license_id": "Arc State Model Non-Commercial License",
+      "license_evidence_url": "https://github.com/ArcInstitute/state/blob/main/MODEL_LICENSE.md",
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://github.com/ArcInstitute/state",
+        "https://github.com/ArcInstitute/state/blob/main/MODEL_LICENSE.md",
+        "https://github.com/ArcInstitute/state/blob/main/MODEL_ACCEPTABLE_USE_POLICY.md",
+        "https://arcinstitute.org/tools/state/commercial"
+      ],
+      "notes": [
+        "The repository documents cellular perturbation-response modeling; architecture or API compatibility alone does not authorize model use.",
+        "The model license is the Arc State Model Non-Commercial License, dated 2025-06-23, with a separate acceptable-use policy.",
+        "The license covers derivatives including fine-tuning, distillation, additional training, and integration as a prior. Commercial and sponsored-R&D restrictions require resolution for intended use.",
+        "Arc describes an opt-in commercial evaluation arrangement requiring confirmation; no eligibility, opt-in, or approval is assumed.",
+        "Code, weights, datasets, and outputs have distinct terms. This entry records the model restriction and does not grant dataset rights.",
+        "No checkpoint, generated target, embedding, or prediction was downloaded, executed, or admitted."
+      ],
+      "intended_roles": [
+        "architecture and perturbation-model comparison reference"
+      ],
+      "artifact_admission_allowed": false
+    },
+    {
+      "dataset_id": "NICHEFORMER_REFERENCE",
+      "title": "Nicheformer: a foundation model for single-cell and spatial omics",
+      "primary_url": "https://www.nature.com/articles/s41592-025-02814-z",
+      "revision": null,
+      "organisms": [
+        "Homo sapiens",
+        "Mus musculus"
+      ],
+      "modalities": [
+        "rna",
+        "spatial"
+      ],
+      "data_kind": "reference",
+      "pairing_scope": "Predicted niche context from an RNA/spatial model is inferred and must not be relabeled measured spatial ground truth.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://www.nature.com/articles/s41592-025-02814-z",
+        "https://github.com/theislab/nicheformer",
+        "https://github.com/theislab/nicheformer/blob/main/LICENSE",
+        "https://github.com/theislab/nicheformer-data/"
+      ],
+      "notes": [
+        "Peer-reviewed Nature Methods article published 2025-10-30, volume 22, pages 2525-2538.",
+        "The method supports RNA/spatial representation learning; it does not validate ATAC/protein/voltage integration or regenerative efficacy.",
+        "Official theislab/nicheformer code declares BSD-3-Clause; that does not resolve dataset or pretrained-weight rights.",
+        "Checkpoint integration requires an immutable revision, separate model/data license review, and training/evaluation overlap audit.",
+        "No model artifact or dataset was downloaded."
+      ],
+      "intended_roles": [
+        "spatial-context architecture and evaluation reference"
+      ],
+      "related_dataset_ids": [
+        "SPATIALCORPUS_110M"
+      ],
+      "artifact_admission_allowed": false
+    },
+    {
+      "dataset_id": "BETSE_SIMULATION_REFERENCE",
+      "title": "BioElectric Tissue Simulation Engine (BETSE)",
+      "primary_url": "https://github.com/betsee/betse",
+      "revision": null,
+      "organisms": [],
+      "modalities": [
+        "bioelectric",
+        "biochemical"
+      ],
+      "data_kind": "simulation",
+      "pairing_scope": "Fields generated within one simulation are paired computational states, not paired experimental voltage, omics, or regeneration measurements.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://github.com/betsee/betse",
+        "https://www.frontiersin.org/journals/bioengineering-and-biotechnology/articles/10.3389/fbioe.2016.00055/full",
+        "https://as.tufts.edu/biology/levin-lab/resources/software"
+      ],
+      "notes": [
+        "BETSE is a two-dimensional multiphysics simulator for bioelectric and biochemical tissue dynamics, including electrodiffusion and related processes.",
+        "Primary methods paper: Pietak and Levin (2016), Exploring Instructive Physiological Signaling with the Bioelectric Tissue Simulation Engine.",
+        "The code repository declares BSD-2-Clause; code licensing does not establish rights to external inputs, calibration data, or resulting labeled assets.",
+        "No simulation was executed and no synthetic records exist in this catalog. Future artifacts need simulator version, configuration, geometry, units, seed, and calibration evidence.",
+        "Keep simulated, experimentally measured, and model-imputed bioelectric outcomes in distinct provenance classes and evaluation strata.",
+        "Mechanistic simulation does not establish biological or clinical efficacy; experimental validation must be assessed separately."
+      ],
+      "intended_roles": [
+        "separately labeled synthetic bioelectric test domain",
+        "mechanistic simulator interface reference"
+      ],
+      "holdout_units_required": [
+        "simulation_configuration",
+        "geometry",
+        "parameter_regime",
+        "seed"
+      ],
+      "artifact_admission_allowed": false
+    },
+    {
+      "dataset_id": "FOREST_OF_THOUGHT_REFERENCE",
+      "title": "Forest-of-Thought: Scaling Test-Time Compute for Enhancing LLM Reasoning",
+      "primary_url": "https://proceedings.mlr.press/v267/bi25a.html",
+      "revision": null,
+      "organisms": [],
+      "modalities": [],
+      "data_kind": "reference",
+      "pairing_scope": "Algorithmic reasoning reference; no biological measurements or paired assay data.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://proceedings.mlr.press/v267/bi25a.html",
+        "https://arxiv.org/abs/2412.09078"
+      ],
+      "notes": [
+        "Bi et al., ICML 2025, Proceedings of Machine Learning Research 267:4253-4267.",
+        "This supports an LLM test-time reasoning approach, not a validated biological intervention planner or regeneration outcome model.",
+        "A project-specific typed-graph search or planner needs an independently specified objective and evaluation.",
+        "Implementation compatibility and code/model license are unverified; no artifact was obtained."
+      ],
+      "intended_roles": [
+        "test-time reasoning method reference"
+      ],
+      "artifact_admission_allowed": false
+    },
+    {
+      "dataset_id": "CONTINUOUS_GFLOWNET_REFERENCE",
+      "title": "A theory of continuous generative flow networks",
+      "primary_url": "https://proceedings.mlr.press/v202/lahlou23a.html",
+      "revision": null,
+      "organisms": [],
+      "modalities": [],
+      "data_kind": "reference",
+      "pairing_scope": "Mathematical sampling-method reference; no biological measurements or paired assay data.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://proceedings.mlr.press/v202/lahlou23a.html",
+        "https://proceedings.mlr.press/v202/lahlou23a/lahlou23a.pdf"
+      ],
+      "notes": [
+        "Lahlou et al., ICML 2023, Proceedings of Machine Learning Research 202:18269-18300.",
+        "The paper develops GFlowNets over continuous and hybrid state spaces for amortized sampling from unnormalized targets.",
+        "This theory does not establish that a proposed biological reward is valid, calibrated, causal, or experimentally achievable.",
+        "An adaptation needs explicit state/action support, a justified reward, sampling diagnostics, and independent outcome validation.",
+        "Code and artifact licenses are unverified; no model or dataset was obtained."
+      ],
+      "intended_roles": [
+        "continuous proposal-distribution method reference"
+      ],
+      "artifact_admission_allowed": false
+    },
+    {
+      "dataset_id": "MUP_MUTRANSFER_REFERENCE",
+      "title": "Tensor Programs V: Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer",
+      "primary_url": "https://arxiv.org/abs/2203.03466",
+      "revision": null,
+      "organisms": [],
+      "modalities": [],
+      "data_kind": "reference",
+      "pairing_scope": "Neural-network parametrization and width-transfer reference; no biological data pairing.",
+      "license_status": "unresolved",
+      "license_id": null,
+      "license_evidence_url": null,
+      "access_status": "public",
+      "training_status": "candidate_only",
+      "downloaded": false,
+      "source_urls": [
+        "https://arxiv.org/abs/2203.03466",
+        "https://github.com/microsoft/mup/blob/main/README.md",
+        "https://github.com/microsoft/mup/blob/main/examples/MLP/main.py"
+      ],
+      "notes": [
+        "The primary paper studies hyperparameter transfer across widths under maximal update parametrization, not guaranteed transfer across depth, objectives, datasets, or architecture changes.",
+        "Official implementation guidance requires compatible base/delta shapes, width-dependent parameter metadata, initialization, readout, and optimizer handling.",
+        "Coordinate checks over multiple widths and training updates are prerequisites for interpreting a transfer sweep; configuration generation alone is not readiness.",
+        "Pin the implementation revision and freeze architecture, objective, data manifest, and optimization conventions for transfer comparisons.",
+        "Repository code licensing does not confer training-data or checkpoint rights.",
+        "No training run or sweep was launched by this source review."
+      ],
+      "intended_roles": [
+        "parametrization and transfer-readiness reference"
+      ],
+      "artifact_admission_allowed": false
+    }
+  ]
+}

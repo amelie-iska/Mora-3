@@ -10,6 +10,7 @@ from mora3.data.admet import canonical,digest
 from mora3.data.finite_union_native_rows import full9,decode_disposition,read_exact
 from mora3.research.primary_native_routes import FiniteNativeTrainRoute,NativeRouteBinding,RepeatedFiniteNativeTrainRoute
 from mora3.research.mcsa_campaign_route import MCSACampaignTrainRoute
+from mora3.research.source_text_campaign import ReviewedTextCampaignRoute,SPECS
 from mora3.research.mup_campaign import NativeTrainRoutePlan,executable_adapter_sha256
 from mora3.research.primary_campaign_assembly import _read,_reference
 
@@ -99,6 +100,30 @@ def exact_capacities(root,*,bindings,plans,source_snapshot,max_identity_metadata
             limit = route.maximum_updates
             capacity = limit // passes
             evidence = route.binding()
+        elif type(route) is ReviewedTextCampaignRoute:
+            state=route.executable_binding();route.budget.__post_init__()
+            task,train_rows,validation_rows,_=SPECS[route.family]
+            if (state['task']!=task or state['train_rows']!=train_rows
+                or len(route._train)!=train_rows or state['validation_rows']!=validation_rows
+                or len(route._validation)!=validation_rows):
+                raise ValueError('Exact reviewed text role denominator changed')
+            coordinates=[]
+            for issued in route._train:
+                route.view.require_row(issued,role='train')
+                row=issued.native_row
+                if row.source_family!=route.family or row.evaluation_only or row.condition_inputs()['task']!=task:
+                    raise ValueError('Exact reviewed native text train family/task required')
+                used+=len(row.source_coordinate_json)
+                if used>max_identity_metadata_bytes:raise ValueError('Text source coordinate metadata budget exceeded')
+                coordinates.append(digest(row.source_coordinate_json))
+            if len(set(coordinates))!=train_rows:raise ValueError('Duplicate text source coordinates cannot enlarge capacity')
+            passes=route.budget.max_passes
+            capacity=(train_rows+route.budget.batch_size-1)//route.budget.batch_size
+            limit=capacity*passes
+            if limit!=route.maximum_windows:raise ValueError('Declared finite text pass capacity changed')
+            evidence=dict(route=state,train_coordinate_order_sha256=digest(canonical(coordinates)),
+                original_windows=capacity,declared_passes=passes,
+                incomplete_last_batch_preserved=True)
         elif type(route) in (FiniteNativeTrainRoute, RepeatedFiniteNativeTrainRoute):
             passes = route.max_passes if type(route) is RepeatedFiniteNativeTrainRoute else 1
             route = route.original if passes > 1 else route

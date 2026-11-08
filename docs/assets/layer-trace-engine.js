@@ -63,7 +63,11 @@ export const weights = {
     };
   }),
   finalNorm: normParameters(100),
-  readout: vector(width, 110),
+  affinity: {
+    baseWidth: 2, outputMult: 1,
+    weights: matrix(3, width, 110),
+    bias: vector(3, 120, .12),
+  },
 };
 
 const presets = {
@@ -151,6 +155,32 @@ function denseAttention(rows, valid, {qkv, qkvBias, output, outputBias}, attnMul
   return {packed, scale, heads, concatenated, output: linear(concatenated, output, outputBias)};
 }
 
+// Axes are separate even when two predictions use the same encoder state.
+export const feedbackAxes = [
+  {label: "ΔG · kcal/mol", target: -.65, scale: 1.5, group: "experimental"},
+  {label: "UMA · eV", target: -.25, scale: .5, group: "teacher"},
+  {label: "eSEN · eV", target: -.4, scale: .5, group: "teacher"},
+];
+const masks = {both: [true, true, true], experimental: [true, false, false],
+  teacher: [false, true, true], none: [false, false, false]};
+export const feedbackWeight = .25;
+
+export function affinityObjective(predictions, coverage) {
+  const rows = feedbackAxes.map((axis, i) => {
+    const active = masks[coverage][i];
+    const residual = active ? (predictions[i] - axis.target) / axis.scale : null;
+    return {...axis, active, prediction: predictions[i], residual, loss: active ? residual ** 2 : null};
+  });
+  const reduce = group => {
+    const terms = rows.filter(row => row.active && row.group === group);
+    return terms.length ? terms.reduce((total, row) => total + row.loss, 0) / terms.length : null;
+  };
+  const experimental = reduce("experimental"), computed = reduce("teacher");
+  const total = experimental === null && computed === null ? null
+    : (experimental ?? 0) + feedbackWeight * (computed ?? 0);
+  return {rows, experimental, computed, total};
+}
+
 export function runTrace(graph, blockSize = graph.tokens.length, {kind = "tropical", attnMult = 1} = {}) {
   const incidence = graph.endpoints.map(pair => pair.flatMap(node => graph.identifiers[node]));
   const features = linear(graph.features, weights.feature);
@@ -176,6 +206,10 @@ export function runTrace(graph, blockSize = graph.tokens.length, {kind = "tropic
   });
   const final = normalize(rows, weights.finalNorm);
   const masked = final.values.map((row, i) => graph.valid[i] ? row : zero);
-  const readout = dot(masked[0], weights.readout);
-  return {incidence, features, incidences, roles, input, layers, final, masked, readout};
+  const head = weights.affinity;
+  const contextScale = head.outputMult / (width / head.baseWidth);
+  const scaledContext = masked[0].map(value => value * contextScale);
+  const [predictions] = linear([scaledContext], head.weights, head.bias);
+  return {incidence, features, incidences, roles, input, layers, final, masked,
+    affinity: {contextScale, scaledContext, predictions}};
 }

@@ -34,7 +34,53 @@ function rejection(item, query) {
   return reasons.join(", ");
 }
 
+// A supplied correspondence, not a discovered biological mechanism.
+export const sourceMotif = {
+  types: ["donor", "junction", "receiver"],
+  edges: [[0, 1, "opens"], [1, 2, "conducts"]],
+};
+export function checkMotif(source, target, mapping) {
+  if (mapping.length !== source.types.length || target.types.length !== mapping.length
+      || new Set(mapping).size !== mapping.length
+      || mapping.some(i => !Number.isInteger(i) || i < 0 || i >= target.types.length))
+    return {ok:false, reasons:["Correspondence is not a bijection"], matched:0};
+  const reasons=[];
+  if (source.types.some((type,i)=>type !== target.types[mapping[i]])) reasons.push("Node type mismatch");
+  const expected = source.edges.map(([a,b,type])=>JSON.stringify([mapping[a],mapping[b],type]));
+  const actual = target.edges.map(edge=>JSON.stringify(edge));
+  const matched = expected.filter(edge=>actual.includes(edge)).length;
+  if (matched !== expected.length || actual.length !== expected.length || new Set(actual).size !== actual.length)
+    reasons.push("Directed typed edge mismatch");
+  return {ok:!reasons.length,reasons,matched};
+}
+const candidateMotif = id => ({types:[...sourceMotif.types], edges:id === "B"
+  ? [[0,1,"opens"],[0,2,"conducts"]]
+  : id === "A" ? [[1,0,"opens"],[2,1,"conducts"]] : sourceMotif.edges});
+
+export function topologyComparison(radius, scenario=0) {
+  const source=[[0,0],[1,0],[1,1],[0,1]];
+  const target=scenario===1 ? [[0,0],[.4,0],[.8,0],[1.2,0]]
+    : scenario===2 ? source.map(p=>[...p]) : [[0,0],[1.2,.1],[1.35,.85],[.14,.95]];
+  const mapping=scenario===2 ? [0,2,1,3] : [0,1,2,3];
+  const a=ripsAt(source,radius), b=ripsAt(target,radius);
+  const key=(i,j)=>[Math.min(i,j),Math.max(i,j)].join(":");
+  const mapped=new Set(a.edges.map(([i,j])=>key(mapping[i],mapping[j])));
+  const targetEdges=new Set(b.edges.map(([i,j])=>key(i,j)));
+  const missing=[...mapped].filter(k=>!targetEdges.has(k));
+  const extra=[...targetEdges].filter(k=>!mapped.has(k));
+  const distances=source.flatMap((p,i)=>source.slice(i+1).map((q,k)=>{
+    const j=i+k+1, left=norm(subtract(p,q)),right=norm(subtract(target[mapping[i]],target[mapping[j]]));
+    return {pair:`${i}↔${j}`,left,right,error:Math.abs(left-right)};
+  }));
+  return {source,target,mapping,a,b,missing,extra,distances,
+    distortion:Math.max(...distances.map(d=>d.error)),
+    sameBetti:a.components===b.components && a.loops===b.loops,
+    preservesEdges:!missing.length && !extra.length};
+}
+
 export function analogy(scale, referenceMode, scenario = 0) {
+  if (!Number.isFinite(scale) || !Number.isInteger(referenceMode) || referenceMode < 0 || referenceMode > 3
+      || ![0,1,2].includes(scenario)) throw new RangeError("Invalid analogy controls");
   const querySpec = {...matched};
   if (scenario === 1) querySpec.stage = "late epithelial";
   if (scenario === 2) querySpec.relation = "receiver → donor";
@@ -51,8 +97,9 @@ export function analogy(scale, referenceMode, scenario = 0) {
   // every candidate record and never participate in the distance or gates.
   const ranked = candidates.map(candidate => {
     const difference = subtract(candidate.state, query);
-    return {...candidate, projected: norm(difference.slice(0, 2)), full: norm(difference),
-      refusal: rejection(candidate, querySpec), masked: true};
+    const motif=checkMotif(sourceMotif,candidateMotif(candidate.id),[0,1,2]);
+    return {...candidate, motif, difference, squared:difference.map(v=>v*v), projected: norm(difference.slice(0, 2)), full: norm(difference),
+      refusal: [rejection(candidate, querySpec), ...motif.reasons].filter(Boolean).join(", "), masked: true};
   }).sort((a, b) => a.full - b.full || a.id.localeCompare(b.id));
   const eligible = ranked.filter(item => !item.refusal);
   const selected = displacement ? eligible[0] : null;

@@ -1,9 +1,10 @@
 import {tensorScene} from "./layer-trace-scene.js";
-import {weights, graphPreset, graphFromInput, runTrace, cdf} from "./layer-trace-engine.js";
+import {weights, graphPreset, graphFromInput, runTrace, cdf, affinityObjective, feedbackAxes, feedbackWeight} from "./layer-trace-engine.js";
 
 const names = ["input","strength","strength-value","token","head","channel","steps","progress","prev","next",
   "title","explanation","equation","numerical","tensors","map","key","reduction","json","apply","input-status","scene","angle","pitch",
-  "kernel","multiplier","multiplier-value","block-setting","multiplier-setting","hidden-setting","hidden-channel"];
+  "kernel","multiplier","multiplier-value","block-setting","multiplier-setting","hidden-setting","hidden-channel",
+  "affinity-setting","axis","coverage-setting","coverage"];
 const ui = Object.fromEntries(names.map(name => [name, document.getElementById("trace-" + name)]));
 const fmt = value => value === -Infinity ? "−∞" : typeof value === "number"
   ? (Math.abs(value) < .00005 ? "0.0000" : value.toFixed(4)) : value;
@@ -133,8 +134,12 @@ const layerSteps = [
       const candidates=c.head.candidates[c.query], max=c.head.context[c.query][c.channel];
       const winners=candidates.flatMap((row, i) => row[c.channel] === max ? [i] : []);
       const blocks=c.head.blocks[c.query];
+      const remaining=candidates.filter((_,i)=>i!==c.key && c.graph.valid[i]);
+      const without=remaining.length ? Math.max(...remaining.map(row=>row[c.channel])) : null;
       return ["Channel " + (c.channel+1) + " reaches " + fmt(max) + " at " + winners.map(i => c.graph.tokens[i]).join(", ") + "."
-        + (winners.length > 1 ? " The source sends the max gradient through the first matching key." : ""),
+        + (winners.length > 1 ? " The local max routes its subgradient through the first matching key." : "")
+        + (without===null ? " Removing this key would leave no valid keys."
+          : " Without the selected key, this channel would be " + fmt(without) + "."),
         matrix("Score-plus-value candidates",candidates,{rows:c.graph.tokens,selected:c.key,channel:c.channel,winners}),
         matrix("Partial maximum by key block",blocks,{channel:c.channel}),
         matrix("Reduced context",c.head.context,c.tokenRows)];
@@ -248,13 +253,32 @@ steps.push({title:"Final normalization and padding mask",text:"Normalize the las
   equation:"h = mask(LayerNormfinal(x₂))",render(c) {
     return [...normView(c,c.trace.layers[1].output,c.trace.final,weights.finalNorm),matrix("Final valid-token representation",c.trace.masked,c.tokenRows)];
   }});
-steps.push({title:"Illustrative graph readout",text:"A demonstration linear readout selects the graph token. Actual Mora-3 output heads select and decode representations according to their own modality and task.",
-  equation:"ŷ = w · h[GRAPH]",render(c) {
-    const terms=c.trace.masked[0].map((value,i)=>value*weights.readout[i]);
-    return ["Illustrative output = sum " + showRow(terms) + " = " + fmt(c.trace.readout) + ".",
-      matrix("Graph representation",[c.trace.masked[0]],{rows:["[GRAPH]"]}),
-      matrix("Demonstration readout weights",[weights.readout],{weight:true}),
-      matrix("Readout contributions",[terms])];
+steps.push({title:"Affinity and teacher-energy readouts",text:"The Cartesian adapter selects the graph-token state. The feedback head scales that context by output_mult divided by the width multiplier, then applies separate affine maps for experimental and teacher axes. Here the graph is already prepared and all weights are demonstrations.",
+  equation:"u = h[GRAPH] × output_mult / (width / base_width); ŷₐ = Wₐ u + bₐ",render(c) {
+    const {scaledContext,predictions,contextScale}=c.trace.affinity;
+    const {weights:headWeights,bias}=weights.affinity;
+    const axis=Number(ui.axis.value);
+    return [feedbackAxes[axis].label + " = " + fmt(predictions[axis]) + ". Context scale = "
+      + weights.affinity.outputMult + " / (4 / " + weights.affinity.baseWidth + ") = " + fmt(contextScale) + ".",
+      matrix("Selected graph representation and scaled context",[c.trace.masked[0],scaledContext],{rows:["[GRAPH]","scaled"]}),
+      matrix("Separate affine weight rows",headWeights,{rows:feedbackAxes.map(row=>row.label),selected:axis,weight:true}),
+      linearTerms("Selected affine output",scaledContext,headWeights[axis],bias[axis],predictions[axis]),
+      matrix("Output by axis",predictions.map(value=>[value]),{rows:feedbackAxes.map(row=>row.label),cols:["prediction"],selected:axis})];
+  }});
+steps.push({title:"Observation masks and feedback objective",text:"Each complex record can carry at most one experimental label and one teacher observation. Three synthetic records reuse the displayed context to isolate the masks. The head averages normalized squared errors within each observed group and multiplies the teacher mean by its explicit auxiliary weight.",
+  equation:"rₐ = (ŷₐ − yₐ)/sₐ; L = mean(r²experimental) + λ mean(r²teacher)",render(c) {
+    const {rows,experimental,computed,total}=affinityObjective(c.trace.affinity.predictions,ui.coverage.value);
+    const axis=Number(ui.axis.value);
+    const missing=value=>value===null?"—":value;
+    const note=total===null ? "The source objective rejects this batch because every target is missing."
+      : "Total = " + [experimental===null?null:fmt(experimental),
+        computed===null?null:feedbackWeight+" × "+fmt(computed)].filter(Boolean).join(" + ") + " = " + fmt(total) + ".";
+    return [note,
+      matrix("Separate synthetic records and observation masks",rows.map(row=>[
+        row.prediction,row.active?row.target:"—",row.scale,missing(row.residual),missing(row.loss),row.active?"observed":"missing"
+      ]),{rows:rows.map(row=>row.label),cols:["prediction","observed target","scale","residual","square","mask"],selected:axis}),
+      matrix("Objective by observed group",[[missing(experimental),1],[missing(computed),feedbackWeight],[missing(total),"—"]],
+        {rows:["experimental","teacher","total"],cols:["mean or total","weight"]})];
   }});
 
 let index = 0, graph, trace, currentInput, sceneAxes = [];
@@ -274,7 +298,8 @@ const routes = [
     ];
   }),
   [17, "Final norm", n => n + " × 4"],
-  [18, "Readout", () => "scalar"],
+  [18, "Affinity heads", () => "1 + 2 axes"],
+  [19, "Masked loss", () => "3 records"],
 ];
 const makeButton = (i, label) => {
   const button = node("button", label);
@@ -292,7 +317,7 @@ const mapButtons = routes.map(([i, label]) => {
   button.replaceChildren(caption,shape);
   return {button, shape, caption};
 });
-for (const [name, from, to] of [["Input", 0, 1], ["Layer 1", 1, 9], ["Layer 2", 9, 17], ["Output", 17, 19]]) {
+for (const [name, from, to] of [["Input", 0, 1], ["Layer 1", 1, 9], ["Layer 2", 9, 17], ["Output", 17, 20]]) {
   const row = node("div");
   const track = node("div");
   row.className = "trace-map-row";
@@ -341,9 +366,23 @@ function drawScene() {
     tensors=row(label,values);
     sceneAxes = [{row:"token",packed:true}];
   } else {
-    tensors=index===0?row("Token embeddings",trace.input):index===steps.length-1
-      ? [{label:"Graph readout",values:[[trace.readout]],selection:[0,0]}] : row("Final states",trace.masked);
-    if(index!==steps.length-1) sceneAxes = [{row:"token",packed:true}];
+    if (index<18) {
+      tensors=index===0?row("Token embeddings",trace.input):row("Final states",trace.masked);
+      sceneAxes = [{row:"token",packed:true}];
+    } else {
+      const axis=Number(ui.axis.value);
+      if (index===18) {
+        const values=trace.affinity.predictions;
+        tensors=[{label:"Experimental ΔG (kcal/mol)",values:[[values[0]]],selection:axis===0?[0,0]:null},
+          {label:"UMA · eSEN (eV)",values:[[values[1],values[2]]],selection:axis>0?[0,axis-1]:null}];
+        sceneAxes = [{outputOffset:0},{outputOffset:1}];
+      } else {
+        const {rows}=affinityObjective(trace.affinity.predictions,ui.coverage.value);
+        tensors=[{label:"Squared normalized residual by record",values:rows.map(row=>[row.loss??0]),
+          selection:[axis,0],mask:r=>!rows[r].active}];
+        sceneAxes = [{row:"axis"}];
+      }
+    }
   }
   tensorScene(ui.scene,tensors,head,Number(ui.angle.value),Number(ui.pitch.value));
   ui.scene.classList.toggle("is-selectable",sceneAxes.length>0);
@@ -363,6 +402,8 @@ function render() {
   ui.prev.disabled=index===0;
   ui.next.disabled=index===steps.length-1;
   ui["hidden-setting"].hidden=view!==7;
+  ui["affinity-setting"].hidden=index<18;
+  ui["coverage-setting"].hidden=index!==19;
   const tokenRows={rows:graph.tokens,selected:query};
   const [note,...figures]=step.render({graph,trace,query,key,channel,layer,tokenRows,
     global,hidden:Number(ui["hidden-channel"].value),
@@ -426,6 +467,7 @@ ui.apply.addEventListener("click", () => {
   try {
     const input = JSON.parse(ui.json.value);
     applyInput(input ?? {});
+    ui.input.value="custom";
     ui["input-status"].textContent = "Custom graph applied.";
   } catch (error) {
     ui["input-status"].textContent = error instanceof SyntaxError ? "Enter valid JSON. The previous graph is still shown." : error.message;
@@ -439,7 +481,8 @@ ui.scene.addEventListener("click",event=>{
   const [tensor,row,column]=cell.dataset.cell.split(",").map(Number);
   const axis=sceneAxes[tensor];
   if (!axis) return;
-  ui[axis.row].value=row;
+  if (axis.row) ui[axis.row].value=row;
+  if (axis.outputOffset!==undefined) ui.axis.value=axis.outputOffset+column;
   if (axis.column) ui[axis.column].value=column;
   if (axis.head!==undefined) ui.head.value=axis.head;
   if (axis.packed) {
@@ -464,7 +507,7 @@ ui.kernel.addEventListener("change",()=>{
   runGraph(graph);
 });
 ui.multiplier.addEventListener("input",()=>runGraph(graph));
-[ui.token,ui.key,ui.head,ui.channel,ui["hidden-channel"]].forEach(control=>control.addEventListener("change",render));
+[ui.token,ui.key,ui.head,ui.channel,ui["hidden-channel"],ui.axis,ui.coverage].forEach(control=>control.addEventListener("change",render));
 function fromHash() {
   const requested = Number(location.hash.match(/^#step-(\d+)$/)?.[1]);
   select(requested >= 1 && requested <= steps.length ? requested - 1 : 0);

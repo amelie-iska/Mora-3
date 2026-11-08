@@ -33,7 +33,8 @@ export function tensorScene(svg, tensors, selected, angle, tilt) {
       const low=[base(r,c,0),base(r,c+.93,0),base(r+.93,c+.93,0),base(r+.93,c,0)];
       const active=selection?.[0]===r&&(selection[1]===undefined||selection[1]===c);
       const style=masked?"masked":active?"active":value<0?"negative":selected===tensor.head?"head-selected":"value";
-      const name=label+", row "+(r+1)+", channel "+(c+1)+": "+(Number.isFinite(value)?value.toFixed(4):"−∞");
+      const name=label+", row "+(r+1)+", channel "+(c+1)+": "
+        +(masked?"masked":Number.isFinite(value)?value.toFixed(4):"−∞");
       facets.push({points:top,style,name,cell:[i,r,c]});
       for (let f=0;f<4;f++) {
         const g=(f+1)%4;

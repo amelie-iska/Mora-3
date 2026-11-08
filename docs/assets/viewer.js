@@ -42,12 +42,18 @@ function example(index,value,model) {
     case 4: return {rows:[['Edit Δz',vector(model.direction.map(v=>v*value))],['Edit length',fixed(Math.hypot(...model.direction)*Math.abs(value))]],math:'z′ = z + αd, with unit d = '+vector(model.direction)+'.'};
     case 5: return {rows:[['Exit at steps 1 / 2 / 3',model.masses.map(percent).join(' / ')],['Total exit mass',percent(model.masses.reduce((a,b)=>a+b,0))]],math:'Stop masses are p, (1−p)p, and (1−p)². The last stop is forced. Continuous move densities are separate.'};
     case 6: return {rows:model.selected.map((ids,i)=>['Tree '+(i+1)+' selected scores',ids.map(id=>fixed(model.scores[i][id])).join(' · ')]),math:'Each toy tree has three eligible branches. Keep the highest-scoring K per tree.'};
-    case 7: return {rows:[['Shared-space query',vector(model.query)],['Selected eligible candidate',model.selected]],math:'Synthetic ranking score = −squared Euclidean distance. B and C stay refused at every λ, even when nearer than A or D. No biological transfer has been demonstrated.'};
+    case 7: return {rows:[['4D query',vector(model.query)],
+      ['Nearest in the 2D view',model.projected],['Nearest in the full space',model.nearest],
+      ['Selected eligible candidate',model.selected],['No-transfer baseline',model.baseline]],
+      math:'Candidates rank by 4D Euclidean distance. The first two coordinates give the projected distance. Role, directed edges, cell state, intervention, and endpoint gates apply before selection.'};
     case 8: {
       const mean=model.points.reduce((sum,point,i)=>sum+point.reduce((s,v,j)=>s+(v-model.reference[i][j])**2,0),0)/model.points.length;
       return {rows:[['Mapped atoms',model.points.length],['Unaligned RMS from A',`${fixed(Math.sqrt(mean),3)} Å`]],math:'Linear interpolation in a fixed frame. RMS displacement is from endpoint A without alignment.'};
     }
-    case 9: return {rows:[['Lower-energy state',percent(1-model.population)],['Higher-energy state',percent(model.population)]],math:'Two equally weighted states, ΔE = 0.06 eV. p(high) = 1 / (1 + exp(ΔE / kᴮT)).'};
+    case 9: return {rows:[['Stage temperature',model.temperature+' K'],
+      ['Cooling from prior stage',model.gap===null?'Initial stage':model.gap+' K'],
+      ['Lower-energy state',percent(1-model.population)],['Higher-energy state',percent(model.population)]],
+      math:'Illustrative schedule 800 → 550 → 400 → 325 → 290 K. Equal base weights, ΔE = 0.06 eV. p(high) = 1 / (1 + exp(ΔE / kᴮT)).'};
     case 10: return {rows:[['Toy energy',`${fixed(model.energy,3)} eV`],['Toy force',`${fixed(model.force,3)} eV/Å`]],math:'E = ½kx², F = −kx, with k = 0.4 eV/Å². The browser does not run either teacher.'};
     case 11: return {rows:[['Illustrative grid',value*8],['Recorded primary starts','0 / 24']],math:'Toy grid = LR choices × 2 readout × 2 key × 2 seeds. Moving the slider does not change the project plan.'};
     default: throw new Error('Unrecognized atlas stage');
@@ -96,8 +102,8 @@ function setNumbers() {
     const heading=document.createElement('h3');heading.textContent='Candidate audit · toy values';candidates.append(heading);
     model.candidates.forEach(item=>{
       const row=document.createElement('div');row.className='atlas-candidate';row.dataset.refused=String(!!item.refusal);
-      const label=document.createElement('strong');label.textContent=`${item.id} · score ${fixed(-item.distance,3)}${item.id===model.selected?' · selected':''}`;
-      const reason=document.createElement('span');reason.textContent=item.refusal?`REFUSED: ${item.refusal}`:`ELIGIBLE: ${item.label}`;
+      const label=document.createElement('strong');label.textContent=`${item.id} · 4D ${fixed(item.full,3)} · 2D ${fixed(item.projected,3)}${item.id===model.selected?' · selected':''}`;
+      const reason=document.createElement('span');reason.textContent=item.refusal?`REFUSED · ${item.refusal}`:'ELIGIBLE · outcome masked';
       row.append(label,reason);candidates.append(row);
     });
   }

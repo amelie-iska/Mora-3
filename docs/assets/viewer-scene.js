@@ -1,3 +1,5 @@
+import {analogy} from './mechanism-models.js';
+
 const palette = ['#8de3ba', '#edc579', '#c8b5ef', '#9bdaef'];
 const ink = '#102d2b';
 const mint = '#dceaa0';
@@ -227,9 +229,9 @@ function drawAnalogy(g, c, v, model) {
   }
   g.box([.85,.62,-.18],[.34,.34,.9],mint); // shared embedding route
   model.candidates.forEach((item,i)=>{
-    const x=-1.15+i*.76, color=item.refusal?'#da8e88':item.id===model.selected?'#dceaa0':c;
-    const h=.12+.48/(1+item.distance);
-    g.box([x,.24+h/2,1.02],[.46,h,.35],color);
+    const x=-1.35+i*.54, color=item.refusal?'#da8e88':item.id===model.selected?'#dceaa0':c;
+    const h=.12+.48/(1+item.full);
+    g.box([x,.24+h/2,1.02],[.33,h,.35],color);
     g.line([.85,.43,.2],[x,.26,1.02],color);
     if(item.refusal) {g.line([x-.20,.85,.99],[x+.20,1.12,.99],color);g.line([x+.20,.85,.99],[x-.20,1.12,.99],color);}
     else if(item.id===model.selected)g.gem([x,.98,1.02],.09,mint);
@@ -320,19 +322,18 @@ export function toyModel(index, value) {
     return {scores,selected};
   }
   if(index===7) {
-    const displacement=[.8,.5,-.3],target=[.2,-.1,.4];
-    const query=add(target,mul(displacement,value));
-    const candidates=[
-      {id:'A',vector:[1.05,.45,.08],refusal:null,label:'Matched motif / endpoint'},
-      {id:'B',vector:[.8,.3,.16],refusal:'Reversed receptor → ligand edge',label:'Nearest, wrong topology'},
-      {id:'C',vector:[1,.4,.1],refusal:'Affinity endpoint substituted for cell response',label:'Nearest, wrong endpoint'},
-      {id:'D',vector:[.36,0,.34],refusal:null,label:'Matched motif / endpoint'}
-    ].map(x=>({...x,distance:x.vector.reduce((sum,v,i)=>sum+(v-query[i])**2,0)}));
-    const selected=[...candidates].filter(x=>!x.refusal).sort((a,b)=>a.distance-b.distance||a.id.localeCompare(b.id))[0].id;
-    return {displacement,query,candidates,selected};
+    const {query,ranked,projected,baseline,selected}=analogy(value,0);
+    const candidates=[...ranked].sort((a,b)=>a.id.localeCompare(b.id));
+    return {query,candidates,projected:projected.id,nearest:ranked[0].id,
+      baseline:baseline.id,selected:selected?.id??"Abstain"};
   }
   if(index===8) return {points:structureA.map((point,i)=>mix(point,structureB[i],value)),reference:structureA};
-  if(index===9) return {population:1/(1+Math.exp(.06/(8.617333262e-5*value)))};
+  if(index===9) {
+    const temperatures=[800,550,400,325,290];
+    const temperature=temperatures[value-1];
+    const gap=value>1?temperatures[value-2]-temperature:null;
+    return {temperature,gap,population:1/(1+Math.exp(.06/(8.617333262145e-5*temperature)))};
+  }
   if(index===10) return harmonic(value);
   return {};
 }

@@ -1,4 +1,4 @@
-import {analogy, trajectory, currentVelocity, segmentBytes, hilbertScore, ripsAt, ripsLoopIntervals} from "./mechanism-models.js";
+import {analogy, trajectory, currentVelocity, segmentBytes, hilbertScore, ripsAt, ripsLoopIntervals,topologyComparison} from "./mechanism-models.js";
 
 const ui = Object.fromEntries(["method", "title", "status", "description", "formula", "control", "result", "source", "plot", "caption", "evidence"]
   .map(name => [name, document.getElementById("lab-" + name)]));
@@ -238,9 +238,9 @@ const methods = {
   },
   analogy: {
     title: "Transfer a typed relation", status: intended,
-    description: "In two independent reference cultures, compare paired before and after records for a donor-to-receiver junction-opening pulse. Transfer the matched displacement to a new assay query, then screen six candidate proposals using their visible descriptors. Their post-intervention outcomes stay masked throughout.",
+    description: "In two independent reference cultures, compare paired before and after records for a donor-to-receiver junction-opening pulse. Transfer the matched displacement to a new assay query, then screen six candidate proposals using visible descriptors and a supplied donor → junction → receiver motif. A low embedding distance cannot override a broken typed edge. Their post-intervention outcomes stay masked throughout.",
     formula: "Δ = mean(z(ref after) − z(ref before)); q = z(query before) + βΔ",
-    source: "architecture.html", sourceLabel: "Architecture and reasoning evidence",
+    source: code + "reasoning/fot_selection.py", sourceLabel: "Implemented eligibility selection (analogy gates here are synthetic)",
     control: {label: "Reference displacement scale β", min: -1, max: 1.5, step: 0.05, value: 1,
       secondaryLabel:"Reference pairs", choices: ["Both early-stage reference pairs", "Matched pair 1", "Matched pair 2", "Later-stage pair 3"],
       scenarioLabel:"Counterfactual query context", scenarios:["Original matched query", "Later receiver cell state", "Swap donor and receiver"]},
@@ -271,14 +271,16 @@ const methods = {
         notes:[
           ["Query relation", m.querySpec.relation + " · " + m.querySpec.stage + " · " + m.querySpec.assay + " (" + m.querySpec.unit + ") · " + m.querySpec.protocol],
           ["Reference audit", m.referenceAudit.map(r=>r.id + " (" + r.group + "): " + r.disposition).join(" · ")],
+          ["Typed correspondence", "Source donor 0 → junction 1 (opens), junction 1 → receiver 2 (conducts). Target mapping 0→0, 1→1, 2→2. A reverses edges; B rewires junction→receiver to donor→receiver. Both fail even when close in the plot."],
+          ["Shared representation", "All z vectors are manually assigned four-dimensional fixtures, not TokenGT outputs. Native routes share an encoder; this page does not run a checkpoint or establish cross-modal calibration."],
           ["Matched displacement", m.displacement ? "Δ = (" + m.displacement.map(v=>scalar(v)).join(", ") + ")" : "No supported transfer direction."],
           ["Counterfactual", "β = 0 removes the transfer. Negative β reverses it. Switching to a later cell state invalidates the early pairs. Selecting R3 then tests recovery with matching evidence."],
           ["Projection check", m.projectedEligible ? "Among eligible proposals, the 2D view prefers " + m.projectedEligible.id + ". The selection rule uses all four coordinates." : "No eligible 2D comparison."]
         ],
         table: {
           caption: "Candidate audit in 4D distance order · q (" + m.query.map(value=>scalar(value)).join(", ") + ")",
-          columns: ["Candidate", "2D distance", "4D distance", "Gate", "Held-out outcome"],
-          rows: m.ranked.map(item => [item.id, scalar(item.projected,3), scalar(item.full,3),
+          columns: ["Candidate", "2D distance", "4D distance", "Squared residuals · four axes", "Motif edges", "Gate", "Held-out outcome"],
+          rows: m.ranked.map(item => [item.id, scalar(item.projected,3), scalar(item.full,3), item.squared.map(v=>scalar(v,4)).join(" + "), item.motif.matched + "/2",
             item.refusal || (item === m.selected ? "Selected" : "Eligible"), "Masked"]),
         }};
     }
@@ -288,12 +290,11 @@ const methods = {
     description: "The research plan studies whether a mapping between latent neighborhoods preserves connectivity and loops across scales. This Vietoris–Rips example compares two four-point neighborhoods at the selected radius and shows the scale interval where each has an unfilled loop.",
     formula: "include edge (i, j) when ‖zᵢ − zⱼ‖₂ ≤ ε; fill every clique",
     source: "architecture.html", sourceLabel: "Reasoning design and evidence",
-    control: {label: "Filtration radius ε", min: 0.6, max: 2.2, step: 0.05, value: 1.15},
-    render(radius) {
-      const neighborhoods = [
-        [[0, 0], [1, 0], [1, 1], [0, 1]],
-        [[0, 0], [1.2, 0.1], [1.35, 0.85], [0.14, 0.95]]
-      ];
+    control: {label: "Filtration radius ε", min: 0.6, max: 2.2, step: 0.05, value: 1.15,
+      secondaryLabel:"Proposed correspondence", choices:["Deformed square · identity mapping", "Collapsed line · identity mapping", "Same square · wrong mapping"]},
+    render(radius, scenario) {
+      const comparison=topologyComparison(radius,scenario);
+      const neighborhoods = [comparison.source,comparison.target];
       const panels = neighborhoods.map((states, group) => {
         const position = states.map(([x, y]) => [70 + group * 255 + 116 * x, 229 - 120 * y]);
         const {edges,faces,components,loops}=ripsAt(states,radius);
@@ -304,15 +305,20 @@ const methods = {
         const textX = 56 + 255 * group;
         return {
           figure: label(textX, 58, "NEIGHBORHOOD " + (group ? "B" : "A"), "mute") + fills + strokes
-            + position.map(p => dot(...p)).join("") + label(textX, 284, "β₀ " + components + "    β₁ " + loops, "aqua"),
+            + position.map((p,i) => dot(...p) + label(p[0]+9,p[1]-9,String(i),"blue")).join("") + label(textX, 284, "β₀ " + components + "    β₁ " + loops, "aqua"),
           intervals, summary: " " + (group ? "B" : "A") + " has " + components + " component(s) and " + loops + " loop(s)."
         };
       });
       return {...result(line(278, 47, 278, 291, "grid-line") + panels.map(p => p.figure).join(""),
-        "At radius " + scalar(radius) + "," + panels.map(p => p.summary).join(""),
+        "At radius " + scalar(radius) + "," + panels.map(p => p.summary).join("") + (comparison.preservesEdges ? " Supplied map preserves this edge set." : " REFUSE supplied map: edge mismatch."),
         "β₀ counts components. β₁ counts independent unfilled loops. A loop dies when filling triangles remove the independent cycle."),
-        notes:panels.map((p,i)=>["Neighborhood " + (i===0 ? "A" : "B") + " loop interval",
-          p.intervals.join(" · ") || "No unfilled loop across the filtration."]),
+        table:{caption:"All six distances under the supplied map", columns:["Source pair", "Source distance", "Mapped target distance", "Absolute error"], rows:comparison.distances.map(d=>[d.pair,scalar(d.left,3),scalar(d.right,3),scalar(d.error,3)])},
+        notes:[["Supplied map", comparison.mapping.map((j,i)=>i+"→"+j).join(" · ")],
+          ["Correspondence audit", "Equal Betti counts: " + comparison.sameBetti + "; missing mapped edges: " + (comparison.missing.join(", ") || "none") + "; extra target edges: " + (comparison.extra.join(", ") || "none") + ". Counts alone cannot authenticate a correspondence."],
+          ["Metric distortion", "max |d(source pair) − d(mapped target pair)| = " + scalar(comparison.distortion,3) + ". No learned acceptance threshold is implied."],
+          ["Scope", "Four-point clique complexes only. Undirected proximity edges are not causal, chemical, or typed semantic edges. Even a passing map is no proof of a biological analogy."],
+          ...panels.map((p,i)=>["Neighborhood " + (i===0 ? "A" : "B") + " loop interval",
+          p.intervals.join(" · ") || "No unfilled loop across the filtration."])],
       };
     }
   },

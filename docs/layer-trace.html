@@ -1,19 +1,19 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Step through TokenGT with two layers and two attention heads using the tropical or ordinary μP kernel."><meta name="theme-color" content="#121c1b"><meta property="og:type" content="website"><meta property="og:title" content="Inside a TokenGT layer · Mora-3"><meta property="og:description" content="Step through TokenGT with two layers and two attention heads using the tropical or ordinary μP kernel."><title>Inside a TokenGT layer · Mora-3</title><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/theme.css"><script src="assets/theme.js"></script><script defer src="assets/site.js"></script><link rel="stylesheet" href="assets/layer-trace.css"><script type="module" src="assets/layer-trace.js"></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Trace two layers, multi-head tropical or ordinary μP attention, and separate experimental affinity and teacher feedback outputs."><meta name="theme-color" content="#121c1b"><meta property="og:type" content="website"><meta property="og:title" content="Inside a TokenGT layer · Mora-3"><meta property="og:description" content="Trace two layers, multi-head tropical or ordinary μP attention, and separate experimental affinity and teacher feedback outputs."><title>Inside a TokenGT layer · Mora-3</title><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/theme.css"><script src="assets/theme.js"></script><script defer src="assets/site.js"></script><link rel="stylesheet" href="assets/layer-trace.css"><script type="module" src="assets/layer-trace.js"></script></head>
 <body><a class="skip" href="#main">Skip to content</a><header class="site-header"><div class="wrap header-inner"><div class="header-brand"><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><button type="button" class="theme-toggle" id="theme-toggle" hidden>Light mode</button></div><nav class="nav" aria-label="Primary"><a class="nav-cta" href="paper.html">Live paper</a><a href="architecture.html">Architecture</a><a href="architecture-3d.html">3D atlas</a><a href="data.html">Data</a><a href="training.html">Training</a><a href="modalities.html">Modalities</a><a href="outputs.html">Outputs</a><a href="applications.html">Applications</a></nav></div></header>
 <main id="main" class="wrap" tabindex="-1">
 <header class="section-intro trace-intro">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="architecture-3d.html">3D atlas</a><span aria-hidden="true">/</span><span aria-current="page">Layer trace</span></nav>
   <p class="eyebrow">Architecture internals · Computed example</p>
   <h1>Inside a TokenGT layer</h1>
-  <p class="lead">Follow a graph through two encoder layers. Open any operation in the tensor map, then select a head, query, key, and channel to inspect its arithmetic.</p>
+  <p class="lead">Follow a graph through two encoder layers, then inspect how a task head separates experimental affinity from teacher energy. Open any operation in the tensor map and select a head, token, or channel.</p>
   <p>The browser computes a 4-channel, 2-head example with fixed demonstration weights. It implements the finite tropical kernel and the ordinary softmax kernel with the μP query scaling used in the training configuration.</p>
 </header>
 <div class="trace" data-trace>
   <aside class="trace-controls" aria-label="Trace inputs">
     <h2>Input and view</h2>
     <label for="trace-input">Graph preset</label>
-    <select id="trace-input"><option value="junction">Two cells and a junction</option><option value="chain">Three-cell chain</option><option value="contact">Protein contact motif</option></select>
+    <select id="trace-input"><option value="junction">Two cells and a junction</option><option value="chain">Three-cell chain</option><option value="contact">Protein contact motif</option><option value="custom" disabled hidden>Custom graph</option></select>
     <label for="trace-strength">First edge feature <output for="trace-strength" id="trace-strength-value"></output></label>
     <input id="trace-strength" type="range" min="-4" max="4" step=".05" value=".4">
     <details class="trace-custom"><summary>Edit graph input</summary>
@@ -44,6 +44,14 @@
       <label for="trace-multiplier">μP attention multiplier <output for="trace-multiplier" id="trace-multiplier-value">1.00</output></label>
       <input id="trace-multiplier" type="range" min=".25" max="4" step=".25" value="1">
     </div>
+    <div class="trace-setting" id="trace-affinity-setting" hidden>
+      <label for="trace-axis">Output axis to inspect</label>
+      <select id="trace-axis"><option value="0">Experimental ΔG</option><option value="1">UMA energy</option><option value="2">eSEN energy</option></select>
+    </div>
+    <div class="trace-setting" id="trace-coverage-setting" hidden>
+      <label for="trace-coverage">Available labels across example records</label>
+      <select id="trace-coverage"><option value="both">Experimental and teacher</option><option value="experimental">Experimental only</option><option value="teacher">Teacher only</option><option value="none">No observations</option></select>
+    </div>
     <details class="trace-index"><summary>All computation steps</summary><nav id="trace-steps" class="trace-steps" aria-label="Computation steps"></nav></details>
   </aside>
   <section class="trace-work" aria-labelledby="trace-title">
@@ -54,12 +62,12 @@
     <p id="trace-equation" class="trace-equation"></p>
     <figure class="trace-scene">
       <svg id="trace-scene" viewBox="0 0 740 204" role="img"></svg>
-      <figcaption><label for="trace-angle">Orbit</label><input id="trace-angle" type="range" min="-55" max="55" step="1" value="-16"><label for="trace-pitch">Tilt</label><input id="trace-pitch" type="range" min="18" max="65" step="1" value="31"><span>Click a cell to inspect it. Height shows magnitude. Gold is negative. Green marks selection. Gray marks masked keys.</span></figcaption>
+      <figcaption><label for="trace-angle">Orbit</label><input id="trace-angle" type="range" min="-55" max="55" step="1" value="-16"><label for="trace-pitch">Tilt</label><input id="trace-pitch" type="range" min="18" max="65" step="1" value="31"><span>Click a cell to inspect it. Height shows numerical magnitude. Compare values within the same unit. Gold is negative, green marks selection, and gray marks a mask.</span></figcaption>
     </figure>
     <div id="trace-numerical" class="trace-numerical" aria-live="polite"></div>
     <div id="trace-tensors" class="trace-tensors"></div>
   </section>
 </div>
-<p class="trace-foot">The trace covers the encoder forward pass. The final scalar is an illustrative readout. Task-specific decoders, optimizer updates, and checkpoint inference have separate interfaces. <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tokengt.py">TokenGT source</a> · <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tropical.py">Tropical attention source</a></p>
+<p class="trace-foot">The trace covers the encoder and one affinity-feedback head. The graph, weights, label values, and teacher axis names are illustrative. This path begins with a prebuilt graph and does not run the upstream Cartesian graph builder, physics teachers, other decoders, or optimizer. <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tokengt.py">TokenGT source</a> · <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tropical.py">Tropical attention source</a> · <a href="https://github.com/amelie-iska/Mora-3/blob/main/src/mora3/model/complex_affinity_head.py">Affinity head source</a> · <a href="mechanism-lab.html#geometry">Structure and dynamics</a></p>
 <noscript><p>Enable JavaScript to evaluate the trace. <a href="architecture.html">Read the architecture chapter</a> for the text explanation.</p></noscript>
 </main><footer class="footer"><div class="wrap footer-inner"><div><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><p>Biomedical graph modeling · Research in development</p></div><nav class="footer-nav" aria-label="Footer"><a href="paper.html">Live paper</a><a href="applications.html">Applications</a><a href="index.html#releases">Release status</a></nav></div></footer></body></html>

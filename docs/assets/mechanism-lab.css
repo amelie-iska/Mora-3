@@ -1,0 +1,33 @@
+.lab-intro-note { margin-top: 1.1rem; max-width: 64ch; }
+.lab { margin: 1rem 0 4rem; border: 1px solid #d6d8cf; border-radius: .85rem; overflow: hidden; }
+.lab-picker { display: flex; gap: .8rem; align-items: center; padding: 1rem 1.4rem; background: #e9ede1; }
+.lab-picker label, .lab-controls label { font-weight: 700; }
+.lab-picker select, .lab-controls select { min-width: 0; max-width: 100%; padding: .55rem .7rem; border: 1px solid #929d8c; border-radius: .4rem; background: #fafaf5; color: #17261e; font: inherit; }
+.lab-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); }
+.lab-copy { padding: clamp(1.3rem, 4vw, 2.6rem); }
+.lab-copy h2 { margin: .6rem 0 .8rem; line-height: 1.06; }
+.lab-status { display: inline-block; padding: .32rem .55rem; margin: 0; border-radius: .28rem; font-size: .75rem; font-weight: 700; background: #e0ead7; color: #263b2c; }
+.lab-formula { padding: .75rem; margin: 1.2rem 0; border-left: 3px solid #65936c; background: #edf0e7; overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: .87rem; }
+.lab-controls { display: grid; gap: .45rem; }
+.lab-controls input { width: 100%; accent-color: #396a49; }
+.lab-controls output { justify-self: start; font: .88rem ui-monospace, monospace; }
+.lab-result { min-height: 3.4rem; margin: 1rem 0; font-size: .92rem; }
+.lab-figure { display: grid; align-content: center; min-width: 0; margin: 0; padding: clamp(.7rem, 2vw, 1.5rem); background: #111e26; color: #d4e2e7; }
+.lab-figure svg { display: block; width: 100%; min-height: 170px; max-height: 510px; font: 16px ui-monospace, monospace; }
+.lab-figure figcaption { padding: .85rem .25rem .25rem; border-top: 1px solid #3c5057; font-size: .82rem; }
+.lab-figure .grid-line { stroke: #334651; stroke-width: 1; }
+.lab-figure .ink { fill: #e4eff0; }
+.lab-figure .mute { fill: #9bb2bc; }
+.lab-figure .stroke { stroke: #6a91a4; stroke-width: 2.5; fill: none; }
+.lab-figure .aqua { fill: #80d4b0; }
+.lab-figure .amber { fill: #ffc17c; }
+.lab-figure .blue { fill: #91bcef; }
+.lab-figure .box { fill: #243945; stroke: #4d6d7c; }
+@media (max-width: 780px) {
+  .lab-grid { grid-template-columns: 1fr; }
+  .lab-picker { align-items: start; flex-direction: column; gap: .4rem; }
+}
+.lab-figure .dark-ink { fill: #162830; }
+.lab-figure .target-ring { fill: none; stroke: #ffc17c; stroke-width: 1.5; stroke-dasharray: 4 4; }
+
+.lab-figure .lab-face { fill: #37675d; }

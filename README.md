@@ -4,7 +4,7 @@ Mora-3 is a research implementation for multimodal modeling across molecular str
 
 This repository is a source snapshot. Dataset payloads, checkpoints, private environments and experiment logs are distributed separately when release and training gates are met. Some source-specific checks require separately provisioned source artifacts. The affinity feedback component provides teacher-specific electronic interaction targets alongside distinct experimental affinity endpoints. Production complex-data enrollment and benchmark results are pending.
 
-[Interactive research site](https://mora-3-research.wolvieworld.chatgpt.site)
+[Interactive research site](https://amelie-iska.github.io/Mora-3/)
 
 ## Repository layout
 

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Explore illustrative Mora-3 computations and outputs."><meta name="theme-color" content="#121c1b"><meta property="og:type" content="website"><meta property="og:title" content="Mechanism Lab · Mora-3"><meta property="og:description" content="Explore illustrative Mora-3 computations and outputs."><title>Mechanism Lab · Mora-3</title><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/theme.css"><script src="assets/theme.js"></script><script defer src="assets/site.js"></script></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header"><div class="wrap header-inner"><div class="header-brand"><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><button type="button" class="theme-toggle" id="theme-toggle" hidden>Light mode</button></div><nav class="nav" aria-label="Primary"><a class="nav-cta" href="paper.html">Live paper</a><a href="architecture.html">Architecture</a><a href="architecture-3d.html">3D atlas</a><a href="data.html">Data</a><a href="training.html">Training</a><a href="modalities.html">Modalities</a><a href="outputs.html">Outputs</a><a href="applications.html">Applications</a></nav></div></header>
+<main id="main" class="wrap" tabindex="-1">
+<link rel="stylesheet" href="assets/mechanism-lab.css">
+<script defer src="assets/mechanism-lab.js"></script>
+<header class="section-intro">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="paper.html">Live paper</a><span aria-hidden="true">/</span><span aria-current="page">Mechanism lab</span></nav>
+  <p class="eyebrow">Interactive methods · Synthetic examples</p>
+  <h1>Mechanism lab</h1>
+  <p class="lead">Change one variable at a time and follow the computation from input to output.</p>
+  <p class="lab-intro-note">Every input and value in this lab is illustrative. Source links distinguish implemented methods from proposed research directions.</p>
+</header>
+<section class="lab" aria-labelledby="lab-title">
+  <div class="lab-picker">
+    <label for="lab-method">Choose a mechanism</label>
+    <select id="lab-method">
+      <option value="inputs">01 · Graph inputs and outputs</option>
+      <option value="tokenizer">02 · ConvexTok segmentation</option>
+      <option value="attention">03 · Tropical attention</option>
+      <option value="ring">04 · Tropical ring reduction</option>
+      <option value="concept">05 · Latent concept steering</option>
+      <option value="gfn">06 · Latent GFlowNet</option>
+      <option value="forest">07 · Forest-of-thought</option>
+      <option value="analogy">08 · Latent analogy</option>
+      <option value="topology">09 · Topological analogy check</option>
+      <option value="geometry">10 · Structure and dynamics</option>
+    </select>
+  </div>
+  <div class="lab-grid">
+    <div class="lab-copy">
+      <p id="lab-status" class="lab-status">Implemented components · synthetic example</p>
+      <h2 id="lab-title">Graph inputs and outputs</h2>
+      <p id="lab-description">Node and edge tokens carry typed features. Readouts select a representation and expose a target-specific format.</p>
+      <p class="lab-formula" id="lab-formula">graph → tokens → states → readout</p>
+      <div id="lab-control"></div>
+      <p id="lab-result" class="lab-result" aria-live="polite"></p>
+      <a id="lab-source" class="text-link" href="architecture.html">Read the architecture chapter</a>
+    </div>
+    <figure class="lab-figure">
+      <svg id="lab-plot" viewBox="0 0 560 340" role="img" aria-label="Graph token and output schematic"></svg>
+      <figcaption id="lab-caption">A synthetic graph and its selected readout.</figcaption>
+    </figure>
+  </div>
+  <noscript><p>Enable JavaScript to change the example values. The <a href="architecture.html">architecture chapter</a> describes the methods in text.</p></noscript>
+</section>
+</main><footer class="footer"><div class="wrap footer-inner"><div><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><p>Biomedical graph modeling · Research in development</p></div><nav class="footer-nav" aria-label="Footer"><a href="paper.html">Live paper</a><a href="applications.html">Applications</a><a href="index.html#releases">Release status</a></nav></div></footer></body></html>

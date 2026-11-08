@@ -1,0 +1,38 @@
+.header-brand { display: flex; align-items: center; gap: .7rem; flex: none; }
+.theme-toggle { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: .25rem; padding: .26rem .45rem; font-size: .72rem; font-weight: 650; white-space: nowrap; }
+.theme-toggle:hover { color: var(--pine); border-color: var(--pine); }
+:root:not([data-theme="light"]) {
+  --paper: #121c1b;
+  --card: #1a2825;
+  --ink: #eff3e9;
+  --muted: #b7c8bf;
+  --line: #3f5750;
+  --pine: #a0e1c6;
+  --accent: #91e8c4;
+  --acid: #e5f482;
+  --dark: #17302e;
+  color-scheme: dark;
+}
+:root:not([data-theme="light"]) :is(button,a,summary,input,select,textarea):focus-visible { outline-color: #bde8a1; }
+:root:not([data-theme="light"]) .skip { background: var(--card); }
+:root:not([data-theme="light"]) .hero-copy h1 em { color: var(--pine); }
+:root:not([data-theme="light"]) .eyebrow::before { background: #87c9a5; }
+:root:not([data-theme="light"]) .button { color: #12271e; }
+:root:not([data-theme="light"]) .button:hover { background: #b8eed2; }
+:root:not([data-theme="light"]) .card:is(a):hover { background: #243c34; border-color: #8ac3aa; }
+:root:not([data-theme="light"]) .card .card-id, :root:not([data-theme="light"]) thead { color: #b2d9ca; }
+:root:not([data-theme="light"]) :is(.callout,.tag,.evidence>div) { color: var(--ink); background: #203630; border-color: #536d60; }
+:root:not([data-theme="light"]) .tabs button[aria-selected=true],
+:root:not([data-theme="light"]) .filter-buttons button[aria-pressed=true],
+:root:not([data-theme="light"]) .atlas-progress button[aria-pressed=true] { color: #152c24; }
+:root:not([data-theme="light"]) .footer { background: #152824; }
+:root:not([data-theme="light"]) #atlas-description,
+:root:not([data-theme="light"]) :is(.atlas-evidence,.atlas-refs,.atlas-group-label,.atlas-control-label,.atlas-math,.atlas-number span) { color: var(--muted); }
+:root:not([data-theme="light"]) :is(.atlas-demo,.atlas-number,.atlas-group button) { background: #213630; border-color: #507067; }
+:root:not([data-theme="light"]) :is(.atlas-demo-kicker,.atlas-evidence strong,.atlas-number strong,.atlas-group button,.atlas-group button span) { color: #b9e2d2; }
+:root:not([data-theme="light"]) .atlas-group button[aria-current=step] { background: #b4e1cb; color: #162c24; }
+:root:not([data-theme="light"]) .atlas-group button[aria-current=step] span { color: #345f4f; }
+:root:not([data-theme="light"]) .atlas-demo input, :root:not([data-theme="light"]) .lab-controls input { accent-color: #a0e1c6; }
+:root:not([data-theme="light"]) .lab { border-color: var(--line); }
+:root:not([data-theme="light"]) :is(.lab-picker,.lab-formula,.lab-status) { background: #223b33; color: var(--ink); }
+:root:not([data-theme="light"]) :is(.lab-picker select,.lab-controls select) { color: var(--ink); background: #21342e; border-color: #628479; }

@@ -8,6 +8,31 @@ const assay = "junction conductance";
 const relation = "donor → receiver";
 const stage = "early epithelial";
 const protocol = "junction-opening pulse";
+export const coolingGaps = [160, 80, 40, 20];
+export const coolingTemperatures = coolingGaps.map((_, i) =>
+  290 + coolingGaps.slice(i).reduce((total, gap) => total + gap, 0)).concat(290);
+const kBoltzmannEv = 8.617333262145e-5;
+export const energyExamples = [
+  {name: "UMA illustration", energies: [-2, -1.97, -1.94]},
+  {name: "eSEN illustration", energies: [-2.2, -2.145, -2.11]},
+];
+export function boltzmannStates(energies, baseWeights, temperature, reference = Math.min(...energies)) {
+  if (!energies.length || energies.length !== baseWeights.length || !energies.every(Number.isFinite)
+      || !baseWeights.every(weight => Number.isFinite(weight) && weight > 0)
+      || !Number.isFinite(reference) || !Number.isFinite(temperature) || temperature <= 0) {
+    throw new RangeError("Finite energies, positive base weights, and positive temperature required.");
+  }
+  const logReward = energies.map(energy => -(energy - reference) / (kBoltzmannEv * temperature));
+  if (!logReward.every(Number.isFinite)) throw new RangeError("Unrepresentable log reward.");
+  const baseScale = Math.max(...baseWeights);
+  const logBaseNormalizer = Math.log(baseScale) + Math.log(baseWeights.reduce((sum, weight) => sum + weight / baseScale, 0));
+  const logMass = logReward.map((reward, i) => reward + Math.log(baseWeights[i]) - logBaseNormalizer);
+  const shift = Math.max(...logMass);
+  const weights = logMass.map(value => Math.exp(value - shift));
+  const sum = weights.reduce((total, weight) => total + weight, 0);
+  return {logReward, logMass, logNormalizer: shift + Math.log(sum), probabilities: weights.map(weight => weight / sum)};
+}
+
 const matched = {relation, stage, assay, unit: "nS", protocol};
 const references = [
   {...matched, id: "R1", before: [.5, .7, .2, .3], after: [1.8, 1.2, .9, .4], group: "reference culture 1"},
@@ -91,8 +116,12 @@ export function analogy(scale, referenceMode, scenario = 0) {
     disposition: rejection(ref, querySpec) || (chosen.includes(ref.id) ? "Used" : "Outside chosen set"),
   }));
   const pairs = referenceAudit.filter(ref => ref.disposition === "Used");
-  const displacement = pairs.length ? average(pairs.map(pair => subtract(pair.after, pair.before))) : null;
-  const query = displacement ? queryBefore.map((value, i) => value + scale * displacement[i]) : queryBefore;
+  const transfer = active => {
+    const displacement = active.length ? average(active.map(pair => subtract(pair.after, pair.before))) : null;
+    return {displacement, query: displacement
+      ? queryBefore.map((value, i) => value + scale * displacement[i]) : queryBefore};
+  };
+  const {displacement, query} = transfer(pairs);
   // These are visible proposal descriptors. Query outcomes are absent from
   // every candidate record and never participate in the distance or gates.
   const ranked = candidates.map(candidate => {
@@ -107,8 +136,18 @@ export function analogy(scale, referenceMode, scenario = 0) {
   const baseline = [...eligible].sort((a,b) =>
     norm(subtract(a.state, queryBefore)) - norm(subtract(b.state, queryBefore)) || a.id.localeCompare(b.id))[0];
   const projectedEligible = [...eligible].sort((a,b) => a.projected-b.projected || a.id.localeCompare(b.id))[0];
+  const sensitivity = pairs.map(omitted => {
+    const remaining = pairs.filter(pair => pair !== omitted);
+    const {displacement, query: alternative} = transfer(remaining);
+    const ranks = eligible.map(item => ({id: item.id, distance: norm(subtract(item.state, alternative))}))
+      .sort((a,b) => a.distance-b.distance || a.id.localeCompare(b.id));
+    const pick = displacement ? ranks[0] : null;
+    return {omitted: omitted.id, remaining: remaining.map(item => item.id), selected: pick?.id ?? null,
+      distance: pick?.distance ?? null, margin: pick && ranks.length > 1 ? ranks[1].distance - pick.distance : null};
+  });
   return {pairs, referenceAudit, querySpec, queryBefore, displacement, query, ranked, selected, projected,
-    projectedEligible, baseline};
+    projectedEligible, baseline, sensitivity,
+    margin: selected && eligible.length > 1 ? eligible[1].full-selected.full : null};
 }
 
 export function segmentBytes(payload, learned) {

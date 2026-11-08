@@ -53,7 +53,7 @@ function example(index,value,model) {
     case 9: return {rows:[['Stage temperature',model.temperature+' K'],
       ['Cooling from prior stage',model.gap===null?'Initial stage':model.gap+' K'],
       ['Lower-energy state',percent(1-model.population)],['Higher-energy state',percent(model.population)]],
-      math:'Illustrative schedule 800 → 550 → 400 → 325 → 290 K. Equal base weights, ΔE = 0.06 eV. p(high) = 1 / (1 + exp(ΔE / kᴮT)).'};
+      math:'Illustrative schedule ' + model.temperatures.join(' → ') + ' K. Equal base weights, ΔE = 0.06 eV. p(high) = 1 / (1 + exp(ΔE / kᴮT)).'};
     case 10: return {rows:[['Toy energy',`${fixed(model.energy,3)} eV`],['Toy force',`${fixed(model.force,3)} eV/Å`]],math:'E = ½kx², F = −kx, with k = 0.4 eV/Å². The browser does not run either teacher.'};
     case 11: return {rows:[['Illustrative grid',value*8],['Recorded primary starts','0 / 24']],math:'Toy grid = LR choices × 2 readout × 2 key × 2 seeds. Moving the slider does not change the project plan.'};
     default: throw new Error('Unrecognized atlas stage');

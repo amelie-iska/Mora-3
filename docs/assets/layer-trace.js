@@ -58,6 +58,25 @@ function linearTerms(title, input, weight, bias, result) {
   return matrix(title,rows,{rows:[...labels,"bias","output"],cols:["input","weight","contribution"],selected:rows.length-1});
 }
 
+function routingView(c, dense) {
+  const {query, graph, layer} = c;
+  const rows = layer.attention.heads.flatMap((head, i) =>
+    head.context[query].map((context, channel) => {
+      const terms = head.candidates[query].map(row => row[channel]);
+      const selected = dense ? graph.valid.map((valid, key) => valid ? key : -1).filter(key => key >= 0)
+        : terms.flatMap((term, key) => term === context ? [key] : []);
+      const byKey = selected.map(key => graph.tokens[key] + " (" + fmt(terms[key]) + ")").join(" · ");
+      const global = i * 2 + channel;
+      return [byKey, context, layer.attention.concatenated[query][global],
+        dense ? context : layer.attention.decoded[query][global]];
+    }));
+  return matrix("Both heads · selected query routing", rows, {
+    rows: ["H1 c1", "H1 c2", "H2 c1", "H2 c2"],
+    cols: [dense ? "Weighted terms by valid key" : "Maximizing keys", "Context", "Joined channel", dense ? "Projection input" : "expm1"],
+    selected: c.global,
+  });
+}
+
 const steps = [
   {title:"Graph and token embedding", text:"TokenGT builds a row for every node and directed edge. Node endpoints repeat the same ID. Each row adds a feature projection, two endpoint-ID projections packed into one matrix, and a learned node/edge role. The graph token has its own vector. Padding fills the batch shape.",
     equation:"xᵢ = Wfeature fᵢ + Wincidence [p(srcᵢ); p(dstᵢ)] + eroleᵢ", render(c) {
@@ -142,7 +161,7 @@ const layerSteps = [
           : " Without the selected key, this channel would be " + fmt(without) + "."),
         matrix("Score-plus-value candidates",candidates,{rows:c.graph.tokens,selected:c.key,channel:c.channel,winners}),
         matrix("Partial maximum by key block",blocks,{channel:c.channel}),
-        matrix("Reduced context",c.head.context,c.tokenRows)];
+        matrix("Reduced context",c.head.context,c.tokenRows), routingView(c,false)];
     }},
   {title:"Join heads, decode, project, and add", text:"Concatenate the two contexts in head order, then apply expm1 and a bias-free output projection. Add the result to the layer input on the residual path.",
     equation:"a = Wo expm1(concat(c¹,c²)); r = x + a",render(c) {
@@ -216,7 +235,7 @@ const denseSteps = [
           score,h.exponentials[q][i],h.probabilities[q][i],h.v[i][c.channel],h.candidates[q][i][c.channel]
         ]),{rows:c.graph.tokens,cols:["score","exp shifted","weight","V channel","weighted V"],selected:c.key}),
         matrix("Softmax weights",h.probabilities,{...c.tokenRows,cols:c.graph.tokens,channel:c.key}),
-        matrix("Weighted sum by channel",h.context,c.tokenRows)];
+        matrix("Weighted sum by channel",h.context,c.tokenRows), routingView(c,true)];
     }},
   {title:"Join heads, project, and add",text:"Concatenate the two context vectors in head order, mix their channels with an affine projection, then add the residual from the layer input.",
     equation:"a = Wo concat(c¹,c²) + bo; r = x + a",render(c) {

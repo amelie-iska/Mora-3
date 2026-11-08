@@ -1,4 +1,4 @@
-import {analogy, trajectory, currentVelocity, segmentBytes, hilbertScore, ripsAt, ripsLoopIntervals,topologyComparison} from "./mechanism-models.js";
+import {analogy, trajectory, currentVelocity, segmentBytes, hilbertScore, ripsAt, ripsLoopIntervals, topologyComparison, boltzmannStates, coolingTemperatures, energyExamples} from "./mechanism-models.js";
 
 const ui = Object.fromEntries(["method", "title", "status", "description", "formula", "control", "result", "source", "plot", "caption", "evidence"]
   .map(name => [name, document.getElementById("lab-" + name)]));
@@ -275,6 +275,12 @@ const methods = {
           ["Shared representation", "All z vectors are manually assigned four-dimensional fixtures, not TokenGT outputs. Native routes share an encoder; this page does not run a checkpoint or establish cross-modal calibration."],
           ["Matched displacement", m.displacement ? "Δ = (" + m.displacement.map(v=>scalar(v)).join(", ") + ")" : "No supported transfer direction."],
           ["Counterfactual", "β = 0 removes the transfer. Negative β reverses it. Switching to a later cell state invalidates the early pairs. Selecting R3 then tests recovery with matching evidence."],
+          ["Reference sensitivity", m.sensitivity.length ? m.sensitivity.map(row => "Omit " + row.omitted + " → "
+            + (row.selected ? row.selected + " (distance " + scalar(row.distance,3)
+              + (row.margin === null ? "" : ", margin " + scalar(row.margin,3)) + ")" : "abstain")).join(" · ")
+            : "No compatible reference subset to test."],
+          ["Retrieval margin", m.margin === null ? "A runner-up margin requires two eligible proposals and a supported transfer."
+            : "Runner-up minus selected distance = " + scalar(m.margin,3) + ". This is a geometric separation, not calibrated confidence."],
           ["Projection check", m.projectedEligible ? "Among eligible proposals, the 2D view prefers " + m.projectedEligible.id + ". The selection rule uses all four coordinates." : "No eligible 2D comparison."]
         ],
         table: {
@@ -319,6 +325,47 @@ const methods = {
           ["Scope", "Four-point clique complexes only. Undirected proximity edges are not causal, chemical, or typed semantic edges. Even a passing map is no proof of a biological analogy."],
           ...panels.map((p,i)=>["Neighborhood " + (i===0 ? "A" : "B") + " loop interval",
           p.intervals.join(" · ") || "No unfilled loop across the filtration."])],
+      };
+    }
+  },
+  ensemble: {
+    title: "Five-stage Boltzmann target", status: "Implemented reward equation · synthetic ensemble",
+    description: "Keep the molecular system fixed while cooling. Select a teacher-specific toy energy vector, then compute log rewards and normalize the mass over three illustrative conformational states. Each state has an explicit base weight.",
+    formula: "log Rᵢ = −(Eᵢ − Eref)/(kᴮT);  pᵢ ∝ wᵢ exp(log Rᵢ)",
+    source: "https://github.com/amelie-iska/Mora-3/blob/f74ff02d88bb9e12b02e835b541c27486298f580/src/mora3/boltzmann_target.py", sourceLabel: "Native Boltzmann log reward",
+    control: {label: "Cooling stage", options: coolingTemperatures.map((t,i) => "Stage " + (i+1) + " · " + t + " K"),
+      secondaryLabel: "Independent energy illustration", choices: energyExamples.map(example => example.name),
+      scenarioLabel: "Relative base weights", scenarios: ["Equal weight", "Third basin has 4× base weight"]},
+    render(stage, teacher, measure) {
+      const example = energyExamples[teacher];
+      const temperature = coolingTemperatures[stage];
+      const base = measure === 0 ? [1,1,1] : [1,1,4];
+      const {logReward, logMass, logNormalizer, probabilities} = boltzmannStates(example.energies, base, temperature);
+      const pct = value => scalar(100 * value,1) + "%";
+      const colors = ["aqua","blue","amber"];
+      const plot = coolingTemperatures.map((t,i) => {
+        const values = boltzmannStates(example.energies,base,t).probabilities;
+        const x = 45 + i*102;
+        let top = 261;
+        return values.map((value,j) => {
+          const height = value*182;
+          top -= height;
+          return box(x,top,54,height,colors[j]);
+        }).join("") + label(x,286,t + " K",i===stage?"aqua":"mute")
+          + (i===stage ? line(x,299,x+54,299,"stroke") : "");
+      }).join("");
+      const gap = stage ? coolingTemperatures[stage-1]-temperature : null;
+      return {...result(label(42,36,"NORMALIZED PROBABILITY BY COOLING STAGE","mute") + plot
+        + label(42,324,"Green A   Blue B   Gold C","mute"),
+        "Stage " + (stage+1) + " · " + temperature + " K" + (gap === null ? "" : " · drop " + gap + " K")
+          + ". State masses " + probabilities.map(pct).join(" / ") + ".",
+        "The bars show a three-state approximation with invented energies. The same reward equation is used for the continuous coordinate target. Sampling steps do not specify physical elapsed time."),
+        table:{caption:"Energy and target mass at the selected stage",
+          columns:["State","Energy (eV)","Relative base weight","log reward","log mass","Probability"],
+          rows:example.energies.map((energy,i)=>[["A","B","C"][i],scalar(energy,3),String(base[i]),scalar(logReward[i],3),scalar(logMass[i],3),pct(probabilities[i])])},
+        notes:[["Reference", "The minimum toy energy is used as a common reference. Moving that reference shifts all log rewards equally and leaves probabilities unchanged."],
+          ["Normalization", "The relative base weights sum to 1 after normalization. Log mass adds the log of that normalized base weight to the log reward. The log-sum-exp of the three log masses is " + scalar(logNormalizer,3) + "."],
+          ["Teacher scope", "UMA and eSEN illustrate separate energy vectors. The browser runs no potential, DFT calculation, force evaluation, or kinetic integrator."]],
       };
     }
   },

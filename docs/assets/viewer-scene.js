@@ -1,4 +1,4 @@
-import {analogy} from './mechanism-models.js';
+import {analogy, boltzmannStates, coolingTemperatures} from './mechanism-models.js';
 
 const palette = ['#8de3ba', '#edc579', '#c8b5ef', '#9bdaef'];
 const ink = '#102d2b';
@@ -329,10 +329,10 @@ export function toyModel(index, value) {
   }
   if(index===8) return {points:structureA.map((point,i)=>mix(point,structureB[i],value)),reference:structureA};
   if(index===9) {
-    const temperatures=[800,550,400,325,290];
-    const temperature=temperatures[value-1];
-    const gap=value>1?temperatures[value-2]-temperature:null;
-    return {temperature,gap,population:1/(1+Math.exp(.06/(8.617333262145e-5*temperature)))};
+    const temperature=coolingTemperatures[value-1];
+    const gap=value>1?coolingTemperatures[value-2]-temperature:null;
+    const {probabilities}=boltzmannStates([0,.06],[1,1],temperature);
+    return {temperature,gap,population:probabilities[1],temperatures:coolingTemperatures};
   }
   if(index===10) return harmonic(value);
   return {};

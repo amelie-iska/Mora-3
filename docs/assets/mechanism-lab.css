@@ -31,3 +31,8 @@
 .lab-figure .target-ring { fill: none; stroke: #ffc17c; stroke-width: 1.5; stroke-dasharray: 4 4; }
 
 .lab-figure .lab-face { fill: #37675d; }
+#lab-evidence:empty { display: none; }
+#lab-evidence { overflow-x: auto; }
+#lab-evidence table { color: #d4e2e7; font-size: .76rem; margin: .35rem 0 .8rem; }
+#lab-evidence caption { text-align: left; margin: .35rem; font-weight: 700; }
+#lab-evidence :is(th,td) { background: transparent; color: inherit; padding: .35rem .4rem; border-color: #3c5057; }

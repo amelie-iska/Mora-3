@@ -59,13 +59,13 @@ function example(index,value) {
       return {rows:[['Input bytes',motif.length],['Shortest path tokens',result.length]],math:`Fixed toy vocabulary: A, C, AC, ACAC. Encoding: ${result.join(' · ')}`};
     }
     case 3: return {rows:[['Winning keys',model.winners.map(v=>`K${v+1}`).join(' · ')],['Output vector',vector(model.result)]],math:'score(q,k) = min(q−k) − max(q−k). Each output takes maxₖ(score + Vₖ).'};
-    case 4: return {rows:[['Edit Δz',vector(model.direction.map(v=>v*value))],['Edit length',fixed(Math.hypot(...model.direction)*Math.abs(value))]],math:'z′ = z + αd, using the synthetic direction d = (0.8, 0.5, −0.3).'};
+    case 4: return {rows:[['Edit Δz',vector(model.direction.map(v=>v*value))],['Edit length',fixed(Math.hypot(...model.direction)*Math.abs(value))]],math:'z′ = z + αd, with unit d = '+vector(model.direction)+'.'};
     case 5: return {rows:[['Exit at steps 1 / 2 / 3',model.masses.map(percent).join(' / ')],['Total exit mass',percent(model.masses.reduce((a,b)=>a+b,0))]],math:'Stop masses are p, (1−p)p, and (1−p)². The last stop is forced. Continuous move densities are separate.'};
-    case 6: return {rows:[['Trees',2],['Active / proposed',`${2*value} / 6`]],math:'Each toy tree has three eligible branches. Keep the highest-scoring K per tree.'};
+    case 6: return {rows:model.selected.map((ids,i)=>['Tree '+(i+1)+' selected scores',ids.map(id=>fixed(model.scores[i][id])).join(' · ')]),math:'Each toy tree has three eligible branches. Keep the highest-scoring K per tree.'};
     case 7: return {rows:[['Shared-space query',vector(model.query)],['Selected eligible candidate',model.selected]],math:'Synthetic ranking score = −squared Euclidean distance. B and C stay refused at every λ, even when nearer than A or D. No biological transfer has been demonstrated.'};
     case 8: {
       const mean=model.points.reduce((sum,point,i)=>sum+point.reduce((s,v,j)=>s+(v-model.reference[i][j])**2,0),0)/model.points.length;
-      return {rows:[['Mapped atoms',model.points.length],['RMS displacement',`${fixed(Math.sqrt(mean),3)} Å`]],math:'Linear interpolation in a fixed frame. RMS displacement here is calculated before any alignment.'};
+      return {rows:[['Mapped atoms',model.points.length],['Unaligned RMS from A',`${fixed(Math.sqrt(mean),3)} Å`]],math:'Linear interpolation in a fixed frame. RMS displacement is from endpoint A without alignment.'};
     }
     case 9: return {rows:[['Lower-energy state',percent(1-model.population)],['Higher-energy state',percent(model.population)]],math:'Two equally weighted states, ΔE = 0.06 eV. p(high) = 1 / (1 + exp(ΔE / kᴮT)).'};
     case 10: return {rows:[['Toy energy',`${fixed(model.energy,3)} eV`],['Toy force',`${fixed(model.force,3)} eV/Å`]],math:'E = ½kx², F = −kx, with k = 0.4 eV/Å². The browser does not run either teacher.'};

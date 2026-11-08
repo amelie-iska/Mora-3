@@ -178,27 +178,28 @@ function drawConcepts(g, c, v, model) {
   g.gem(dest,.19,mint);
 }
 function drawGFN(g, c, v, model) {
-  const origin=[-1.37,.59,.03];
-  g.gem(origin,.16,mint);
-  for (let i=0;i<3;i++) {
-    const s=i-1;
-    const path=[origin,[-.67,.83+s*.15,s*.21],[.14,1.02+s*.25,s*.50],[1.25,.66+s*.37,s*.77]];
-    g.path(path,c);
-    for (let j=1;j<3;j++) g.gem(path[j],.077,c);
-    g.gem(path[3],.10+model.masses[i]*.30,mint);
-  }
+  const path=[[-1.37,.59,-.25],[-.6,.8,-.23],[.22,.97,-.20],[1.08,1.11,-.12]];
+  g.gem(path[0],.16,c);
+  path.slice(1).forEach((point,i)=>{
+    g.arrow(path[i],point,c);
+    g.gem(point,.09,c);
+    const exit=add(point,[.12,-.22,.94]);
+    g.arrow(point,exit,mint);
+    g.gem(exit,.10+model.masses[i]*.30,mint);
+  });
 }
-function drawForest(g, c, n) {
+function drawForest(g, c, n, model) {
   for (let t=0;t<2;t++) {
     const root=[-1.12,.44,t*.93-.48];
     g.gem(root,.13,mint);
     for(let i=0;i<3;i++) {
       const mid=[-.30,.75+i*.19,root[2]+(i-1)*.24];
       const end=[1.16,1.14+i*.26,root[2]+(i-1)*.38];
-      const tint=i<n?c:'#51605c';
+      const kept=model.selected[t].includes(i);
+      const tint=kept?c:'#51605c';
       g.path([root,mid,end],tint);
       g.gem(mid,.087,tint);
-      g.gem(end,i<n?.14:.08,tint);
+      g.gem(end,kept?.14:.08,tint);
     }
   }
 }
@@ -273,8 +274,13 @@ export function toyModel(index, value) {
     const result=terms.map(row=>Math.max(...row));
     return {result,winners:terms.map((row,i)=>row.indexOf(result[i]))};
   }
-  if(index===4) return {direction:[.8,.5,-.3]};
+  if(index===4) return {direction:norm([.8,.5,-.3])};
   if(index===5) return {masses:[value,(1-value)*value,(1-value)**2]};
+  if(index===6) {
+    const scores=[[.83,.91,.75],[.77,.75,.88]];
+    const selected=scores.map(row=>[0,1,2].sort((i,j)=>row[j]-row[i]).slice(0,value));
+    return {scores,selected};
+  }
   if(index===7) {
     const displacement=[.8,.5,-.3],target=[.2,-.1,.4];
     const query=add(target,mul(displacement,value));

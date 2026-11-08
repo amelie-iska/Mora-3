@@ -1,6 +1,6 @@
-"use strict";
+import {analogy, trajectory, currentVelocity} from "./mechanism-models.js";
 
-const ui = Object.fromEntries(["method", "title", "status", "description", "formula", "control", "result", "source", "plot", "caption"]
+const ui = Object.fromEntries(["method", "title", "status", "description", "formula", "control", "result", "source", "plot", "caption", "evidence"]
   .map(name => [name, document.getElementById("lab-" + name)]));
 const code = "https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/";
 const implemented = "Implemented method · synthetic example";
@@ -32,40 +32,45 @@ const methods = {
     control: {label: "Example route", options: ["Molecular complex", "Protein structure", "Cell perturbation", "Reaction"]},
     render(index) {
       const entry = inputs[index];
-      const positions = [[62, 108], [139, 158], [63, 211]];
-      const graph = line(62, 108, 139, 158) + line(139, 158, 63, 211) + line(62, 108, 63, 211)
-        + positions.map((p, i) => dot(...p, i === 1 ? "amber" : "aqua", 19) + label(p[0] - 5, p[1] + 6, entry.graph[i], "dark-ink")).join("");
-      const tokens = entry.names.map((name, i) => box(206, 97 + i * 43, 125, 33)
-        + label(214, 119 + i * 43, name, i === 1 ? "amber" : "aqua")).join("");
+      const positions = [[56, 158], [157, 158]];
+      const graph = arrow(76,158,133,158)
+        + box(81,105,54,32) + label(90,127,entry.graph[1],"amber")
+        + positions.map((point,i) => dot(...point,"aqua",19)
+          + label(point[0]-5,point[1]+6,entry.graph[i*2],"dark-ink")).join("");
+      const tokens = ["[GRAPH]", entry.names[0], entry.names[2], entry.names[1]].map((name, i) =>
+        box(206, 84 + i * 39, 125, 31) + label(214, 105 + i * 39, name, i === 3 ? "amber" : "aqua")).join("");
       return result(label(30, 58, "GRAPH", "mute") + label(208, 58, "TOKEN STATES", "mute")
         + label(388, 58, "READOUT", "mute") + graph + arrow(155, 158, 198, 158)
         + tokens + arrow(336, 158, 379, 158) + box(387, 130, 155, 54)
         + label(399, 163, entry.output[0], "blue") + label(30, 279, entry.output[1], "ink")
         + label(30, 307, entry.output[2], "mute"), entry.output[1] + " with " + entry.output[2] + ".",
-        "Green nodes and amber edge or relation features feed a blue readout.");
+        "The directed edge has its own token. The encoder prepends a learned graph token. A task selects the appropriate state or states for its readout.");
     }
   },
   tokenizer: {
     title: "ConvexTok segmentation", status: implemented,
     description: "Vocabulary fitting uses a continuous relaxation and rounds its scores into a bounded vocabulary. Encoding uses shortest-path segmentation over retained byte strings and the byte fallback.",
-    formula: "d[j] = min { d[i] + 1 | bytes[i:j] in vocabulary }",
+    formula: "d[i] = min { 1 + d[j] | bytes[i:j] in vocabulary };  d[n] = 0",
     source: code + "tokenization/shortest_path.py", sourceLabel: "Shortest-path encoder source",
     control: {label: "Available learned tokens", options: ["Byte fallback", "Add AC and GT", "Add ACGT too"]},
     render(index) {
       const payload = "ACGTACGT";
       const learned = ["AC", "GT", "ACGT"].slice(0, [0, 2, 3][index]);
       const tokens = [...learned, "A", "C", "G", "T"];
-      const paths = Array(payload.length + 1).fill(null);
-      paths[0] = [];
-      for (let start = 0; start < payload.length; start += 1) {
+      const costs = Array(payload.length).fill(Infinity).concat(0);
+      const next = [];
+      for (let start = payload.length - 1; start >= 0; start--) {
         for (const token of tokens) {
-          if (!payload.startsWith(token, start)) continue;
-          const end = start + token.length;
-          const path = [...paths[start], token];
-          if (paths[end] === null || path.length < paths[end].length) paths[end] = path;
+          if (!payload.startsWith(token,start)) continue;
+          const cost = 1 + costs[start+token.length];
+          if (cost < costs[start] || (cost === costs[start] && token.length > next[start].length)) {
+            costs[start]=cost;
+            next[start]=token;
+          }
         }
       }
-      const path = paths[payload.length];
+      const path=[];
+      for (let i=0;i<payload.length;i+=next[i].length) path.push(next[i]);
       const cells = [...payload].map((c, i) => box(36 + 61 * i, 62, 52, 50) + label(58 + 61 * i, 93, c)).join("");
       let offset = 0;
       const spans = path.map(token => {
@@ -75,9 +80,10 @@ const methods = {
           + label(x + 12, 192, token, "dark-ink");
       }).join("");
       return result(label(36, 41, "INPUT BYTES", "mute") + cells + arrow(271, 116, 271, 153) + spans
-        + label(36, 262, "SHORTEST PATH · " + path.length + " TOKENS", "mute"),
+        + label(36, 256, "SUFFIX COST d[i] AT EACH BYTE OFFSET", "mute")
+        + costs.map((cost,i)=>label(41 + 59*i, 289, String(cost), "blue")).join(""),
         path.join(" | ") + " uses " + path.length + " tokens and decodes to " + payload + ".",
-        "The lower row spans the original bytes assigned to each emitted token.");
+        "The suffix costs are computed right to left. Equal-cost paths choose the longer first token. Controls are separate from payload bytes.");
     }
   },
   attention: {
@@ -114,7 +120,16 @@ const methods = {
     source: "architecture.html", sourceLabel: "Attention design and evidence",
     control: {label: "Blocks seen by query shard 0", min: 1, max: 4, step: 1, value: 2},
     render(count) {
-      const blocks = [[0.3, 1.2], [1.5, 0.1], [-0.4, 1.7], [1.3, 0.8]];
+      const keyBlocks = [
+        [[0,.1,.4,1.3],[.9,.3,.2,.8]],
+        [[.7,.6,1.8,.3],[0,.75,1.1,.85]],
+        [[.4,.9,.1,2.2],[.8,.4,-.1,1.0]],
+        [[1.0,.7,1.6,.95],[.1,.4,.2,1.1]]
+      ];
+      const blocks=keyBlocks.map(keys => [2,3].map(channel => Math.max(...keys.map(key => {
+        const differences=[.6-key[0],.8-key[1]];
+        return Math.min(...differences)-Math.max(...differences)+key[channel];
+      }))));
       const slots = [[184, 84], [312, 137], [184, 218], [56, 137]];
       const visible = blocks.slice(0, count);
       const max = [0, 1].map(i => Math.max(...visible.map(block => block[i])));
@@ -129,7 +144,7 @@ const methods = {
         + label(369, 130, "RUNNING MAX", "mute") + label(369, 166, max.map(v => scalar(v, 1)).join("  /  "), "aqua")
         + label(42, 290, "MERGED " + count + " OF " + blocks.length + " BLOCKS", "mute"),
         "After " + count + " blocks, the two channel maxima are " + max.map(v => scalar(v, 1)).join(" and ") + ".",
-        "Green shows which blocks reached the local query. This is a reduction example with toy partial maxima.");
+        "Green shows which blocks reached the local query. Each block reduces two synthetic keys with the same Hilbert score as the attention demo. The distributed ring is a design sketch.");
     }
   },
   concept: {
@@ -140,81 +155,116 @@ const methods = {
     control: {label: "Signed steering strength α", min: -2, max: 2, step: 0.1, value: 1},
     render(value) {
       const original = [2.1, 1.5];
-      const direction = [0.8, 0.6];
+      const basis = [[1,0],[0,1]];
+      const projection = [[.72,.54],[.48,.78]], bias=[.08,.12];
+      const raw = basis.map(row => projection.map((w,i)=>w.reduce((sum,x,j)=>sum+x*row[j],bias[i])));
+      const [direction,other] = raw.map(row=>row.map(x=>x/Math.hypot(...row)));
+      const cosine=direction.reduce((sum,x,i)=>sum+x*other[i],0);
       const edit = original.map((coordinate, i) => coordinate + value * direction[i]);
-      return result(grid() + arrow(...xy(original), ...xy(edit))
+      return result(grid() + arrow(...xy(original), ...xy(original.map((x,i)=>x+other[i]))) + arrow(...xy(original), ...xy(edit))
         + point(xy(original), "z", "blue") + point(xy(edit), "z′", "aqua")
         + label(48, 34, "2D LATENT SLICE", "mute") + label(339, 314, "α = " + scalar(value, 1), "amber"),
-        "The synthetic state moves to (" + edit.map(v => scalar(v)).join(", ") + ").",
-        "The displayed direction is synthetic. Biological meaning requires independent calibration.");
+        "The state moves to (" + edit.map(v => scalar(v)).join(", ") + "). Direction cosine: " + scalar(cosine,3) + ".",
+        "Both directions have unit norm after the same affine projection. The high cosine illustrates why normalization alone does not yield independent directions.");
     }
   },
   gfn: {
     title: "Latent GFlowNet", status: implemented,
-    description: "A policy makes continuous latent moves and chooses when to stop. Trajectory balance compares path log densities with terminal log reward and counts stop mass once.",
+    description: "Score a fixed path with two-dimensional Gaussian forward and reverse kernels. A noninitial move includes continuation probability. The final exit contributes stop probability once, and the reverse step to the origin is deterministic.",
     formula: "residual = log Z + Σ(log Pᶠ − log Pᵇ) + log Pstop − log R",
-    source: code + "reasoning/continuous_gfn.py", sourceLabel: "Trajectory balance source",
-    control: {label: "Terminal log reward", min: -2, max: 2, step: 0.1, value: 0.5},
-    render(reward) {
-      const balance = 1.5 - 0.3 - 0.45 + 0.1 - 0.35 - reward;
-      return result(grid() + arrow(72, 202, 217, 137) + arrow(217, 137, 385, 101)
-        + arrow(217, 137, 373, 230) + point([72, 202], "z₀", "blue") + point([217, 137], "z₁", "blue")
-        + point([385, 101], "stop", "aqua") + point([373, 230], "continue", "amber")
-        + label(52, 34, "ILLUSTRATIVE LATENT TRAJECTORY", "mute")
-        + label(52, 313, "LOG BALANCE RESIDUAL = " + scalar(balance), "aqua"),
-        "Residual " + scalar(balance) + " yields squared loss " + scalar(balance ** 2, 3) + " for this path.",
-        "The green stop ends the selected path. Amber shows an alternative continuation.");
+    source: code + "reasoning/gfn_sampling.py", sourceLabel: "Path scoring source",
+    control: {label: "Terminal log reward", min: -2, max: 2, step: 0.1, value: 0.5,
+      choices:["Stop at step 2", "Forced stop at horizon 3", "Stop at step 1"]},
+    render(reward, choice) {
+      const model=trajectory(reward,[2,3,1][choice]);
+      return {...result(grid() + model.states.slice(1).map((state,i) => arrow(...xy(model.states[i]),...xy(state))).join("")
+        + model.states.map((state,i) => point(xy(state),"z"+i,i===model.states.length-1?"aqua":"blue")).join("")
+        + label(48, 34, "LAYERED LATENT PATH", "mute")
+        + label(48, 315, "STOP LOG MASS " + scalar(model.stop) + "   LOG Z " + scalar(model.logZ), "aqua"),
+        "Residual " + scalar(model.balance) + " yields squared loss " + scalar(model.balance ** 2, 3) + ".",
+        "Densities describe continuous latent moves. Stop and continue are probability masses, with forced exit at the horizon."),
+        table:{caption:"Terms in trajectory balance",columns:["Move","Forward density","Continue","Reverse density"],
+          rows:model.terms.map((term,i)=>[String(i+1),...["forward","continuation","backward"].map(key=>scalar(term[key],3))])},
+      };
     }
   },
   forest: {
     title: "Forest-of-thought", status: implemented,
-    description: "A bounded search can expand several roots in latent space. Score-ordered selection keeps branches that satisfy a minimum distance from previously selected states.",
-    formula: "retain candidates by score, subject to a distance threshold and beam budget",
-    source: code + "reasoning/fot_selection.py", sourceLabel: "Branch selection source",
-    control: {label: "Minimum latent separation", min: 0, max: 3.5, step: 0.1, value: 1},
+    description: "Two trees keep independent beams. At each layer, filter invalid candidates, sort by score, then greedily enforce minimum separation. A retained terminal leaf is recorded and does not expand.",
+    formula: "per tree, per layer: valid → stable score order → distance guard → beam",
+    source: code + "reasoning/fot_forest.py", sourceLabel: "Bounded forest source",
+    control: {label: "Minimum latent separation", min: 0, max: 1.4, step: 0.05, value: 0.45},
     render(threshold) {
-      const roots = [[0.5, 1.1], [0.5, 2.4]];
-      const candidates = [
-        {state: [2.6, 2.8], score: 0.94, root: 1},
-        {state: [2.8, 2.6], score: 0.90, root: 1},
-        {state: [3.4, 1.25], score: 0.82, root: 0},
-        {state: [4.6, 0.72], score: 0.71, root: 0}
-      ];
-      const selected = [];
-      candidates.forEach(candidate => {
-        if (selected.length === 3) return;
-        if (selected.every(kept => Math.hypot(...kept.state.map((v, i) => v - candidate.state[i])) >= threshold)) selected.push(candidate);
+      const panels=[[74,122],[74,245]].map(([x,y],tree) => {
+        const root={id:"R"+(tree+1),xy:[x,y]};
+        const nodes=[];
+        let active=[root];
+        for (let depth=1;depth<=2;depth++) {
+          const layer=active.flatMap((parent,j)=>[0,1,2].map(i=>{
+            const state=[depth*1.3+(i%2)*.2, j*.6+i*.27];
+            return {id:parent.id+"."+i, parent, state, depth, xy:[x+depth*152,y-32+j*16+i*20],
+              score:[.85,.96,.72][i]-.04*j-.03*depth, valid:i!==1 || tree===0 || depth===2,
+              terminal: i===0};
+          }));
+          const selected=[];
+          for (const item of layer.filter(item=>item.valid).sort((a,b)=>b.score-a.score)) {
+            if (selected.length===2) break;
+            if (selected.every(other=>Math.hypot(...item.state.map((v,j)=>v-other.state[j]))>=threshold)) {
+              item.selected=true;
+              selected.push(item);
+            }
+          }
+          nodes.push(...layer);
+          active=selected.filter(item=>!item.terminal);
+          if (!active.length) break;
+        }
+        return {root,nodes};
       });
-      const branches = candidates.map((candidate, index) => {
-        const to = xy(candidate.state);
-        const style = selected.includes(candidate) ? "aqua" : "mute";
-        const selectedLabelOffset = index === 1 ? 27 : -10;
-        return arrow(...xy(roots[candidate.root]), ...to) + dot(...to, style)
-          + label(to[0] + 9, to[1] + selectedLabelOffset, scalar(candidate.score), style);
-      }).join("");
-      return result(grid() + branches + roots.map((root, i) => point(xy(root), "root " + (i + 1), "blue")).join("")
-        + label(48, 34, "CANDIDATE SCORES", "mute"), selected.length + " of 4 branches retained at minimum separation " + scalar(threshold, 1) + ".",
-        "Selected branches are green. Gray branches fell outside the retained beam.");
+      const branches=panels.map(({root,nodes}) => point(root.xy,root.id,"blue") + nodes.map(item=>{
+        const tint=!item.valid?"amber":item.selected?"aqua":"mute";
+        return line(...item.parent.xy,...item.xy,item.selected?"stroke":"grid-line")
+          + dot(...item.xy,tint,item.terminal?7:4) + label(item.xy[0]+10,item.xy[1]+4,scalar(item.score),tint);
+      }).join("")).join("");
+      const all=panels.flatMap(panel=>panel.nodes);
+      return result(label(43,35,"ROOTS","mute") + label(198,35,"DEPTH 1","mute") + label(347,35,"DEPTH 2","mute") + branches,
+        all.filter(item=>item.selected).length + " of " + all.length + " proposals retained across both trees.",
+        "Green marks retained branches. Amber marks invalid proposals. Larger markers are terminal and do not expand.");
     }
   },
   analogy: {
-    title: "Latent analogy", status: intended,
-    description: "A proposed retrieval test applies a reference displacement to a different source. Nearest candidates need independent evidence that the transformation transfers across contexts.",
-    formula: "query = z(C) + β[z(B) − z(A)]",
+    title: "Transfer a typed relation", status: intended,
+    description: "Two synthetic pairs show the same change in a matched junction-conductance assay. Estimate the direction from either pair or both, then apply it to a new donor–receiver assay. Rank all four embedding coordinates and check roles, cell state, and the measured endpoint independently.",
+    formula: "Δ = mean(z(after) − z(before)); q = z(new before) + βΔ",
     source: "architecture.html", sourceLabel: "Architecture and reasoning evidence",
-    control: {label: "Reference displacement scale β", min: 0, max: 1.5, step: 0.1, value: 1},
-    render(scale) {
-      const a = [0.4, 0.5], b = [2.1, 1.2], c = [0.8, 1.9];
-      const target = c.map((coordinate, i) => coordinate + scale * (b[i] - a[i]));
-      const candidates = [[1.35, 2.2], [2.6, 2.8], [3.7, 2.95]];
-      const distances = candidates.map(z => Math.hypot(...z.map((v, i) => v - target[i])));
-      const nearest = distances.indexOf(Math.min(...distances));
-      return result(grid() + arrow(...xy(a), ...xy(b)) + arrow(...xy(c), ...xy(target))
-        + point(xy(a), "A", "blue") + point(xy(b), "B", "blue") + point(xy(c), "C", "blue")
-        + candidates.map((z, i) => point(xy(z), "D" + (i + 1), i === nearest ? "aqua" : "mute")).join("")
-        + dot(...xy(target), "amber", 5) + label(48, 34, "NEAREST LATENT CANDIDATE", "mute"),
-        "D" + (nearest + 1) + " is nearest to the synthetic query at distance " + scalar(distances[nearest]) + ".",
-        "Amber marks the extrapolated query. Green marks a retrieved candidate.");
+    control: {label: "Reference displacement scale β", min: 0, max: 1.5, step: 0.05, value: 1,
+      choices: ["Both reference pairs", "Matched pair 1", "Matched pair 2"]},
+    render(scale, referenceMode) {
+      const model = analogy(scale, referenceMode);
+      const project = ([x,y]) => [56 + 138*x, 286 - 72*y];
+      const marks = model.pairs.map(pair => {
+        const id=pair.name.at(-1);
+        const a=project(pair.before), b=project(pair.after);
+        return arrow(...a,...b) + point(a, "R"+id+" pre", "blue") + point(b, "R"+id+" post", "blue");
+      }).join("");
+      const target = project(model.query), start = project(model.queryBefore);
+      const marksById = model.ranked.map(candidate => {
+        const [x,y]=project(candidate.state);
+        const style=candidate === model.selected ? "aqua" : candidate.refusal ? "amber" : "mute";
+        const offsets={A:[-36,-24], B:[-19,30], C:[25,-17], D:[19,33], E:[15,20], F:[-43,11]};
+        const [dx,dy]=offsets[candidate.id];
+        return line(x,y,x+dx,y+dy,"grid-line") + dot(x,y,style,candidate === model.selected ? 7 : 4)
+          + label(x+dx,y+dy,candidate.id,style);
+      }).join("");
+      const display = result(grid() + label(44, 28, "COORDINATES 1–2 OF 4", "mute") + marks + arrow(...start,...target)
+        + point(start,"new pre","blue") + marksById + '<circle cx="'+target[0]+'" cy="'+target[1]+'" r="10" class="target-ring"/>'
+        + label(target[0]+13,target[1]-14,"q","amber") + label(44, 316, "Blue: reference   Green: selected   Amber: refused", "mute"),
+        "2D nearest " + model.projected.id + " · 4D nearest " + model.ranked[0].id + " · eligible " + model.selected.id + " · no-transfer baseline " + model.baseline.id + ".",
+        "Fixture embeddings are hand-authored. Closeness proposes a candidate for validation. It cannot establish a transferred effect.");
+      return {...display, table: {
+        caption: "Candidate audit in distance order · query (" + model.query.map(value=>scalar(value)).join(", ") + ")",
+        columns: ["Candidate", "2D distance", "4D distance", "Eligibility"],
+        rows: model.ranked.map(item => [item.id, scalar(item.projected,3), scalar(item.full,3), item.refusal ?? (item === model.selected ? "Selected" : "Eligible")]),
+      }};
     }
   },
   topology: {
@@ -252,6 +302,7 @@ const methods = {
           }
         }
         const components = new Set(states.map((_, i) => root(i))).size;
+        // On four vertices, the four triangular boundaries have one dependency.
         const rank = triangles === 4 ? 3 : triangles;
         const loops = edges - states.length + components - rank;
         const textX = 56 + 255 * group;
@@ -267,29 +318,33 @@ const methods = {
     }
   },
   geometry: {
-    title: "Structure and dynamics", status: "Implemented components · synthetic geometry",
-    description: "A structure output specifies atom identities and a coordinate frame. A coordinate-velocity head can act on the current frame. Flow time in this view indexes an illustrative path through coordinate space.",
-    formula: "x(t) = (1 − t)x₀ + tx₁,  dx/dt = x₁ − x₀",
+    title: "Current-frame structure and dynamics", status: "Diagnostic implementation · synthetic geometry",
+    description: "Compute scalar coefficients from distance and bond features of a four-atom input. Multiply each relative displacement by its coefficient, average across neighbors including self, and zero the anchor velocity. The ghost frame shows one illustrative Euler step.",
+    formula: "vᵢ = freeᵢ · (1/N) Σⱼ wᵀfᵢⱼ(xⱼ − xᵢ);  x′ = x + 0.4v",
     source: code + "model/current_frame_velocity.py", sourceLabel: "Coordinate-velocity readout source",
-    control: {label: "Flow interpolation time t", min: 0, max: 1, step: 0.05, value: 0.35},
-    render(time) {
-      const start = [[112, 164], [231, 124], [288, 212], [415, 171]];
-      const end = [[112, 164], [192, 81], [327, 126], [416, 213]];
-      const current = start.map((p, i) => p.map((x, j) => x + time * (end[i][j] - x)));
-      const bonds = positions => positions.slice(1).map((p, i) => line(...positions[i], ...p)).join("");
-      const guides = end.map(p => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="13" class="target-ring"/>').join("");
-      const velocities = current.slice(1).map((p, i) => {
-        const atom = i + 1;
-        return arrow(...p, ...p.map((v, j) => v + 0.29 * (end[atom][j] - start[atom][j])));
+    control: {label: "Bond feature coefficient", min: -0.8, max: 1.6, step: 0.05, value: 0.9},
+    render(coupling) {
+      const {xyz,free,velocities,next,distance} = currentVelocity(coupling);
+      const project = ([x,y,z]) => [79 + 98*x + 23*z, 176 - 100*y + 48*z];
+      const bonds = xyz.slice(1).map((point,i) => line(...project(xyz[i]), ...project(point))).join("");
+      const ghosts = next.map(point => {
+        const [x,y]=project(point);
+        return '<circle cx="'+x+'" cy="'+y+'" r="12" class="target-ring"/>';
       }).join("");
-      const distance = Math.hypot(...current[1].map((v, i) => v - current[2][i])) / 50;
-      return result(label(42, 42, "PROJECTED COORDINATE FRAME", "mute") + guides + bonds(current) + velocities
-        + current.map((p, i) => dot(...p, i === 0 ? "blue" : "aqua", 10) + label(p[0] - 5, p[1] + 32, String(i + 1))).join("")
-        + label(42, 291, "FLOW TIME " + scalar(time) + "    PAIR 2–3 " + scalar(distance) + " TOY UNITS", "mute"),
-        "The anchor is fixed. Projected atoms 2 and 3 are " + scalar(distance) + " toy units apart.",
-        "Arrows show the interpolation velocity. Dashed rings mark target coordinates. Flow time has no physical units.");
+      return {...result(label(42, 42, "3D INPUT PROJECTED TO THE PAGE", "mute") + bonds + ghosts
+        + xyz.map((point,i) => {
+          const from=project(point);
+          return (free[i] ? arrow(...from,...project(point.map((x,j)=>x+1.8*velocities[i][j]))) : "")
+            + dot(...from, free[i] ? "aqua" : "blue", 9) + label(from[0]-5, from[1]+32, String(i+1));
+        }).join("") + label(42, 291, "PAIR 2–3 AFTER STEP  " + scalar(distance,3) + " Å", "mute"),
+        "Atom 1 is fixed. Atom 2 has speed " + scalar(Math.hypot(...velocities[1]),3) + " Å per toy step unit.",
+        "Arrows magnify the velocity. Rings show the Euler update. This diagnostic has no calibrated physical time."),
+        table:{caption:"Current-frame velocities",columns:["Atom","vₓ","vᵧ","v_z","Mask"],
+          rows:velocities.map((v,i)=>[String(i+1),...v.map(x=>scalar(x,3)),free[i]?"Free":"Fixed"])},
+      };
     }
   }
+
 };
 
 function show(name) {
@@ -318,18 +373,55 @@ function show(name) {
   }
   holder.append(pickerLabel, picker);
   if (!control.options) holder.append(output);
+  const secondary = document.createElement("select");
+  if (control.choices) {
+    const secondaryLabel = document.createElement("label");
+    secondary.id = "lab-choice";
+    secondaryLabel.htmlFor = secondary.id;
+    secondaryLabel.textContent = name === "analogy" ? "Reference pairs" : "Terminal step";
+    control.choices.forEach((choice, i) => secondary.add(new Option(choice, i)));
+    holder.append(secondaryLabel, secondary);
+  }
   ui.control.replaceChildren(holder);
   const update = () => {
     output.value = picker.value;
-    const display = method.render(Number(picker.value));
+    const display = method.render(Number(picker.value), Number(secondary.value));
     ui.plot.innerHTML = '<defs><marker id="lab-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6a91a4"/></marker></defs>' + display.figure;
     ui.plot.setAttribute("aria-label", method.title + ". " + display.summary);
     ui.result.textContent = display.summary;
     ui.caption.textContent = display.caption;
+    ui.evidence.replaceChildren();
+    if (display.table) {
+      const table=document.createElement("table");
+      table.createCaption().textContent=display.table.caption;
+      const head=table.createTHead().insertRow();
+      for (const title of display.table.columns) {
+        const cell=document.createElement("th");
+        cell.scope="col";
+        cell.textContent=title;
+        head.append(cell);
+      }
+      const body=table.createTBody();
+      for (const values of display.table.rows) {
+        const row=body.insertRow();
+        for (const value of values) row.insertCell().textContent=value;
+      }
+      ui.evidence.append(table);
+    }
   };
   picker.addEventListener("input", update);
+  secondary.addEventListener("change", update);
   update();
 }
 
-ui.method.addEventListener("change", () => show(ui.method.value));
-show(ui.method.value);
+function selectMethod() {
+  const requested=location.hash.slice(1);
+  ui.method.value=Object.hasOwn(methods,requested) ? requested : "inputs";
+  show(ui.method.value);
+}
+ui.method.addEventListener("change", () => {
+  history.replaceState(null,"","#"+ui.method.value);
+  show(ui.method.value);
+});
+window.addEventListener("hashchange", selectMethod);
+selectMethod();

@@ -1,7 +1,8 @@
-import {weights, makeGraph, runTrace} from "./layer-trace-engine.js";
+import {tensorScene} from "./layer-trace-scene.js";
+import {weights, graphPreset, graphFromInput, runTrace} from "./layer-trace-engine.js";
 
 const names = ["input","strength","strength-value","token","head","channel","steps","progress","prev","next",
-  "title","explanation","equation","numerical","tensors"];
+  "title","explanation","equation","numerical","tensors","map","key","reduction","json","apply","input-status","scene","angle"];
 const ui = Object.fromEntries(names.map(name => [name, document.getElementById("trace-" + name)]));
 const fmt = value => value === -Infinity ? "−∞" : typeof value === "number"
   ? (Math.abs(value) < .00005 ? "0.0000" : value.toFixed(4)) : value;
@@ -13,7 +14,7 @@ function node(tag, content) {
   return item;
 }
 function matrix(title, values, {rows = [], cols = columns(values[0].length), selected = -1, channel = -1,
-  winner = -1, weight = false} = {}) {
+  winners = [], weight = false} = {}) {
   const figure = node("figure");
   figure.className = "trace-matrix" + (weight ? " is-weights" : "");
   figure.append(node("figcaption", title + " · " + values.length + " × " + values[0].length));
@@ -33,7 +34,7 @@ function matrix(title, values, {rows = [], cols = columns(values[0].length), sel
   values.forEach((row, i) => {
     const tr = body.insertRow();
     if (i === selected) tr.className = "is-selected";
-    if (i === winner) tr.classList.add("is-winner");
+    if (winners.includes(i)) tr.classList.add("is-winner");
     const th = node("th", rows[i] ?? String(i + 1));
     th.scope = "row";
     tr.append(th);
@@ -87,7 +88,16 @@ const layerSteps = [
   {title:"Max-plus queries, keys, and values", text:"Each head applies the same three learned head-local matrices to its own slice. For each output coordinate, add each input coordinate to its projection weight and take the maximum.",
     equation:"qᵢⱼ = maxᵣ(zᵢᵣ + WQⱼᵣ), with the same operation for K and V",render(c) {
       const terms=c.head.z[c.query].map((value,i)=>value+c.parameters.query[c.channel][i]);
+      const ops = [
+        ["Q at query", c.query, c.parameters.query],
+        ["K at key", c.key, c.parameters.key],
+        ["V at key", c.key, c.parameters.value],
+      ];
       return ["Selected query channel = max " + showRow(terms) + " = " + fmt(Math.max(...terms)) + ".",
+        matrix("Max-plus terms for selected channel", ops.map(([,row,w]) => {
+          const terms = c.head.z[row].map((value, i) => value + w[c.channel][i]);
+          return [...terms, Math.max(...terms)];
+        }), {rows:ops.map(([name]) => name),cols:["z₁ + W₁","z₂ + W₂","maximum"]}),
         matrix("Query weights shared by heads",c.parameters.query,{weight:true,selected:c.channel}),
         matrix("Key weights shared by heads",c.parameters.key,{weight:true}),
         matrix("Value weights shared by heads",c.parameters.value,{weight:true}),
@@ -96,16 +106,21 @@ const layerSteps = [
   {title:"Hilbert scores and key mask", text:"Subtract each key vector from the selected query. Negate the range across head-local channels. The padding key receives negative infinity, so it cannot win the reduction.",
     equation:"sᵢⱼ = minᵣ(qᵢᵣ − kⱼᵣ) − maxᵣ(qᵢᵣ − kⱼᵣ)",render(c) {
       const terms=c.head.differences[c.query].map((diff,i)=>[...diff,Math.min(...diff),Math.max(...diff),c.graph.valid[i]?"valid":"masked",c.head.scores[c.query][i]]);
-      return ["Query " + c.graph.tokens[c.query] + " = " + showRow(c.head.q[c.query]) + ".",
-        matrix("Selected query versus each key",terms,{rows:c.graph.tokens,cols:["difference 1","difference 2","min","max","key mask","score"]}),
+      const diff=c.head.differences[c.query][c.key];
+      const score=c.head.scores[c.query][c.key];
+      return ["Selected Q − K = " + showRow(diff) + ". "
+        + (c.graph.valid[c.key] ? "Score = " + fmt(Math.min(...diff)) + " − " + fmt(Math.max(...diff)) + " = " + fmt(score) + "." : "Key mask sets the score to −∞."),
+        matrix("Selected query versus each key",terms,{rows:c.graph.tokens,selected:c.key,cols:["difference 1","difference 2","min","max","key mask","score"]}),
         matrix("All scores for the selected head",c.head.scores,{rows:c.graph.tokens,cols:c.graph.tokens,selected:c.query})];
     }},
-  {title:"Max-plus context per channel", text:"Add the query–key score to each value channel. A channel selects its own maximizing key. In a tie, the highlighted key is the first maximizer in token order.",
+  {title:"Max-plus context per channel", text:"Add the query–key score to each value channel. A channel has its own maximizing keys. Every exact tie is highlighted. The blockwise variant first reduces within each key block, then merges those maxima.",
     equation:"cᵢᵣ = maxⱼ(sᵢⱼ + vⱼᵣ)",render(c) {
       const candidates=c.head.candidates[c.query], max=c.head.context[c.query][c.channel];
-      const winner=candidates.findIndex(row=>row[c.channel]===max);
-      return ["Channel " + (c.channel+1) + " selects " + c.graph.tokens[winner] + " at " + fmt(max) + ".",
-        matrix("Score-plus-value candidates",candidates,{rows:c.graph.tokens,channel:c.channel,winner}),
+      const winners=candidates.flatMap((row, i) => row[c.channel] === max ? [i] : []);
+      const blocks=c.head.blocks[c.query];
+      return ["Channel " + (c.channel+1) + " reaches " + fmt(max) + " at " + winners.map(i => c.graph.tokens[i]).join(", ") + ".",
+        matrix("Score-plus-value candidates",candidates,{rows:c.graph.tokens,selected:c.key,channel:c.channel,winners}),
+        matrix("Partial maximum by key block",blocks,{channel:c.channel}),
         matrix("Reduced context",c.head.context,c.tokenRows)];
     }},
   {title:"Join heads, decode, project, and add", text:"Concatenate the two contexts in head order, then apply expm1 and a bias-free output projection. Add the result to the layer input on the residual path.",
@@ -160,16 +175,78 @@ steps.push({title:"Illustrative graph readout",text:"A demonstration linear read
   }});
 
 let index = 0, graph, trace;
-const buttons = steps.map((step, i) => {
-  const button=node("button",String(i+1).padStart(2,"0")+" · "+(step.layer===undefined?"":"L"+(step.layer+1)+" ")+step.title);
-  button.type="button";
-  button.addEventListener("click",()=>select(i,true));
+const routes = [
+  [0, "Embed", n => n + " × 4"],
+  ...[0, 1].flatMap(layer => {
+    const first = 1 + layer * layerSteps.length;
+    return [
+      [first, "Norm", n => n + " × 4"],
+      [first + 1, "Split heads", n => "2 × " + n + " × 2"],
+      [first + 2, "Q / K / V", n => "3 × 2 × " + n + " × 2"],
+      [first + 3, "Score", n => "2 × " + n + " × " + n],
+      [first + 4, "Reduce", n => "2 × " + n + " × 2"],
+      [first + 5, "Merge + skip", n => n + " × 4"],
+      [first + 6, "Norm", n => n + " × 4"],
+      [first + 7, "FFN + skip", n => n + " × 6 → 4"],
+    ];
+  }),
+  [17, "Final norm", n => n + " × 4"],
+  [18, "Readout", () => "scalar"],
+];
+const makeButton = (i, label) => {
+  const button = node("button", label);
+  button.type = "button";
+  button.addEventListener("click", () => select(i, true));
   return button;
-});
+};
+const buttons = steps.map((step, i) =>
+  makeButton(i, String(i+1).padStart(2,"0") + " · " + (step.layer === undefined ? "" : "L" + (step.layer+1) + " ") + step.title));
 ui.steps.replaceChildren(...buttons);
-
+const mapButtons = routes.map(([i, label]) => {
+  const button = makeButton(i, label);
+  const shape = node("small");
+  button.append(shape);
+  return {button, shape};
+});
+for (const [name, from, to] of [["Input", 0, 1], ["Layer 1", 1, 9], ["Layer 2", 9, 17], ["Output", 17, 19]]) {
+  const row = node("div");
+  const track = node("div");
+  row.className = "trace-map-row";
+  track.className = "trace-map-track";
+  track.append(...mapButtons.slice(from, to).map(item => item.button));
+  row.append(node("strong", name), track);
+  ui.map.append(row);
+}
+function drawScene() {
+  const layer=trace.layers[steps[index].layer];
+  const query=Number(ui.token.value), key=Number(ui.key.value);
+  const head=Number(ui.head.value), channel=Number(ui.channel.value);
+  const row=(label,values)=>[{label,values,selection:[query]}];
+  const view=layer ? (index-1)%layerSteps.length : -1;
+  let tensors;
+  if (view>=1 && view<=4) {
+    const heads=layer.attention.heads;
+    if (view===2) {
+      tensors=["q","k","v"].map(name=>({label:"H"+(head+1)+" "+name.toUpperCase(),values:heads[head][name],
+        head,selection:[name==="q"?query:key,channel]}));
+    } else {
+      const name=["","z","","scores","context"][view];
+      tensors=heads.map((values,i)=>({label:"H"+(i+1)+" "+name,values:values[name],head:i,
+        selection:i===head?[query,view===3?key:channel]:null,
+        mask:view===3?(_,c)=>!graph.valid[c]:null}));
+    }
+  } else if (layer) {
+    const [label,values]=({0:["Norm 1",layer.firstNorm.values],5:["Residual",layer.residual],
+      6:["Norm 2",layer.secondNorm.values],7:["Layer output",layer.output]})[view];
+    tensors=row(label,values);
+  } else {
+    tensors=index===0?row("Token embeddings",trace.input):index===steps.length-1
+      ? [{label:"Graph readout",values:[[trace.readout]],selection:[0,0]}] : row("Final states",trace.masked);
+  }
+  tensorScene(ui.scene,tensors,head,Number(ui.angle.value));
+}
 function render() {
-  const step=steps[index], query=Number(ui.token.value), channel=Number(ui.channel.value);
+  const step=steps[index], query=Number(ui.token.value), key=Number(ui.key.value), channel=Number(ui.channel.value);
   const title=(step.layer===undefined?"":"Layer "+(step.layer+1)+" · ")+step.title;
   const layer=trace.layers[step.layer];
   ui.title.textContent=title;
@@ -179,31 +256,63 @@ function render() {
   ui.prev.disabled=index===0;
   ui.next.disabled=index===steps.length-1;
   const tokenRows={rows:graph.tokens,selected:query};
-  const [note,...figures]=step.render({graph,trace,query,channel,layer,tokenRows,
+  const [note,...figures]=step.render({graph,trace,query,key,channel,layer,tokenRows,
     parameters:weights.layers[step.layer],head:layer?.attention.heads[Number(ui.head.value)]});
   ui.numerical.textContent=note;
   ui.tensors.replaceChildren(...figures);
+  drawScene();
 }
 function select(i, focus=false) {
   index=i;
-  buttons.forEach((button,j)=>{if(j===i)button.setAttribute("aria-current","step");else button.removeAttribute("aria-current");});
+  for (const group of [buttons, mapButtons.map(item => item.button)]) {
+    group.forEach((button,j)=>{if(j===i)button.setAttribute("aria-current","step");else button.removeAttribute("aria-current");});
+  }
   render();
-  if(focus)ui.title.focus({preventScroll:window.innerWidth>760});
+  if(focus) {
+    history.replaceState(null, "", "#step-" + (i + 1));
+    ui.title.focus({preventScroll:window.innerWidth>760});
+  }
 }
-function recompute() {
-  const prior=Number(ui.token.value);
+function runGraph(next) {
+  graph = next;
+  trace = runTrace(graph, ui.reduction.value === "full" ? graph.tokens.length : Number(ui.reduction.value));
+  for (const select of [ui.token, ui.key]) {
+    const prior=Number(select.value);
+    select.replaceChildren(...graph.tokens.map((token,i)=>new Option(token,i)));
+    select.value=Math.min(prior,graph.tokens.length-1);
+  }
+  mapButtons.forEach(({shape}, i) => { shape.textContent = routes[i][2](graph.tokens.length); });
+  render();
+}
+function preset() {
   const strength=Number(ui.strength.value);
   ui["strength-value"].value=strength.toFixed(2);
-  graph=makeGraph(ui.input.value,strength);
-  trace=runTrace(graph);
-  ui.token.replaceChildren(...graph.tokens.map((token,i)=>new Option(token,i)));
-  ui.token.value=Math.min(prior,graph.tokens.length-1);
-  render();
+  const input=graphPreset(ui.input.value,strength);
+  ui.json.value=JSON.stringify(input,null,2);
+  ui["input-status"].textContent="";
+  runGraph(graphFromInput(input));
 }
+ui.apply.addEventListener("click", () => {
+  try {
+    const input = JSON.parse(ui.json.value);
+    const next = graphFromInput(input ?? {});
+    runGraph(next);
+    ui["input-status"].textContent = "Custom graph applied.";
+  } catch (error) {
+    ui["input-status"].textContent = error instanceof SyntaxError ? "Enter valid JSON. The previous graph is still shown." : error.message;
+  }
+});
+ui.angle.addEventListener("input",drawScene);
 ui.prev.addEventListener("click",()=>select(index-1,true));
 ui.next.addEventListener("click",()=>select(index+1,true));
-ui.input.addEventListener("change",recompute);
-ui.strength.addEventListener("input",recompute);
-[ui.token,ui.head,ui.channel].forEach(control=>control.addEventListener("change",render));
-recompute();
-select(0);
+ui.input.addEventListener("change",preset);
+ui.strength.addEventListener("input",preset);
+ui.reduction.addEventListener("change",()=>runGraph(graph));
+[ui.token,ui.key,ui.head,ui.channel].forEach(control=>control.addEventListener("change",render));
+function fromHash() {
+  const requested = Number(location.hash.match(/^#step-(\d+)$/)?.[1]);
+  select(requested >= 1 && requested <= steps.length ? requested - 1 : 0);
+}
+preset();
+fromHash();
+window.addEventListener("hashchange", fromHash);

@@ -6,8 +6,8 @@
   <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="architecture-3d.html">3D atlas</a><span aria-hidden="true">/</span><span aria-current="page">Layer trace</span></nav>
   <p class="eyebrow">Architecture internals · Computed example</p>
   <h1>Inside a tropical layer</h1>
-  <p class="lead">Follow one graph through two TokenGT encoder layers. Select a head, token, and channel to see how each intermediate value is computed.</p>
-  <p>All parameters are fixed demonstration values. The trace implements the finite tropical code path and exposes the full intermediate tensors for this example.</p>
+  <p class="lead">Follow a graph through two TokenGT encoder layers. Open any computation in the tensor map, then select a head, query, key, and channel to inspect the arithmetic.</p>
+  <p>The browser computes a 4-channel, 2-head miniature with fixed demonstration weights. The equations follow the finite tropical code path. The wider model and its task heads have separate training configurations.</p>
 </header>
 <div class="trace" data-trace>
   <aside class="trace-controls" aria-label="Trace inputs">
@@ -16,19 +16,34 @@
     <select id="trace-input"><option value="junction">Two cells and a junction</option><option value="chain">Three-cell chain</option><option value="contact">Protein contact motif</option></select>
     <label for="trace-strength">First edge feature <output for="trace-strength" id="trace-strength-value"></output></label>
     <input id="trace-strength" type="range" min="-1" max="1" step=".05" value=".4">
+    <details class="trace-custom"><summary>Edit graph input</summary>
+      <label for="trace-json">Node names, directed edges and feature rows as JSON</label>
+      <textarea id="trace-json" rows="8" spellcheck="false" autocapitalize="off"></textarea>
+      <button type="button" id="trace-apply">Apply graph</button>
+      <p id="trace-input-status" role="status"></p>
+    </details>
     <label for="trace-token">Query or selected token</label>
     <select id="trace-token"></select>
+    <label for="trace-key">Key token to inspect</label>
+    <select id="trace-key"></select>
     <label for="trace-head">Tropical head</label>
     <select id="trace-head"><option value="0">Head 1 · channels 1–2</option><option value="1">Head 2 · channels 3–4</option></select>
     <label for="trace-channel">Head-local channel</label>
     <select id="trace-channel"><option value="0">Channel 1</option><option value="1">Channel 2</option></select>
-    <nav id="trace-steps" class="trace-steps" aria-label="Computation steps"></nav>
+    <label for="trace-reduction">Key reduction</label>
+    <select id="trace-reduction"><option value="full">All keys together</option><option value="2">Blockwise · 2 keys per block</option></select>
+    <details class="trace-index"><summary>All computation steps</summary><nav id="trace-steps" class="trace-steps" aria-label="Computation steps"></nav></details>
   </aside>
   <section class="trace-work" aria-labelledby="trace-title">
+    <nav id="trace-map" class="trace-map" aria-label="Tensor flow by layer"></nav>
     <div class="trace-toolbar"><span id="trace-progress"></span><div><button type="button" id="trace-prev">← Back</button><button type="button" id="trace-next">Next →</button></div></div>
     <h2 id="trace-title" tabindex="-1"></h2>
     <p id="trace-explanation" class="trace-explanation"></p>
     <p id="trace-equation" class="trace-equation"></p>
+    <figure class="trace-scene">
+      <svg id="trace-scene" viewBox="0 0 740 204" role="img"></svg>
+      <figcaption><label for="trace-angle">Orbit tensor grids</label><input id="trace-angle" type="range" min="-45" max="45" step="1" value="-16"><span>Height shows magnitude. Green marks the selected cells. Gray marks masked keys.</span></figcaption>
+    </figure>
     <div id="trace-numerical" class="trace-numerical" aria-live="polite"></div>
     <div id="trace-tensors" class="trace-tensors"></div>
   </section>

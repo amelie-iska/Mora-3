@@ -66,18 +66,41 @@ const presets = {
   contact: {nodes: ["residue A", "residue B", "residue C"], edges: [[0, 1], [0, 2], [2, 1]], nodeFeatures: [[.9, .2], [.1, .8], [.4, -.3]]},
 };
 
-export function makeGraph(name, edgeStrength) {
-  const preset = presets[name];
-  const {nodes, edges, nodeFeatures} = preset;
+export function graphPreset(name, edgeStrength) {
+  const {nodes, edges, nodeFeatures} = presets[name];
+  const edgeFeatures = edges.map((_, i) => [i === 0 ? edgeStrength : .15 * (i + 1), .25 - i * .2]);
+  return {nodes, edges, nodeFeatures, edgeFeatures};
+}
+
+export function graphFromInput({nodes, edges, nodeFeatures, edgeFeatures}) {
+  const validFeature = row => Array.isArray(row) && row.length === 2
+    && row.every(value => Number.isFinite(value) && Math.abs(value) <= 4);
+  if (!Array.isArray(nodes) || nodes.length < 1 || nodes.length > 3
+      || nodes.some(name => typeof name !== "string" || !name.trim() || name.length > 24 || /^\[(GRAPH|PAD)\]$/.test(name))
+      || new Set(nodes).size !== nodes.length) {
+    throw new Error("Use 1–3 distinct node names of 1–24 characters.");
+  }
+  if (!Array.isArray(edges) || edges.length > 5 || edges.some(edge => !Array.isArray(edge)
+      || edge.length !== 2 || edge.some(index => !Number.isInteger(index) || index < 0 || index >= nodes.length))) {
+    throw new Error("Use 0–5 edges with two valid zero-based node indices each.");
+  }
+  if (!Array.isArray(nodeFeatures) || nodeFeatures.length !== nodes.length || !nodeFeatures.every(validFeature)
+      || !Array.isArray(edgeFeatures) || edgeFeatures.length !== edges.length || !edgeFeatures.every(validFeature)) {
+    throw new Error("Supply two finite features between −4 and 4 for each node and edge.");
+  }
   const identifiers = nodes.map((_, i) => Array.from({length: 3}, (__, j) => +(i === j)));
-  const features = [...nodeFeatures, ...edges.map((_, i) => [i === 0 ? edgeStrength : .15 * (i + 1), .25 - i * .2])];
+  const features = [...nodeFeatures, ...edgeFeatures];
   const endpoints = [...nodes.map((_, i) => [i, i]), ...edges];
   const roles = [...nodes.map(() => 0), ...edges.map(() => 1)];
   const tokens = ["[GRAPH]", ...nodes, ...edges.map(([a, b]) => nodes[a] + " → " + nodes[b]), "[PAD]"];
   return {tokens, features, endpoints, roles, identifiers, valid: tokens.map((_, i) => i < tokens.length - 1)};
 }
 
-function runAttention(rows, valid, parameters) {
+export function makeGraph(name, edgeStrength) {
+  return graphFromInput(graphPreset(name, edgeStrength));
+}
+
+function runAttention(rows, valid, parameters, blockSize) {
   const logValues = rows.map(row => row.map(x => Math.log1p(Math.max(x, 0))));
   const heads = [0, 1].map(head => {
     const start = head * headWidth;
@@ -87,8 +110,12 @@ function runAttention(rows, valid, parameters) {
     const scores = differences.map(row => row.map((diff, i) =>
       valid[i] ? Math.min(...diff) - Math.max(...diff) : -Infinity));
     const candidates = scores.map(row => row.map((score, i) => v[i].map(x => score + x)));
-    const context = candidates.map(row => [0, 1].map(channel => Math.max(...row.map(values => values[channel]))));
-    return {z, q, k, v, differences, scores, candidates, context};
+    const maxima = rows => Array.from({length: headWidth}, (_, channel) =>
+      Math.max(...rows.map(values => values[channel])));
+    const blocks = candidates.map(row => Array.from({length: Math.ceil(row.length / blockSize)}, (_, i) =>
+      maxima(row.slice(i * blockSize, (i + 1) * blockSize))));
+    const context = blocks.map(maxima);
+    return {z, q, k, v, differences, scores, candidates, blocks, context};
   });
   const concatenated = rows.map((_, i) => heads.flatMap(head => head.context[i]));
   const decoded = concatenated.map(row => row.map(Math.expm1));
@@ -96,7 +123,7 @@ function runAttention(rows, valid, parameters) {
   return {logValues, heads, concatenated, decoded, output};
 }
 
-export function runTrace(graph) {
+export function runTrace(graph, blockSize = graph.tokens.length) {
   const incidence = graph.endpoints.map(pair => pair.flatMap(node => graph.identifiers[node]));
   const features = linear(graph.features, weights.feature);
   const incidences = linear(incidence, weights.incidence);
@@ -106,7 +133,7 @@ export function runTrace(graph) {
   let rows = input;
   const layers = weights.layers.map(parameters => {
     const firstNorm = normalize(rows, parameters.norm1);
-    const attention = runAttention(firstNorm.values, graph.valid, parameters);
+    const attention = runAttention(firstNorm.values, graph.valid, parameters, blockSize);
     const residual = rows.map((row, i) => add(row, attention.output[i]));
     const secondNorm = normalize(residual, parameters.norm2);
     const ffnPre = linear(secondNorm.values, parameters.ffnIn, parameters.ffnInBias);

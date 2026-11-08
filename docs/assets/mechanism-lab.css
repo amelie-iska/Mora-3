@@ -54,3 +54,18 @@
 
 .lab-envelope { fill: var(--lab-envelope-fill, #c7954833); stroke: #b88236; stroke-dasharray: 4 3; }
 .lab-envelope.stable { fill: #4f9c8533; stroke: #4f9c85; }
+
+.lab-mixture { stroke: var(--blue, #70b8ec); stroke-width: 2.5; }
+
+.cartesian-walkthrough { margin-top: 1.5rem; padding: clamp(.8rem, 3vw, 1.6rem); border: 1px solid var(--line); border-radius: .75rem; overflow-wrap: anywhere; }
+.cartesian-controls { min-inline-size: 0; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 13rem),1fr)); gap: .85rem; border: 1px solid var(--line); }
+.cartesian-controls label { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.cartesian-controls label:last-child { flex-direction: row; align-items: center; }
+.cartesian-controls select { width: 100%; }
+.cartesian-head-table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+.cartesian-head-table th, .cartesian-head-table td { padding: .5rem .4rem; border-bottom: 1px solid var(--line); text-align: left; }
+.cartesian-measures { display: grid; gap: .3rem 1rem; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.cartesian-measures dd { margin: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 500px) {
+  .cartesian-head-table th, .cartesian-head-table td { padding: .35rem .2rem; }
+}

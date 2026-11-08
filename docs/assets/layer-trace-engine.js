@@ -136,16 +136,31 @@ function tropicalAttention(rows, valid, parameters, blockSize) {
 const zeros = (rows, cols) => Array.from({length: rows}, () => Array(cols).fill(0));
 const extremum = (values, reduce) => values.indexOf(reduce(...values));
 
-// Reverse one selected residual scalar. Indices match torch.max/min's first
-// winner, including an exact tie between keys from different blocks.
-export function tropicalResidualGradient(layer, parameters, query, channel) {
+const transposeMultiply = (gradient, weights) => weights[0].map((_, i) =>
+  gradient.reduce((total, value, j) => total + value * weights[j][i], 0));
+
+function normGradient(input, normalized, parameters, gradient) {
+  return input.map((row, token) => {
+    const [mean, variance] = normalized.stats[token];
+    const std = Math.sqrt(variance + epsilon);
+    const standardized = row.map(value => (value - mean) / std);
+    const gained = gradient[token].map((value, i) => value * parameters.gamma[i]);
+    const average = gained.reduce((sum, value) => sum + value, 0) / width;
+    const projection = dot(gained, standardized) / width;
+    return gained.map((value, i) => (value - average - standardized[i] * projection) / std);
+  });
+}
+
+function tropicalAttentionGradient(layer, parameters, gradient) {
   const attention = layer.attention;
   const heads = attention.heads.map((head, h) => {
     const count = head.z.length;
     const [dq, dk, dv, dz] = Array.from({length: 4}, () => zeros(count, headWidth));
-    const routes = head.context[query].map((context, output) => {
+    const routes = head.context.map((row, query) => row.map((context, output) => {
       const global = h * headWidth + output;
-      const seed = parameters.output[channel][global] * Math.exp(context);
+      const decode = Math.exp(context);
+      const seed = gradient[query][global] * decode;
+      // torch.max/min select the first index. Blocks retain the first winner on ties.
       const key = head.candidates[query].findIndex(row => row[output] === context);
       const difference = head.differences[query][key];
       const lo = extremum(difference, Math.min), hi = extremum(difference, Math.max);
@@ -154,10 +169,10 @@ export function tropicalResidualGradient(layer, parameters, query, channel) {
       dk[key][lo] -= seed;
       dk[key][hi] += seed;
       dv[key][output] += seed;
-      return {key, lo, hi, seed, weight: parameters.output[channel][global], decode: Math.exp(context)};
-    });
-    for (const [gradient, projection] of [[dq, parameters.query], [dk, parameters.key], [dv, parameters.value]]) {
-      gradient.forEach((row, token) => row.forEach((value, output) => {
+      return {key, lo, hi, seed, decode};
+    }));
+    for (const [derivative, projection] of [[dq, parameters.query], [dk, parameters.key], [dv, parameters.value]]) {
+      derivative.forEach((row, token) => row.forEach((value, output) => {
         const terms = projection[output].map((weight, i) => weight + head.z[token][i]);
         dz[token][extremum(terms, Math.max)] += value;
       }));
@@ -166,17 +181,50 @@ export function tropicalResidualGradient(layer, parameters, query, channel) {
   });
   const normalized = layer.firstNorm.values.map((row, token) => row.map((value, i) =>
     value > 0 ? heads[Math.floor(i / headWidth)].dz[token][i % headWidth] / (1 + value) : 0));
-  const residual = layer.input.map((row, token) => {
-    const [mean, variance] = layer.firstNorm.stats[token];
-    const std = Math.sqrt(variance + epsilon);
-    const standardized = row.map(value => (value - mean) / std);
-    const gained = normalized[token].map((value, i) => value * parameters.norm1.gamma[i]);
-    const average = gained.reduce((sum, value) => sum + value, 0) / width;
-    const projection = dot(gained, standardized) / width;
-    return gained.map((value, i) =>
-      (value - average - standardized[i] * projection) / std + Number(token === query && i === channel));
+  return {heads, normalized};
+}
+
+function denseAttentionGradient(layer, parameters, gradient) {
+  const {heads, scale} = layer.attention;
+  const count = gradient.length;
+  const packed = zeros(count, 3 * width);
+  heads.forEach((head, h) => {
+    const start = h * headWidth;
+    head.context.forEach((context, query) => {
+      const incoming = gradient[query].slice(start, start + headWidth);
+      // Softmax JVP: p * (dL/dp − E_p[dL/dp]).
+      const average = dot(incoming, context);
+      head.probabilities[query].forEach((probability, key) => {
+        const scoreGradient = probability * (dot(incoming, head.v[key]) - average);
+        incoming.forEach((g, channel) => {
+          const i = start + channel;
+          packed[query][i] += scoreGradient * scale * head.k[key][channel];
+          packed[key][width + i] += scoreGradient * head.scaled[query][channel];
+          packed[key][2 * width + i] += probability * g;
+        });
+      });
+    });
   });
-  return {heads, normalized, residual};
+  return {normalized: packed.map(row => transposeMultiply(row, parameters.dense.qkv))};
+}
+
+function attentionResidualGradient(layer, parameters, upstream, kind) {
+  const projection = kind === "dense" ? parameters.dense.output : parameters.output;
+  const joined = upstream.map(row => transposeMultiply(row, projection));
+  const {heads, normalized} = kind === "dense"
+    ? denseAttentionGradient(layer, parameters, joined)
+    : tropicalAttentionGradient(layer, parameters, joined);
+  const input = normGradient(layer.input, layer.firstNorm, parameters.norm1, normalized);
+  return {heads, normalized, residual: input.map((row, i) => add(row, upstream[i]))};
+}
+
+export function tropicalResidualGradient(layer, parameters, query, channel) {
+  const upstream = zeros(layer.input.length, width);
+  upstream[query][channel] = 1;
+  const result = attentionResidualGradient(layer, parameters, upstream, "tropical");
+  return {...result, heads: result.heads.map((head, h) => ({...head,
+    routes: head.routes[query].map((route, c) => ({...route, weight: parameters.output[channel][h * headWidth + c]})),
+  }))};
 }
 
 function denseAttention(rows, valid, {qkv, qkvBias, output, outputBias}, attnMult) {
@@ -262,4 +310,40 @@ export function runTrace(graph, blockSize = graph.tokens.length, {kind = "tropic
   const [predictions] = linear([scaledContext], head.weights, head.bias);
   return {incidence, features, incidences, roles, input, layers, final, masked,
     affinity: {contextScale, scaledContext, predictions}};
+}
+
+// Differentiate the shared-context synthetic objective through both encoder layers.
+export function affinityLossGradient(trace, coverage, kind) {
+  const objective = affinityObjective(trace.affinity.predictions, coverage);
+  if (objective.total === null) return null;
+  const output = objective.rows.map(row => {
+    if (!row.active) return 0;
+    const count = objective.rows.filter(other => other.active && other.group === row.group).length;
+    const multiplier = row.group === "teacher" ? feedbackWeight : 1;
+    return 2 * multiplier * row.residual / (row.scale * count);
+  });
+  const context = transposeMultiply(output, weights.affinity.weights)
+    .map(value => value * trace.affinity.contextScale);
+  const finalOutput = zeros(trace.masked.length, width);
+  finalOutput[0] = context;
+  const finalInput = normGradient(trace.layers.at(-1).output, trace.final, weights.finalNorm, finalOutput);
+  let upstream = finalInput;
+  const layers = [];
+  for (let i = trace.layers.length - 1; i >= 0; i -= 1) {
+    const layer = trace.layers[i];
+    const parameters = weights.layers[i];
+    const hidden = upstream.map((row, token) => transposeMultiply(row, parameters.ffnOut).map((g, j) => {
+      const x = layer.ffnPre[token][j];
+      return g * (cdf(x) + x * Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI));
+    }));
+    const ffnInput = hidden.map(row => transposeMultiply(row, parameters.ffnIn));
+    const ffnNorm = normGradient(layer.residual, layer.secondNorm, parameters.norm2, ffnInput);
+    const postAttention = ffnNorm.map((row, j) => add(row, upstream[j]));
+    const attention = attentionResidualGradient(layer, parameters, postAttention, kind);
+    layers.push({index: i, output: upstream, hidden, postAttention,
+      normalized: attention.normalized, input: attention.residual});
+    upstream = attention.residual;
+  }
+  const feature = upstream.slice(1, -1).map(row => transposeMultiply(row, weights.feature));
+  return {output, context, finalInput, layers, embedding: upstream, feature};
 }

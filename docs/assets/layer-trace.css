@@ -99,3 +99,9 @@
 .trace-reverse summary { cursor: pointer; font-weight: 650; }
 .trace-reverse li { margin-block: .45rem; }
 .trace-reverse .trace-matrix { margin-block: .8rem; }
+
+.trace-reverse label { display: grid; gap: .35rem; max-width: 32rem; }
+.trace-reverse select { max-width: 100%; }
+
+.trace-loss-phase .trace-positive { color: var(--mint, #81e2b1); }
+.trace-loss-phase .trace-negative { color: var(--amber, #e8b96d); }

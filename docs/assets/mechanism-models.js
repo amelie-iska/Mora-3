@@ -122,9 +122,10 @@ export function topologyComparison(radius, scenario=0) {
 
 export function referenceEnvelope(origin, deltas, scale, selected, eligible) {
   if (deltas.length < 2 || !selected) return null;
-  const bounds = origin.map((value, i) => {
-    const endpoints = deltas.map(delta => value + scale * delta[i]);
-    return [Math.min(...endpoints), Math.max(...endpoints)];
+  const transfers = deltas.map(delta => origin.map((value, i) => value + scale * delta[i]));
+  const bounds = origin.map((_, i) => {
+    const coordinates = transfers.map(transfer => transfer[i]);
+    return [Math.min(...coordinates), Math.max(...coordinates)];
   });
   const center = bounds.map(([lo, hi]) => (lo + hi) / 2);
   const radii = bounds.map(([lo, hi]) => (hi - lo) / 2);
@@ -135,9 +136,14 @@ export function referenceEnvelope(origin, deltas, scale, selected, eligible) {
     const gap = squaredDistance(candidate.state, center) - squaredDistance(selected.state, center);
     const sensitivity = subtract(candidate.state, selected.state)
       .reduce((sum, value, i) => sum + 2 * Math.abs(value) * radii[i], 0);
-    return {id: candidate.id, minGap: gap - sensitivity, maxGap: gap + sensitivity};
+    // A difference of squared Euclidean distances is affine in q. Over
+    // convex mixtures of complete paired displacements, extrema occur at a vertex.
+    const mixtureGaps = transfers.map(q => squaredDistance(candidate.state, q) - squaredDistance(selected.state, q));
+    return {id: candidate.id, minGap: gap - sensitivity, maxGap: gap + sensitivity,
+      minMixtureGap: Math.min(...mixtureGaps), maxMixtureGap: Math.max(...mixtureGaps)};
   });
-  return {bounds, rivals, robust: rivals.every(rival => rival.minGap > 1e-12)};
+  return {bounds, transfers, rivals, robust: rivals.every(rival => rival.minGap > 1e-12),
+    mixtureRobust: rivals.every(rival => rival.minMixtureGap > 1e-12)};
 }
 
 export function analogy(scale, referenceMode, scenario = 0) {
@@ -296,29 +302,40 @@ export function trajectory(logReward, length) {
   return {states, terms, stop, balance, logZ, pathSum};
 }
 
-const rotateQuarterTurn = ([x,y,z]) => [x,-z,y];
+const transforms = [
+  xyz => xyz,
+  ([x,y,z]) => [x,-z,y],
+  ([x,y,z]) => [x,y,-z],
+];
+const signedVolume = ([a,b,c,d]) => {
+  const [u,v,w] = [b,c,d].map(point => subtract(point,a));
+  return (u[0]*(v[1]*w[2]-v[2]*w[1]) + u[1]*(v[2]*w[0]-v[0]*w[2]) + u[2]*(v[0]*w[1]-v[1]*w[0])) / 6;
+};
 
 export function currentVelocity(coupling, frame = 0) {
   const original = [[0, 0, .1], [1.36, .55, -.18], [2.47, -.28, .28], [3.75, .57, -.1]];
-  // Proper rotation about the chain axis, plus a frame translation.
-  const xyz = frame ? original.map(point => rotateQuarterTurn(point).map((value,i)=>value+[.1,-.35,.15][i])) : original;
+  const xyz = original.map(point => transforms[frame](point).map((value,i)=>
+    value + (frame === 1 ? [.1,-.35,.15][i] : 0)));
   const free = [false, true, true, true];
   const pairs = xyz.map((point, i) => xyz.map((neighbor, j) => {
     const relative = subtract(neighbor, point);
     const distance = norm(relative);
     const bonded = Math.abs(i-j) === 1;
-    const coefficient = .18 * Math.exp(-distance) + (bonded ? coupling : 0);
-    return {relative, distance, bonded, coefficient, weighted: relative.map(value => coefficient * value)};
+    const distanceFeature = Math.exp(-distance);
+    const terms = [.18 * distanceFeature, bonded ? coupling : 0];
+    const coefficient = terms[0] + terms[1];
+    return {relative, distance, distanceFeature, bonded, terms, coefficient, weighted: relative.map(value => coefficient * value)};
   }));
   const velocities = pairs.map((row, i) => free[i] ? average(row.map(pair => pair.weighted)) : [0,0,0]);
   const next = xyz.map((point, i) => point.map((value, j) => value + .4 * velocities[i][j]));
-  return {xyz, free, pairs, velocities, next, distance: norm(subtract(next[1], next[2]))};
+  return {xyz, free, pairs, velocities, next, signedVolume: signedVolume(next),
+    distance: norm(subtract(next[1], next[2]))};
 }
 
-export function frameComparison(coupling) {
+export function frameComparison(coupling, frame = 1) {
   const original = currentVelocity(coupling);
-  const transformed = currentVelocity(coupling,1);
-  const velocityError = Math.max(...original.velocities.map((v,i)=>norm(subtract(rotateQuarterTurn(v),transformed.velocities[i]))));
+  const transformed = currentVelocity(coupling,frame);
+  const velocityError = Math.max(...original.velocities.map((v,i)=>norm(subtract(transforms[frame](v),transformed.velocities[i]))));
   const distanceError = Math.max(...original.next.flatMap((p,i)=>original.next.slice(i+1).map((q,j)=>
     Math.abs(norm(subtract(p,q)) - norm(subtract(transformed.next[i],transformed.next[i+j+1]))))));
   return {original, transformed, velocityError, distanceError};

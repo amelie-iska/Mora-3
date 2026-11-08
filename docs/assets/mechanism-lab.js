@@ -1,6 +1,7 @@
 import {analogy, sourceMotif, trajectory, frameComparison, segmentBytes, hilbertTerms, hilbertScore, ripsAt, ripsLoopIntervals, topologyComparison, boltzmannStates, coolingTemperatures, energyExamples} from "./mechanism-models.js";
+import {renderCartesianWalkthrough} from "./cartesian-walkthrough.js";
 
-const ui = Object.fromEntries(["method", "title", "status", "description", "formula", "control", "result", "source", "plot", "caption", "evidence"]
+const ui = Object.fromEntries(["method", "title", "status", "description", "formula", "control", "result", "source", "plot", "caption", "evidence", "cartesian"]
   .map(name => [name, document.getElementById("lab-" + name)]));
 const code = "https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/";
 const implemented = "Implemented method · synthetic example";
@@ -108,15 +109,15 @@ const methods = {
     formula: "sⱼ = −(max(q−kⱼ) − min(q−kⱼ)); yᵣ = maxⱼ(sⱼ + vⱼᵣ)",
     source: code + "model/tropical.py", sourceLabel: "Tropical attention source",
     control: {label: "Second query coordinate", min: -2, max: 2, step: 0.25, value: 0,
-      secondaryLabel: "Key mask", choices:["All keys valid", "Mask k₁", "Mask k₂"]},
+      secondaryLabel: "Key mask", choices:["All keys valid", "Mask k₁", "Mask k₂", "Mask all keys"]},
     render(value, mask) {
       const keys = [[0, 0], [1, -1], [1, 1]];
       const values = [[0, 1], [2, -0.5], [-0.5, 2]];
       const terms = keys.map(key => hilbertTerms([1,value],key));
-      const scores = terms.map(({score},i) => i === mask && mask > 0 ? -Infinity : score);
+      const scores = terms.map(({score},i) => mask === 3 || (i === mask && mask > 0) ? -Infinity : score);
       const channels = [0, 1].map(i => scores.map((score, j) => score + values[j][i]));
       const maxima = channels.map(column => Math.max(...column));
-      const winners = channels.map((column,i)=>column.indexOf(maxima[i]));
+      const winners = channels.map((column,i)=>Number.isFinite(maxima[i]) ? column.indexOf(maxima[i]) : -1);
       const headers = label(32, 68, "KEY", "mute") + label(165, 68, "SCORE", "mute")
         + label(280, 68, "S + V₀", "mute") + label(403, 68, "S + V₁", "mute");
       const rows = scores.map((score, j) => {
@@ -124,17 +125,19 @@ const methods = {
         return label(32, y, "k" + j + " (" + keys[j].join(",") + ")")
           + label(165, y, Number.isFinite(score) ? scalar(score) : "MASK", "blue")
           + channels.map((column, i) => label(280 + 123 * i, y, Number.isFinite(column[j]) ? scalar(column[j]) : "−∞",
-            j === winners[i] ? "aqua" : column[j] === maxima[i] ? "amber" : "mute")).join("") + line(32, y + 15, 514, y + 15, "grid-line");
+            j === winners[i] ? "aqua" : winners[i] >= 0 && column[j] === maxima[i] ? "amber" : "mute")).join("") + line(32, y + 15, 514, y + 15, "grid-line");
       }).join("");
       const selected = maxima.map(s => scalar(s)).join(", ");
-      return {...result(headers + rows + label(32, 279, "MAX PER CHANNEL → (" + selected + ")", "aqua"),
-        "With q = (1, " + scalar(value) + "), the output is (" + selected + "). Winning key indices: " + winners.join(", ") + ".",
+      return {...result(headers + rows + label(32, 279, mask === 3 ? "NO VALID KEY → REFUSED" : "MAX PER CHANNEL → (" + selected + ")", mask === 3 ? "amber" : "aqua"),
+        mask === 3 ? "Refused. The native operator requires at least one valid key."
+          : "With q = (1, " + scalar(value) + "), the output is (" + selected + "). Winning key indices: " + winners.join(", ") + ".",
         "Green is the first winning key per channel. Amber shows later ties. The two channels can choose different keys."),
         table:{caption:"Hilbert score before the key mask",
           columns:["Key", "q − k", "Min", "Max", "Min − max", "Valid"],
           rows:terms.map(({differences,min,max,score},i)=>["k"+i,differences.map(v=>scalar(v)).join(", "),
             scalar(min),scalar(max),scalar(score),Number.isFinite(scores[i])?"Yes":"Masked → −∞"])},
-        notes:[["Next operation", "The full layer joins all heads, applies expm1, and projects the result. These two channels become ("
+        notes:[["Next operation", mask === 3 ? "The valid-key check stops before the reduction. No context reaches the projection."
+          : "The full layer joins all heads, applies expm1, and projects the result. These two channels become ("
           + maxima.map(v=>scalar(Math.expm1(v),3)).join(", ") + ") before projection."]],
       };
     }
@@ -157,12 +160,13 @@ const methods = {
       }))));
       const slots = [[184, 84], [312, 137], [184, 218], [56, 137]];
       const visible = blocks.slice(0, count);
-      let running = [-Infinity, -Infinity];
-      const history = visible.map(block => {
+      let running = [-Infinity, -Infinity], origins = [-1,-1];
+      const history = visible.map((block, index) => {
+        origins = block.map((value,i)=>value > running[i] ? index : origins[i]);
         running = block.map((value,i)=>Math.max(value,running[i]));
-        return running;
+        return {running, origins};
       });
-      const max = history.at(-1);
+      const {running:max} = history.at(-1);
       const dense = [2,3].map(channel => Math.max(...keyBlocks.flat().map(key =>
         hilbertScore([.6,.8],key.slice(0,2))+key[channel])));
       const links = slots.map(([x, y], i) => {
@@ -180,8 +184,8 @@ const methods = {
         "After " + count + " blocks, the two channel maxima are " + max.map(v => scalar(v, 2)).join(" and ") + ".",
         "Green shows which blocks reached the local query. Each block reduces two synthetic keys with the same Hilbert score as the attention demo. The distributed ring is a design sketch."),
         table:{caption:"Merge history for the selected query",
-          columns:["Arrival", "Block max · channels 0 / 1", "Running max · channels 0 / 1"],
-          rows:visible.map((block,i)=>["B"+i,channels(block),channels(history[i])])},
+          columns:["Arrival", "Block max · channels 0 / 1", "Running max · channels 0 / 1", "Winning blocks · channels 0 / 1"],
+          rows:visible.map((block,i)=>["B"+i,channels(block),channels(history[i].running),history[i].origins.map(j=>"B"+j).join(" / ")])},
         notes:[["Full reduction check", count === blocks.length ? "Running and unsharded maxima agree in both channels."
           : "Unsharded minus running maxima are " + channels(dense.map((v,i)=>v-max[i])) + ". Unseen blocks can only raise a maximum."]],
       };
@@ -192,14 +196,16 @@ const methods = {
     description: "The concept editor learns an affine transform of a fixed input basis and normalizes the resulting directions. A signed step scales one direction and adds it to the latent state. This panel shows the edit before any decoder or downstream measurement.",
     formula: "z′ = z + α dᵢ,  ‖dᵢ‖₂ = 1",
     source: code + "reasoning/graphcg.py", sourceLabel: "GraphCG concept editor source",
-    control: {label: "Signed steering strength α", min: -2, max: 2, step: 0.1, value: 1},
-    render(value) {
+    control: {label: "Signed steering strength α", min: -2, max: 2, step: 0.1, value: 1,
+      secondaryLabel:"Basis direction", choices:["Edit along direction 1", "Edit along direction 2"]},
+    render(value, selected) {
       const original = [2.1, 1.5];
       const basis = [[1,0],[0,1]];
       const projection = [[.72,.54],[.48,.78]], bias=[.08,.12];
       const raw = basis.map(row => projection.map((w,i)=>w.reduce((sum,x,j)=>sum+x*row[j],bias[i])));
       const rawNorm = raw.map(row=>Math.hypot(...row));
-      const [direction,other] = raw.map((row,i)=>row.map(x=>x/rawNorm[i]));
+      const directions = raw.map((row,i)=>row.map(x=>x/rawNorm[i]));
+      const direction = directions[selected], other = directions[1-selected];
       const cosine=direction.reduce((sum,x,i)=>sum+x*other[i],0);
       const delta = direction.map(x=>value*x);
       const edit = original.map((coordinate, i) => coordinate + delta[i]);
@@ -211,10 +217,10 @@ const methods = {
         "Both directions have unit norm after the same affine projection. The second arrow shows the other unit direction for comparison."),
         table:{caption:"Affine transform and normalization of the fixed basis",
           columns:["Basis", "Affine output", "Raw norm", "Unit direction"],
-          rows:[direction,other].map((unit,i)=>[vector(basis[i]),vector(raw[i]),scalar(rawNorm[i],3),vector(unit)])},
-        notes:[["Signed edit", vector(original) + " + " + vector(delta) + " = " + vector(edit) + " (rounded). The step scales the first unit direction."],
+          rows:directions.map((unit,i)=>[vector(basis[i]),vector(raw[i]),scalar(rawNorm[i],3),vector(unit)])},
+        notes:[["Signed edit", vector(original) + " + " + vector(delta) + " = " + vector(edit) + " (rounded). The step scales unit direction " + (selected+1) + "."],
           ["Cross-talk in latent space", "The signed edit projects " + scalar(value*cosine,3)
-            + " units onto the second normalized direction. Unit normalization permits correlated directions."]],
+            + " units onto the other normalized direction. Unit normalization permits correlated directions."]],
       };
     }
   },
@@ -338,6 +344,11 @@ const methods = {
         const [x2,y2]=project([bounds[0][1],bounds[1][0]]);
         return box(x1,y1,x2-x1,y2-y1,robust ? "lab-envelope stable" : "lab-envelope");
       })() : "";
+      const mixtures = envelope ? envelope.transfers.map(project) : [];
+      const mixturePath = mixtures.length === 2
+        ? line(...mixtures[0],...mixtures[1],"lab-mixture") + mixtures.map((p,i)=>dot(...p,"blue",3)
+          + label(p[0]+4,p[1]+(i ? 18 : -13),m.pairs[i].id + " transfer","blue")).join("")
+        : "";
       const offsets={A:[-36,-24], B:[-19,30], C:[25,-17], D:[19,33], E:[15,20], F:[-43,11]};
       const marksById = m.ranked.map(candidate => {
         const [x,y]=project(candidate.state);
@@ -347,7 +358,8 @@ const methods = {
           + label(x+dx,y+dy,candidate.id,style);
       }).join("");
       const summary = envelope && !robust
-        ? "Abstain under reference sensitivity · mean-transfer nearest eligible " + m.selected.id + "."
+        ? "Abstain under reference sensitivity · mean-transfer nearest eligible " + m.selected.id + ". "
+          + (envelope.mixtureRobust ? "Only the coordinate stress test reverses the rank." : "A mixture of matched references can reverse or tie the rank.")
         : m.selected
         ? "2D nearest " + m.projected.id + " · 4D nearest " + m.ranked[0].id + " · eligible " + m.selected.id + " · no-transfer baseline " + m.baseline.id + "."
         : "Abstain · " + (m.transferReason || "no eligible proposal") + ". Candidate outcomes remain masked.";
@@ -355,10 +367,10 @@ const methods = {
       const walk = edges => edges.map(([i,j,type]) => i + " → " + j + " (" + type + ")").join(", ");
       const pairAudit = m.agreement.map(({references,cosine}) => references.join(" / ") + " "
         + (Number.isFinite(cosine) ? scalar(cosine,3) : "undefined")).join(" · ");
-      return {...result(grid() + rectangle + label(44, 28, "DISPLAY COORDINATES 1–2 OF 4", "mute") + marks
+      return {...result(grid() + rectangle + mixturePath + label(44, 28, "DISPLAY COORDINATES 1–2 OF 4", "mute") + marks
         + (scale !== 0 && m.displacement ? arrow(...start,...target) : "")
         + point(start,"query pre","blue") + marksById + '<circle cx="'+target[0]+'" cy="'+target[1]+'" r="10" class="target-ring"/>'
-        + label(target[0]+13,target[1]-14,m.displacement ? "q" : "q₀","amber") + label(44, 316, "Blue refs · Green pick · Gold refused · Box spread", "mute"),
+        + label(target[0]+13,target[1]-14,m.displacement ? "q" : "q₀","amber") + label(44, 316, "Blue refs / mixtures · Green pick · Gold refused", "mute"),
         summary,"Fixture vectors illustrate retrieval. Reference outcomes support the displacement. Candidate descriptors contain only visible proposal inputs. A retrieval result needs independent outcome validation."),
         diagram:motifDiagram(example),
         notes:[
@@ -383,7 +395,12 @@ const methods = {
             ? "Projected box uses coordinate-wise minima and maxima of the compatible single-culture transfers. The decision uses all four dimensions. "
               + (robust ? "The same proposal stays nearest throughout the box." : "At least one eligible rival can tie or outrank the mean-transfer proposal within the box.")
             : "At least two compatible reference cultures and one eligible proposal are needed for the spread check."],
-          ["Worst-case gap", envelope?.rivals.length
+          ["Paired-reference mixtures", envelope?.rivals.length
+            ? envelope.rivals.map(rival=>rival.id + " vs " + m.selected.id + " · ["
+              + scalar(rival.minMixtureGap,3) + ", " + scalar(rival.maxMixtureGap,3) + "]").join(" · ")
+              + " in squared-distance units. This range mixes complete reference shifts, keeping coordinates from each pair together."
+            : "At least two reference cultures and an eligible rival are needed."],
+          ["Coordinate stress test", envelope?.rivals.length
             ? envelope.rivals.map(rival=>rival.id + " vs " + m.selected.id + " · [" + scalar(rival.minGap,3)
               + ", " + scalar(rival.maxGap,3) + "]").join(" · ")
               + " in squared-distance units. The box allows combinations of reference coordinates never observed together."
@@ -497,10 +514,10 @@ const methods = {
     formula: "vᵢ = freeᵢ · (1/N) Σⱼ wᵀfᵢⱼ(xⱼ − xᵢ);  x′ = x + 0.4v",
     source: code + "model/current_frame_velocity.py", sourceLabel: "Coordinate-velocity readout source",
     control: {label: "Bond feature coefficient", min: -0.8, max: 1.6, step: 0.05, value: 0.9,
-      secondaryLabel:"Current frame", choices:["Original coordinates", "Rotate and translate frame"],
+      secondaryLabel:"Current frame", choices:["Original coordinates", "Rotate and translate frame", "Reflect across xy plane"],
       scenarioLabel:"Atom to inspect", scenarios:["Atom 2 · free", "Atom 1 · anchor", "Atom 3 · free", "Atom 4 · free"]},
     render(coupling, frame, atomChoice) {
-      const {original,transformed,velocityError,distanceError} = frameComparison(coupling);
+      const {original,transformed,velocityError,distanceError} = frameComparison(coupling,frame || 1);
       const {xyz,free,pairs,velocities,next,distance} = frame ? transformed : original;
       const atom = [1,0,2,3][atomChoice];
       const vector = values => values.map(value=>scalar(value,3)).join(", ");
@@ -516,18 +533,22 @@ const methods = {
           return (free[i] ? arrow(...from,...project(point.map((x,j)=>x+1.8*velocities[i][j]))) : "")
             + dot(...from, free[i] ? "aqua" : "blue", i === atom ? 13 : 9) + label(from[0]-5, from[1]+32, String(i+1));
         }).join("") + label(42, 291, "PAIR 2–3 AFTER STEP  " + scalar(distance,3) + " Å", "mute"),
-        "Atom 1 is fixed. Atom 2 has speed " + scalar(Math.hypot(...velocities[1]),3) + " Å per toy step unit.",
-        "Arrows magnify the velocity and rings show the Euler update. The anchor still supplies context to its neighbors. The frame selector applies a quarter-turn about x and a translation. Time uses an illustrative scale."),
+        "Atom " + (atom+1) + (free[atom] ? " is free. Speed " : " is fixed. Speed ")
+          + scalar(Math.hypot(...velocities[atom]),3) + " Å per toy step unit.",
+        "Arrows magnify the velocity and rings show the Euler update. The anchor still supplies context to its neighbors. Select a rigid transform or a reflection and compare the recomputed velocities. Time uses an illustrative scale."),
         table:{caption:"Pair arithmetic for selected atom " + (atom+1),
-          columns:["Neighbor", "Distance (Å)", "Bond", "Scalar coefficient", "Relative xyz (Å)", "Weighted xyz"],
-          rows:pairs[atom].map((pair,i)=>[String(i+1),scalar(pair.distance,3),pair.bonded?"Yes":"No",
-            scalar(pair.coefficient,3),vector(pair.relative),vector(pair.weighted)])},
+          columns:["Neighbor", "Distance (Å)", "exp(−d)", "Bond", "Distance + bond terms", "Scalar coefficient", "Relative xyz (Å)", "Weighted xyz"],
+          rows:pairs[atom].map((pair,i)=>[String(i+1),scalar(pair.distance,3),scalar(pair.distanceFeature,3),pair.bonded?"Yes":"No",
+            pair.terms.map(value=>scalar(value,3)).join(" + "),scalar(pair.coefficient,3),vector(pair.relative),vector(pair.weighted)])},
         notes:[["Velocity and Euler update", "Selected atom " + (atom+1) + " · " + (free[atom] ? "free" : "fixed")
           + " · velocity (" + vector(velocities[atom]) + "). Current coordinates (" + vector(xyz[atom])
           + ") become (" + vector(next[atom]) + "). The self-pair has a zero displacement and is included in the mean."],
-          ["Rigid-frame check", "Recomputing in the transformed frame gives max ‖v′ − Rv‖ = "
-          + velocityError.toExponential(2) + ". The maximum change across all six updated pair distances is "
-          + distanceError.toExponential(2) + " Å."]],
+          ["Frame check", "Recomputing after " + (frame === 2 ? "reflection" : "rotation and translation")
+          + " gives max ‖v′ − Rv‖ = " + velocityError.toExponential(2)
+          + ". The maximum change across all six updated pair distances is " + distanceError.toExponential(2) + " Å."],
+          ["Reflection and handedness", "Signed tetrahedron volume after the step changes from "
+            + scalar(original.signedVolume,4) + " to " + scalar(transformed.signedVolume,4)
+            + " Å³ under the comparison transform. This distance-and-bond diagnostic is O(3)-equivariant and has no chirality-sensitive feature."]],
       };
     }
   }
@@ -537,6 +558,10 @@ const methods = {
 function show(name) {
   const method = methods[name];
   if (!method) return;
+  ui.cartesian.hidden = name !== "gfn";
+  if (!ui.cartesian.hidden && !ui.cartesian.firstChild) {
+    ui.cartesian.append(renderCartesianWalkthrough(document));
+  }
   const {control} = method;
   ui.title.textContent = method.title;
   ui.status.textContent = method.status;

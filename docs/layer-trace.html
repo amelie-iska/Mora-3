@@ -6,7 +6,7 @@
   <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="architecture-3d.html">3D atlas</a><span aria-hidden="true">/</span><span aria-current="page">Layer trace</span></nav>
   <p class="eyebrow">Architecture internals · Computed example</p>
   <h1>Inside a TokenGT layer</h1>
-  <p class="lead">Follow a graph through two encoder layers, then inspect how a task head separates experimental affinity from teacher energy. Play the forward pass or open any operation. Select a head, token, or channel to follow the arithmetic into its output. At the tropical head merge, open the backward trace to follow a unit gradient into the layer input.</p>
+  <p class="lead">Follow a graph through two encoder layers, then inspect how a task head separates experimental affinity from teacher energy. Play the forward pass or open any operation. Select a head, token, or channel to follow the arithmetic into its output. At the tropical head merge, follow a unit gradient into the layer input. At the loss, step backward through both layers and inspect which graph features affect the objective.</p>
   <p>The browser computes a 4-channel, 2-head example with fixed demonstration weights. It implements the finite tropical kernel and the ordinary softmax kernel with the μP query scaling used in the training configuration.</p>
 </header>
 <div class="trace" data-trace>
@@ -35,7 +35,7 @@
       <select id="trace-hidden-channel"><option value="0">Feature 1</option><option value="1">Feature 2</option><option value="2">Feature 3</option><option value="3">Feature 4</option><option value="4">Feature 5</option><option value="5">Feature 6</option></select>
     </div>
     <label for="trace-kernel">Attention kernel</label>
-    <select id="trace-kernel"><option value="tropical">Finite tropical</option><option value="dense">Ordinary softmax · μP scale</option></select>
+    <select id="trace-kernel"><option value="dense">Ordinary softmax · primary μP path</option><option value="tropical">Finite tropical · comparison</option></select>
     <div class="trace-setting" id="trace-block-setting">
       <label for="trace-reduction">Key reduction</label>
       <select id="trace-reduction"><option value="full">All keys together</option><option value="2">Blockwise · 2 keys per block</option></select>

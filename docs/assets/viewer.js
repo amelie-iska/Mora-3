@@ -46,7 +46,8 @@ function example(index,value,model) {
       ['Nearest in the 2D view',model.projected],['Nearest in the full space',model.nearest],
       ['Selected eligible candidate',model.selected],['No-transfer baseline',model.baseline],
       ['Role map · '+model.matched.id,model.matched.motif.mapping.map((j,i)=>i+'→'+j).join(' · ')],
-      ['Reference spread',model.envelope ? (model.envelope.robust ? 'Stable ranking' : 'Ranking can flip') : 'Unavailable']],
+      ['Paired-reference mixtures',model.envelope ? (model.envelope.mixtureRobust ? 'Stable ranking' : 'Ranking can flip') : 'Unavailable'],
+      ['Coordinate stress test',model.envelope ? (model.envelope.robust ? 'Stable ranking' : 'Ranking can flip') : 'Unavailable']],
       math:'Candidates rank by 4D Euclidean distance. The first two coordinates give the projected distance. Role, directed edges, cell state, intervention, and endpoint gates apply before selection. The lab shows the four-axis reference spread and its worst-case ranking gap.'};
     case 8: {
       const mean=model.points.reduce((sum,point,i)=>sum+point.reduce((s,v,j)=>s+(v-model.reference[i][j])**2,0),0)/model.points.length;

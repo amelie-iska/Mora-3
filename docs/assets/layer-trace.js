@@ -1,5 +1,5 @@
 import {tensorScene, graphScene} from "./layer-trace-scene.js";
-import {weights, graphPreset, graphFromInput, runTrace, cdf, affinityObjective, feedbackAxes, feedbackWeight, tropicalResidualGradient} from "./layer-trace-engine.js";
+import {weights, graphPreset, graphFromInput, runTrace, cdf, affinityObjective, feedbackAxes, feedbackWeight, tropicalResidualGradient, affinityLossGradient} from "./layer-trace-engine.js";
 
 const names = ["input","strength","strength-value","token","head","channel","steps","progress","prev","next",
   "title","explanation","equation","numerical","tensors","map","key","reduction","json","apply","input-status","scene","angle","pitch",
@@ -104,6 +104,66 @@ function reverseAttention(c) {
       ["Normalized token gradient",result.normalized],["Layer input gradient including skip",result.residual]]
       .map(([title,values]) => matrix(title,values,c.tokenRows))
   );
+  return details;
+}
+
+function reverseObjective(c) {
+  const gradient = affinityLossGradient(c.trace, ui.coverage.value, ui.kernel.value);
+  const details = node("details");
+  details.className = "trace-reverse";
+  details.id = "trace-loss-reverse";
+  details.append(node("summary", "Trace the loss backward to the graph features"));
+  if (!gradient) {
+    details.append(node("p", "All observations are missing. The objective refuses this batch before backward."));
+    return details;
+  }
+  const phases = [
+    ["1 · Seed the observed axes", "Each observed axis contributes 2λ(ŷ − y)/(s²n). Here λ is the group weight and n is its observed count. Missing axes contribute zero.", () => [
+      matrix("Loss derivative by prediction axis", gradient.output.map(value => [value]),
+        {rows:feedbackAxes.map(row => row.label),cols:["∂L/∂ŷ"],selected:Number(ui.axis.value)}),
+    ]],
+    ["2 · Reverse the readout", "Multiply by the readout weight transpose and μP scale. Only the graph token receives a direct seed. Final LayerNorm then mixes its four channels.", () => [
+      matrix("Gradient of final graph-token state", [gradient.context], {rows:["[GRAPH]"]}),
+      matrix("Gradient entering layer 2 output", gradient.finalInput, c.tokenRows),
+    ]],
+    ...gradient.layers.map(layer => [
+      (4-layer.index) + " · Reverse layer " + (layer.index+1),
+      "Pass the output derivative through the FFN projection, exact GELU derivative and LayerNorm. Add the FFN skip, route across tokens through attention, then add the attention skip.",
+      () => [
+        matrix("Layer output seed", layer.output, c.tokenRows),
+        matrix("Gradient at GELU input", layer.hidden, c.tokenRows),
+        matrix("Gradient at post-attention residual", layer.postAttention, c.tokenRows),
+        matrix("Attention-branch gradient before reversing the first LayerNorm", layer.normalized, c.tokenRows),
+        matrix("Gradient at layer input including both paths", layer.input, c.tokenRows),
+      ],
+    ]),
+    ["5 · Reverse the embedding", "For each graph row, the transpose of the feature projection maps the embedding gradient to its two input features. The graph token and padding have no raw feature rows.", () => [
+      matrix("Gradient at embedded tokens", gradient.embedding, c.tokenRows),
+      matrix("Input feature sensitivity", gradient.feature, {rows:c.graph.tokens.slice(1,-1),
+        cols:["∂L/∂feature 1","∂L/∂feature 2"],selected:c.query-1}),
+    ]],
+  ];
+  const label = node("label", "Backward computation ");
+  const picker = node("select");
+  picker.id = "trace-loss-phase";
+  label.htmlFor = picker.id;
+  picker.append(...phases.map(([title], i) => new Option(title, i)));
+  label.append(picker);
+  const panel = node("div");
+  panel.className = "trace-loss-phase";
+  const renderPhase = () => {
+    const [, explanation, figures] = phases[Number(picker.value)];
+    panel.replaceChildren(node("p", explanation), ...figures());
+    panel.querySelectorAll("td").forEach(cell => {
+      const value = Number(cell.textContent);
+      if (Number.isFinite(value) && value !== 0) {
+        cell.classList.add(value > 0 ? "trace-positive" : "trace-negative");
+      }
+    });
+  };
+  picker.addEventListener("change", renderPhase);
+  details.append(node("p", "This is the derivative of the displayed demonstration loss with respect to activations and graph input features. The walk holds weights fixed."), label, panel);
+  renderPhase();
   return details;
 }
 
@@ -328,7 +388,7 @@ steps.push({title:"Observation masks and feedback objective",text:"Each complex 
         row.prediction,row.active?row.target:"—",row.scale,missing(row.residual),missing(row.loss),row.active?"observed":"missing"
       ]),{rows:rows.map(row=>row.label),cols:["prediction","observed target","scale","residual","square","mask"],selected:axis}),
       matrix("Objective by observed group",[[missing(experimental),1],[missing(computed),feedbackWeight],[missing(total),"—"]],
-        {rows:["experimental","teacher","total"],cols:["mean or total","weight"]})];
+        {rows:["experimental","teacher","total"],cols:["mean or total","weight"]}), reverseObjective(c)];
   }});
 
 let index = 0, graph, trace, currentInput, sceneAxes = [], playback;
@@ -514,9 +574,16 @@ function render() {
     global,hidden:Number(ui["hidden-channel"].value),
     parameters:weights.layers[step.layer],head:layer?.attention.heads[head]});
   ui.numerical.textContent=note;
-  const reverseOpen = ui.tensors.querySelector(".trace-reverse")?.open;
+  const openId = [...ui.tensors.querySelectorAll(".trace-reverse")].find(item => item.open)?.id;
+  const phase = ui.tensors.querySelector("#trace-loss-phase")?.value;
   ui.tensors.replaceChildren(...figures);
-  if (reverseOpen && ui.tensors.querySelector(".trace-reverse")) ui.tensors.querySelector(".trace-reverse").open = true;
+  const reverse = openId && document.getElementById(openId);
+  if (reverse) reverse.open = true;
+  const picker = ui.tensors.querySelector("#trace-loss-phase");
+  if (picker && phase !== undefined) {
+    picker.value = phase;
+    picker.dispatchEvent(new Event("change"));
+  }
   drawScene();
 }
 function select(i, focus=false, writeHash=focus) {
@@ -636,8 +703,7 @@ ui.strength.addEventListener("input",()=>{
 ui.reduction.addEventListener("change",()=>runGraph(graph));
 ui.kernel.addEventListener("change",()=>{
   const url=new URL(location.href);
-  if(ui.kernel.value==="dense") url.searchParams.set("kernel","dense");
-  else url.searchParams.delete("kernel");
+  url.searchParams.set("kernel",ui.kernel.value);
   history.replaceState(null,"",url);
   runGraph(graph);
 });
@@ -648,7 +714,8 @@ function fromHash() {
   const requested = Number(location.hash.match(/^#step-(\d+)$/)?.[1]);
   select(requested >= 1 && requested <= steps.length ? requested - 1 : 0);
 }
-if(new URLSearchParams(location.search).get("kernel")==="dense") ui.kernel.value="dense";
+const requestedKernel = new URLSearchParams(location.search).get("kernel");
+if (requestedKernel === "tropical" || requestedKernel === "dense") ui.kernel.value = requestedKernel;
 preset();
 fromHash();
 window.addEventListener("hashchange", fromHash);

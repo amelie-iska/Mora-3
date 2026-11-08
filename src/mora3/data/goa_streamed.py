@@ -30,6 +30,17 @@ def _code_hashes(*,combined_study=False):
     return {str(p.relative_to(data.parent)):_sha(p.read_bytes()) for p in paths}
 
 
+_NATIVE_FORM_SEQUENCE_BINDINGS = frozenset((
+    ('displayed_isoform', 'sourceDisplayed_alias_exact_canonical_sequence'),
+    ('isoform', 'exact_official_same_release_isoform_FASTA'),
+    ('processed_product', 'exact_canonical_interval_primary_sequence'),
+))
+
+
+class GOAFormOutsideCanonicalScope(ValueError):
+    """An authenticated original form packet requires its own source policy."""
+
+
 @dataclass(frozen=True)
 class StreamedGOABatch:
     source:SelectedNativeSourceBatch
@@ -125,6 +136,8 @@ class StreamedGOASourcePool:
     def _canonical_sequence(self,packet):
         import pyarrow.parquet as pq
         p=packet.provenance();binding=p['source_audit']['binding'];parent=binding['parent_accession']
+        if (binding.get('subject_kind'),binding.get('sequence_binding')) in _NATIVE_FORM_SEQUENCE_BINDINGS:
+            raise GOAFormOutsideCanonicalScope('original GOA form packet is outside the canonical-only head')
         if (binding.get('subject_kind')!='canonical'
                 or binding.get('sequence_binding')!='exact_current_canonical_source'
                 or binding.get('canonical_labels_inherited')is not False

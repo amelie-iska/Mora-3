@@ -5,7 +5,7 @@ import re
 from threading import RLock
 
 from mora3.data.admet import canonical
-from mora3.data.goa_streamed import StreamedGOASourcePool
+from mora3.data.goa_streamed import GOAFormOutsideCanonicalScope, StreamedGOASourcePool
 from mora3.model.full_owner import SourceBoundOwner
 from mora3.model.lincs_cooperative import LincsCooperativeModel
 
@@ -67,8 +67,11 @@ class GOACampaignAdapter:
         self.executable_binding()
         if type(window) is not NativeRouteWindow or window.original_source_rows != 1:
             raise ValueError('Exact single original GOA train route window required')
-        with self._lock:
-            batch = self.pool.bind_native_rows(window.batch, split='train')
+        try:
+            with self._lock:
+                batch = self.pool.bind_native_rows(window.batch, split='train')
+        except GOAFormOutsideCanonicalScope:
+            return PreparedNativeTargets(0, 'original GOA form requires a separate source policy', None)
         packet, = batch.packets
         observed = sum(packet.observed)
         if observed == 0:

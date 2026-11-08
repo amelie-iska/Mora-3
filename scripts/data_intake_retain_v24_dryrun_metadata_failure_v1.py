@@ -1,0 +1,4 @@
+from pathlib import Path
+import json,datetime
+p=Path('/home/iska/Documents/amelie/bio/Mora-3/planning/research/data_intake/20261101-ExpansionRx-v24-internal-handoff-preparation-v1/dry-run-v1/failure.json')
+p.open('x').write(json.dumps(dict(status='retained_preparation_only_metadata_count_assumption_failure',error='publisher validation incorrectly summed historical source-record map as serializedtaskviews',record_map_sum=75505078,actual_master_taskviews=81116210,correct_taskview_authority='pinned inherited reader-readiness per-family serialized_tasks plus new61426component views; sum81116210',native_source_or_task_rows_read=0,actual_publication=False,oldmaster_or_intake_mutated=False,correction='newversioned dryrun and explicit record-map-unit caveat; no silentmasterrepair',created_utc=datetime.datetime.now(datetime.timezone.utc).isoformat()),indent=2)+'\n')

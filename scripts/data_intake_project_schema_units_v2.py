@@ -1,0 +1,29 @@
+"""Source-schema units supplement; immutable instance fields and admission remain distinct."""
+from pathlib import Path
+import collections,datetime,gzip,hashlib,json
+import pyarrow as pa
+import pyarrow.parquet as pq
+R=Path.cwd();B=Path('outputs/data-intake/20261101-uniprot-physical-units-v1');O=B/'unit-projection-v2';O.mkdir(exist_ok=False)
+def ref(p,**kw):return dict(path=str(p),bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest(),**kw)
+msdoc=B/'research/mass-spectrometry-help.response';ms=json.loads(msdoc.read_text());assert ms['id']=='mass_spectrometry' and ms['lastModified']=='2025-11-26' and '(in Daltons)' in ms['content'];manual=B/'research/manual-2026_03.html';assert '2026_03' in manual.read_text() and 'Abs(max)=xx nm;' in manual.read_text();src=Path('outputs/data-intake/20261031-uniprot-full-annotations-v1/physical-form-supplement-v2/manifest.json');m=json.loads(src.read_text());selected=[]
+for e in m['files']:
+ if e['kind']!='physical':continue
+ p=Path(e['path']);assert ref(p)['sha256']==e['sha256']
+ for row in pq.read_table(p,columns=['record_json']).to_pylist():
+  d=json.loads(row['record_json'])
+  if d['parameter_type'] in ['absorption','mass_spectrometry_source_mass']:selected.append(d)
+cache=collections.OrderedDict();rows=[];counts=collections.defaultdict(collections.Counter)
+def point(obj,p):
+ for k in p.split('/')[1:]:k=k.replace('~1','/').replace('~0','~');obj=obj[int(k)] if isinstance(obj,list) else obj[k]
+ return obj
+for d in selected:
+ r=json.loads(d['source_ref_json']);key=r['raw_file']
+ if key not in cache:
+  b=Path(key).read_bytes();assert hashlib.sha256(b).hexdigest()==r['raw_file_sha256'];cache[key]=json.loads(gzip.decompress(b) if b[:2]==b'\x1f\x8b' else b)['results']
+  if len(cache)>4:cache.popitem(last=False)
+ entry=cache[key][r['results_index']];obj=point(entry,d['source_pointer']);assert obj==json.loads(d['source_value_json']);mass=d['parameter_type']=='mass_spectrometry_source_mass';value=obj.get('molWeight') if mass else obj.get('max');error=obj.get('molWeightError') if mass else None;unit='Da' if mass else 'nm';direct=any(e.get('evidenceCode')=='ECO:0000269' for e in obj.get('evidences',[]));c=counts[d['parameter_type']];c['source_assertions']+=1;c['positive_numeric_source_values']+=type(value) in [int,float] and value>0;c['direct_assertion_ECO0000269']+=direct;c['explicit_molecule_scope']+=d['molecule_scope'] is not None;c['source_literal_unit_present']+=d['unit'] is not None;c['has_error']+=error is not None;c['approximate_flag_true']+=bool(obj.get('approximate'))
+ rows.append(dict(accession=d['accession'],source_parameter_type=d['parameter_type'],source_pointer=d['source_pointer'],source_raw_json=json.dumps(obj,sort_keys=True),source_ref_json=d['source_ref_json'],source_literal_unit=d['unit'],schema_declared_unit=unit,schema_unit_source_url='https://rest.uniprot.org/help/mass_spectrometry' if mass else 'https://prosite.expasy.org/docs/userman.html',schema_document_version=ms['lastModified'] if mass else 'UniProt2026_03',schema_document_sha256=ref(msdoc if mass else manual)['sha256'],unit_provenance_class='explicit_provider_schema_definition;not_literal_in_instance',source_numeric_value=value,source_numeric_error=error,error_semantics='source_accuracy_or_estimated_error;not_assumed_standard_deviation' if error is not None else None,source_approximate_flag=obj.get('approximate'),source_method=obj.get('method'),source_molecule_scope=d['molecule_scope'],unscoped_source_comment_is_not_proof_of_canonical_unmodified_full_protein=True,source_local_direct_experimental_ECO=direct,source_evidence_bindings_json=d['evidence_bindings_json'],source_parent_entry_sequence_sha256=hashlib.sha256(entry['sequence']['value'].encode()).hexdigest(),computed_sequence_mass_used_as_measurement=False,source_scope_and_form_context_still_required=True,numeric_neural_objective_admitted=False,new_generated_sequence_condition_admitted=False,assay_pH=None,assay_temperature=None))
+assert len(rows)==3991 and counts['mass_spectrometry_source_mass']['source_assertions']==3887 and counts['absorption']['source_assertions']==104
+p=O/'schema-bound-physical-assertions.parquet';pq.write_table(pa.Table.from_pylist(rows),p,compression='zstd');assert pq.read_table(p).to_pylist()==rows
+result=dict(schema='mora3.UniProtSchemaPhysicalUnits/v2',status='official_schema_definitions_and_all3991source_pointer_numeric_projections_verified',completed_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),source_original=ref(src),supersedes_unit_review=ref(B/'manifest.json'),review_change='RESThelpbodyfullyreviewedafterearliermanualonlyunitcheck;MassSpectrometrymassnowprovider_schema_Da. Earlierunresolvedmanual-onlyfindingpreserved.',source_help_document=ref(msdoc),help_version=ms['lastModified'],manual_document=ref(manual),manual_release='2026_03',projection=ref(p,rows=len(rows)),counts={k:dict(v) for k,v in counts.items()},instance_unit_fields_preserved_unchanged=True,all_source_pointer_object_and_raw_page_hash_checks=True,all_Parquet_roundtrip_rows=True,measured_vs_computed_mass_separate=True,source_molecular_forms_modifications_method_and_uncertainty_preserved=True,task_specific_admission=dict(full_annotation_prediction='alreadyretainedincompleteUniProtannotationtargets',schema_unit_projection='verified',canonical_intrinsic_or_mature_mass_numeric_supervision='not_admitted_bythissidecar;requiresproduct/PTM/contextreview',assay_conditioned_or_desired_property_generation='not_admitted_bythissidecar',missing_or_inferred_evidence='preservednotconvertedtoexperimental'),new_corpus_tasks=0,new_numeric_model_objectives=0,new_experiments=0,model_or_raw_source_edits=False,code=ref(Path('scripts/data_intake_project_schema_units_v2.py')))
+(O/'manifest.json').open('x').write(json.dumps(result,indent=2)+'\n');print('COMPLETE',json.dumps(result['counts']))

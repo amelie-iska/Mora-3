@@ -1,0 +1,4 @@
+from pathlib import Path
+import json,datetime
+p=Path('/home/iska/Documents/amelie/bio/Mora-3/planning/research/data_intake/20261101-DRAMP135-independent-audit-preparation-v1/frozen-review-package-v1/failure.json')
+p.open('x').write(json.dumps(dict(stage='preparation-only bytepin inventory',error='seal helper compared three-field byte ref to shard ref that also declares rows; basic path/bytes/SHA match was not evaluated separately',correction='NEW versioned preparation directory/helper compares path/bytes/SHA exactly; row/footer semantics stay independently checked in proposed verifier',native_source_rows_decoded=0,candidate_rows_decoded=0,actual_native_audit_launched=False,source_and_candidate_inputs_unchanged=True,retained_no_overwrite=True,created_utc=datetime.datetime.now(datetime.timezone.utc).isoformat()),indent=2)+'\n')

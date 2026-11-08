@@ -1,0 +1,65 @@
+"""Whole original NCI native schemas, legacy graph projection and exact NSC/context joins."""
+from pathlib import Path
+import sys,json,csv,collections,hashlib,time,datetime,shutil,os,re
+import pyarrow as pa,pyarrow.parquet as pq
+from rdkit import rdBase
+R=Path('/home/iska/Documents/amelie/bio/Mora-3');sys.path.insert(0,str(R/'scripts'))
+from data_intake_NCI_AIDS_native import parse_endpoint,parse_structure_record
+B=R/'outputs/data-intake/20261101-NCI-AIDS-original-v1';O=B/'curated-native-v1';CAP=512*2**20
+
+def sha(p):
+ h=hashlib.sha256()
+ with p.open('rb') as stream:
+  while chunk:=stream.read(4*2**20):h.update(chunk)
+ return h.hexdigest()
+def ref(p,**kw):return dict(path=str(p.relative_to(R)),bytes=p.stat().st_size,sha256=sha(p),**kw)
+def check(r):
+ p=R/r['path'];assert p.stat().st_size==r['bytes'] and sha(p)==r['sha256'];return p
+
+def main():
+ start=time.perf_counter();O.mkdir();(O/'structures').mkdir();(O/'code').mkdir();(O/'code'/Path(__file__).name).write_bytes(Path(__file__).read_bytes());(O/'code/data_intake_NCI_AIDS_native.py').write_bytes((R/'scripts/data_intake_NCI_AIDS_native.py').read_bytes());acq=json.loads((B/'manifest.json').read_text());assert acq['raw_verified_bytes']==38655296
+ for asset in acq['assets']:check(asset['raw'])
+ native_sdf=B/'decoded/aido99sd-native.sdf';assert native_sdf.stat().st_size==139252944;source_sdf=ref(native_sdf);structure_files=[];structures=collections.defaultdict(list);buffer=[];structure_counts=collections.Counter();source_programs=collections.Counter();failures=collections.Counter();record_index=0;decoded_bytes=0
+ def reserve():
+  generated=sum(p.stat().st_size for p in B.rglob('*') if p.is_file() and 'raw' not in p.parts and 'research' not in p.parts);assert generated<CAP and shutil.disk_usage(R).free>200*2**30,'NCI derivedcap/free-reserve gate'
+ def flush():
+  if not buffer:return
+  p=O/'structures'/f'native-{len(structure_files):03d}.parquet';pq.write_table(pa.Table.from_pylist(buffer),p,compression='zstd');assert pq.read_table(p).to_pylist()==buffer;structure_files.append(ref(p,rows=len(buffer)));buffer.clear();reserve()
+ with native_sdf.open('rb') as stream:
+  block=[];offset=0
+  while line:=stream.readline():
+   block.append(line);decoded_bytes+=len(line)
+   if line.strip()!=b'$$$$':continue
+   raw=b''.join(block);text=raw.decode('ascii');metadata=None;error=None;status='graph_projection_pass';recordhash=hashlib.sha256(raw).hexdigest();match=re.search(r'>\s*<NSC>\s*\r?\n([^\r\n]+)',text);nsc=match[1].strip() if match else None
+   try:
+    metadata=parse_structure_record(text);assert metadata['native_record_sha256']==recordhash and metadata['native_NSC']==nsc;structure_counts['graph_projection_pass']+=1;source_programs[' | '.join(metadata['native_program_header'])]+=1
+   except Exception as exc:status='quarantined_derived_graph';error=type(exc).__name__+':'+str(exc);failures[error]+=1;structure_counts['derived_graph_quarantines']+=1
+   rid='NCI-AIDS-Oct1999-structure:'+str(record_index);buffer.append(dict(source_record_id=rid,source_record_index=record_index,source_NSC=nsc,source_native_SDF_path=str(native_sdf.relative_to(R)),source_native_SDF_sha256=source_sdf['sha256'],native_byte_offset=offset,native_record_bytes=len(raw),native_record_sha256=recordhash,all_native_record_bytes=raw,graph_projection_status=status,graph_projection_error=error,projection_json=json.dumps(metadata,sort_keys=True) if metadata else None,source_geometry_observed=False,source_stereochemistry_known=False,task_admitted=False));structures[nsc].append(dict(source_record_id=rid,source_record_index=record_index,source_NSC=nsc,native_record_sha256=recordhash,graph_projection_status=status,derived_nonstereo_connectivity_smiles=metadata['derived_nonstereo_connectivity_smiles'] if metadata else None,source_stereochemistry_known=False));record_index+=1;structure_counts['source_records']+=1;offset=decoded_bytes;block=[]
+   if len(buffer)>=1000:flush()
+   if record_index%5000==0:print('NCI_NATIVE_STRUCTURES',record_index,'pass',structure_counts['graph_projection_pass'],'quarantine',structure_counts['derived_graph_quarantines'],'seconds',round(time.perf_counter()-start,2),flush=True)
+ assert not block and record_index==42390 and decoded_bytes==source_sdf['bytes'];flush();assert structure_counts['source_records']==structure_counts['graph_projection_pass']+structure_counts['derived_graph_quarantines']
+ classes=[];class_by_nsc={};class_hist=collections.Counter()
+ with (B/'raw/aids_conc_may04.txt').open() as stream:
+  reader=csv.DictReader(stream);class_header=reader.fieldnames
+  for index,native in enumerate(reader):
+   nsc=native['NSC'].strip();label=native[next(k for k in native if k.strip()=='Conclusion')].strip();assert nsc not in class_by_nsc and label in ['CA','CM','CI'];rid='NCI-AIDS-May2004-conclusion:'+str(index);entry=dict(source_record_id=rid,source_row_index=index,source_NSC=nsc,source_conclusion=label,source_conclusion_role='manual_overall_judgment_from_individual_dose_response_curves',secondary_binary_projection_CA_CM_positive=int(label in ['CA','CM']),secondary_binary_projection_is_not_new_observation=True,source_native_fields_json=json.dumps(native,sort_keys=True),source_structure_record_ids_json=json.dumps([s['source_record_id'] for s in structures.get(nsc,[])]),source_geometry_or_stereospecific_claim=False,task_admitted=False);classes.append(entry);class_by_nsc[nsc]=entry;class_hist[label]+=1
+ assert len(classes)==43850;p=O/'native-conclusion-records.parquet';pq.write_table(pa.Table.from_pylist(classes),p,compression='zstd');assert pq.read_table(p).to_pylist()==classes;class_file=ref(p,rows=len(classes));endpoint_files=[];contexts=collections.defaultdict(lambda:collections.defaultdict(list));endpoint_counts={};all_endpoints=[]
+ for endpoint,filename in [('EC50','aids_ec50_may04.txt'),('IC50','aids_ic50_may04.txt')]:
+  records=[];stats=collections.Counter();ns=set();header=None
+  with (B/'raw'/filename).open() as stream:
+   reader=csv.DictReader(stream);header=reader.fieldnames
+   for index,native in enumerate(reader):
+    parsed=None;error=None;status='native_schema_pass';rid='NCI-AIDS-May2004-'+endpoint+':'+str(index);nsc=native['NSC'].strip();ns.add(nsc)
+    try:
+     parsed=parse_endpoint(native,endpoint);stats['native_schema_pass']+=1;stats['point_target_available']+=parsed['point_target_available'];stats['physical_unit_mapping_available']+=parsed['physical_unit_mapping_available'];stats['positive_uncertainty_target_available']+=parsed['positive_uncertainty_target_available'];stats['source_documentation_gap']+=parsed['source_documentation_gap'];stats['source_NumExp_sum_not_independent_experiment_count']+=parsed['source_NumExp'];stats['flag_'+parsed['source_flag']]+=1;stats['unit_'+parsed['source_ConcUnit']]+=1;contexts[tuple(parsed['compound_highestdose_context_key'])][endpoint].append(rid)
+    except Exception as exc:error=type(exc).__name__+':'+str(exc);status='quarantined_native_numeric_schema';stats['schema_quarantines']+=1
+    entry=dict(source_record_id=rid,source_row_index=index,source_NSC=nsc,endpoint_kind=endpoint,assay_readout='protection_of_infected_cells' if endpoint=='EC50' else 'growth_inhibition_of_uninfected_cells',source_native_fields_json=json.dumps(native,sort_keys=True),source_schema_status=status,source_schema_error=error,projection_json=json.dumps(parsed,sort_keys=True) if parsed else None,source_conclusion_record_id=class_by_nsc.get(nsc,{}).get('source_record_id'),source_structure_record_ids_json=json.dumps([s['source_record_id'] for s in structures.get(nsc,[])]),same_cell_or_assay_replicate_pair_asserted=False,source_cell_line=None,source_exposure_time=None,task_admitted=False);records.append(entry);all_endpoints.append(entry);stats['source_rows']+=1
+  expected=39365 if endpoint=='EC50' else 39350;assert len(records)==expected;stats['unique_source_NSCs']=len(ns);p=O/('native-'+endpoint+'-records.parquet');pq.write_table(pa.Table.from_pylist(records),p,compression='zstd');assert pq.read_table(p).to_pylist()==records;endpoint_files.append(ref(p,rows=len(records),endpoint=endpoint,native_header=header));endpoint_counts[endpoint]=dict(stats)
+ links=[];unique_graph_links=0;ambiguous_graph_links=0;missing_graph_links=0;paired_contexts=0;endpoint_by_id={r['source_record_id']:r for r in all_endpoints};paired_point_contexts=0
+ for key,values in sorted(contexts.items()):
+  nsc,unit,high=key;sources=structures.get(nsc,[]);valid=[s for s in sources if s['graph_projection_status']=='graph_projection_pass'];chem={s['derived_nonstereo_connectivity_smiles'] for s in valid};paired=bool(values['EC50'] and values['IC50']);paired_contexts+=paired;both_point=paired and len(values['EC50'])==len(values['IC50'])==1 and all(json.loads(endpoint_by_id[rid]['projection_json'])['point_target_available'] for rid in values['EC50']+values['IC50']);paired_point_contexts+=both_point;links.append(dict(source_NSC=nsc,source_ConcUnit=unit,source_log10_highest_concentration_literal=high,EC50_source_record_ids_json=json.dumps(values['EC50']),IC50_source_record_ids_json=json.dumps(values['IC50']),paired_assay_context=paired,exact_one_per_endpoint_and_both_source_point_masks=both_point,all_source_structure_record_ids_json=json.dumps([s['source_record_id'] for s in sources]),unique_successful_source_connectivity_graph=(len(chem)==1),multiple_successful_source_connectivity_graphs=(len(chem)>1),source_conclusion_record_id=class_by_nsc.get(nsc,{}).get('source_record_id'),join_level='literalNSC+same_source_concentrationunit+same_log10highesttestedconcentration;infected/uninfectedseparateassays',same_cell_or_replicate_link=False,release_dates_equal=False,source_lot_identity_or_stereochemistry_verified=False,new_training_task_admitted=False))
+ for nsc in class_by_nsc:
+  valid={s['derived_nonstereo_connectivity_smiles'] for s in structures.get(nsc,[]) if s['graph_projection_status']=='graph_projection_pass'};unique_graph_links+=len(valid)==1;ambiguous_graph_links+=len(valid)>1;missing_graph_links+=len(valid)==0
+ p=O/'NSC-unit-highestdose-context-links.parquet';pq.write_table(pa.Table.from_pylist(links),p,compression='zstd');assert pq.read_table(p).to_pylist()==links;link_file=ref(p,rows=len(links));reserve();result=dict(schema='mora3.NCIAIDSOriginalNativeCuration/v1',status='complete_native_sources_graph_projection_and_exact_NSC_context_links;task_admission_pending',completed_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),source_acquisition=ref(B/'manifest.json'),source_native_SDF=source_sdf,native_structure_counts=dict(structure_counts),native_structure_distinct_NSCs=len(structures),native_structure_projection_failures=dict(failures),source_program_header_counts=dict(source_programs),source_conclusion_counts=dict(class_hist),source_conclusion_rows=len(classes),conclusion_NSCs_with_one_unambiguous_valid_graph=unique_graph_links,conclusion_NSCs_missing_valid_graph=missing_graph_links,conclusion_NSCs_multiple_successful_graphs=ambiguous_graph_links,endpoint_counts=endpoint_counts,context_link_rows=len(links),paired_compound_unit_highestdose_contexts=paired_contexts,paired_exactpoint_source_contexts=paired_point_contexts,source_provider_counts_are_rows_not_unique_NSCs=True,classification_manual_and_endpoint_computed_summaries_separate=True,all_native_SDF_bytes_atoms_bonds_and_unknown_fields_retained=True,all_successful_derived_graphs_native_element_topology_and_roundtrip_formula_charge_verified=True,all_old_source_raw_decoded_files_unchanged=True,legacy_syntax_policy='terminalMENDaddedonlytoderivedinmemorycopy;nativeatom/bond/charge/countlinesneveredited;strictfailuresquarantined',geometry_policy='Corina01.500030sourcecomputednostereo/nooptimization;coordsandgeometryderivedstereotagsnevermodelobservedinputs/targets',source_stereochemistry_known=False,IC50_native_header_resolves_log10_scale=True,IC50_lessthan_and_V_units_documentation_gaps_retained=True,aggregate_censor_flags_not_bounds_on_mean=True,zero_SD_not_perfect_precision=True,no_IC50_EC50_selectivity_ratio_derived=True,source_NSC_link_is_not_samecell_replicate_or_matchedlot=True,source_release_dates=['October1999structures','May2004class/endpoints'],rights='officialpublicnonconfidentialNCIrelease;copyrightfreeNCIproductsunlessotherwiseindicated;creditNCI;noCCSPDXinvented',structure_files=structure_files,class_file=class_file,endpoint_files=endpoint_files,context_links=link_file,source_raw_schema_headers=dict(conclusion=class_header),model_adapter_supported=False,new_training_task_views=0,new_independent_experiments=0,optimizer_steps=0,seed=0,RDKit_version=rdBase.rdkitVersion,seconds=time.perf_counter()-start)
+ (O/'manifest.json').open('x').write(json.dumps(result,indent=2)+'\n');print('COMPLETE',json.dumps({k:result[k] for k in ['native_structure_counts','conclusion_NSCs_with_one_unambiguous_valid_graph','conclusion_NSCs_missing_valid_graph','conclusion_NSCs_multiple_successful_graphs','endpoint_counts','context_link_rows','paired_compound_unit_highestdose_contexts','paired_exactpoint_source_contexts','seconds']}),flush=True)
+if __name__=='__main__':main()

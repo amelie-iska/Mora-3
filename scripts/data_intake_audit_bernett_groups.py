@@ -1,0 +1,48 @@
+"""All native Bernett pairs: qualification, exact-pair and detected-group exposure audit."""
+from pathlib import Path
+import json,csv,gzip,hashlib,collections,datetime,time
+import pyarrow as pa,pyarrow.parquet as pq
+R=Path('/home/iska/Documents/amelie/bio/Mora-3');O=R/'outputs/data-intake/20261101-Bernett-corpus-readiness-v1';O.mkdir();start=time.perf_counter()
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def ref(p,**kw):return dict(path=str(p.relative_to(R)),bytes=p.stat().st_size,sha256=sha(p),**kw)
+def check(rec):
+ p=Path(rec['path']);p=p if p.is_absolute() else R/p;assert p.stat().st_size==rec['bytes'] and sha(p)==rec['sha256'];return p
+H=R/'outputs/data-sources/20261031-legacy-mint-v1/handoff-MINT-Bernett-full-native-verified-v2.json';assert sha(H)=='fa02aaa97c77d1482a12e2eaf24144ddd996754ef28ee77ef0863d4c0aa6d46a';h=json.loads(H.read_text());S=Path(h['native_manifest']);assert sha(S)==h['native_manifest_sha256'];m=json.loads(S.read_text());baselinep=R/'outputs/data-intake/20261031-subagent/raw/uniprot2026_03/reviewed-annotation4-5-sequences.tsv.gz'
+with gzip.open(baselinep,'rt') as stream:baseline={r['Entry']:r['Sequence'] for r in csv.DictReader(stream,delimiter='\t')}
+G=R/'outputs/data-intake/20261101-qualified-protein-linclust-v1/manifest.json';g=json.loads(G.read_text());groupmap={r['canonical_sequence_sha256']:r['detected_group_id'] for r in pq.read_table(check(g['membership'])).to_pylist()};assert len(groupmap)==104176
+masterp=R/'outputs/data-intake/20261101-RNAcentral-pilot-union-v1/master-corpus-manifest-v18-RNAcentral-native-pilot-v1.json';master=json.loads(masterp.read_text());prior_train_sequences=set();prior_group_refs=[]
+for shard in master['shards']:
+ if shard.get('source_family')=='UniProt':
+  assert shard.get('split')=='train';r=master['effective_group_lookup'][shard['path']];prior_group_refs.append(r)
+  for row in pq.read_table(check(r)).to_pylist():prior_train_sequences.update(x[len('sequence:'):] for x in json.loads(row['effective_groups_json']) if x.startswith('sequence:'))
+assert prior_train_sequences==set(groupmap)
+fasta=next(p for p in m['payloads'] if Path(p['path']).name=='native-SwissProt-source-sequences.parquet');proteins={};qualified={};dispositions=collections.Counter()
+for row in pq.read_table(check(fasta)).to_pylist():
+ acc=row['native_source_id'];seq=row['native_sequence'];digest=hashlib.sha256(seq.encode()).hexdigest();assert digest==row['native_sequence_sha256'] and len(seq)==row['native_length'] and acc not in proteins;proteins[acc]=row;expected=acc in baseline and seq==baseline[acc];assert expected==row['exact_qualified_current_entry_sequence_candidate'];dispositions[row['disposition']]+=1
+ if expected:qualified[acc]=digest
+assert len(proteins)==20385 and len(qualified)==16290
+rows=[];files=[];native_ids=set();sets=collections.defaultdict(lambda:collections.defaultdict(set));pair_counts=collections.Counter();pair_labels=collections.defaultdict(set);counts=collections.Counter();splitcounts=collections.defaultdict(collections.Counter)
+for source in m['payloads']:
+ if source is fasta:continue
+ path=check(source);files.append(ref(path));native=pq.read_table(path).to_pylist();assert len(native)==source['rows']
+ for rowindex,row in enumerate(native):
+  assert row['source_record_id'] not in native_ids;native_ids.add(row['source_record_id']);a,b=row['protein1_accession'],row['protein2_accession'];split=row['source_native_split'];good=a in qualified and b in qualified;assert good==row['both_current_annotation_qualified_exact_sequence_candidates'];missing=[x for x in [a,b] if x not in proteins];assert row['all_native_protein_sequence_refs_unambiguous']==(not missing);assert row['experimental_noninteraction'] is False and row['direct_binding_proven'] is False
+  for acc,key in [(a,'protein1_native_sequence_sha256'),(b,'protein2_native_sequence_sha256')]:assert row[key]==(proteins[acc]['native_sequence_sha256'] if acc in proteins else None)
+  counts['native_pair_occurrences']+=1;splitcounts[split]['native_pairs']+=1;counts['both_exact_qualified_candidate_pairs']+=good;counts['pairs_missing_native_FASTA']+=bool(missing);counts['positive_labels']+=row['benchmark_label']==1;counts['random_sampled_negative_labels']+=row['benchmark_label']==0
+  output=dict(source_record_id=row['source_record_id'],source_payload=str(path.relative_to(R)),source_payload_sha256=source['sha256'],source_row_index=rowindex,source_native_split=split,protein1_accession=a,protein2_accession=b,source_benchmark_label=row['benchmark_label'],source_label_evidence_class=row['evidence_class'],both_exact_qualified_native_sequences=good,missing_native_FASTA_subjects_json=json.dumps(missing),source_positive_is_not_per_assay_direct_binding=True,source_sampled_negative_is_not_experimental_absence=True,new_task_admitted=False,corpus_split_admitted=None,upstream_HIPPIE_terms_and_pair_evidence_pending=True)
+  if good:
+   sa,sb=qualified[a],qualified[b];ga,gb=groupmap[sa],groupmap[sb];key='|'.join(sorted([sa,sb]));pair_counts[key]+=1;pair_labels[key].add(row['benchmark_label']);splitcounts[split]['both_qualified_pairs']+=1;sets[split]['accessions'].update([a,b]);sets[split]['exact_sequences'].update([sa,sb]);sets[split]['detected_endpoint_groups'].update([ga,gb]);sets[split]['unordered_sequence_pairs'].add(key);output.update(protein1_native_sequence_sha256=sa,protein2_native_sequence_sha256=sb,detected_protein_group1=ga,detected_protein_group2=gb,unordered_exact_sequence_pair_key=key,both_endpoints_already_in_current_train_reference_priors=(sa in prior_train_sequences and sb in prior_train_sequences))
+  else:output.update(protein1_native_sequence_sha256=None,protein2_native_sequence_sha256=None,detected_protein_group1=None,detected_protein_group2=None,unordered_exact_sequence_pair_key=None,both_endpoints_already_in_current_train_reference_priors=None)
+  rows.append(output)
+assert len(rows)==274500 and counts['both_exact_qualified_candidate_pairs']==253313 and counts['pairs_missing_native_FASTA']==173
+intersections={};shared=collections.defaultdict(set)
+for a,b in [('train','validation'),('train','test'),('validation','test')]:
+ intersections[a+'__'+b]={kind:len(sets[a][kind]&sets[b][kind]) for kind in ['accessions','exact_sequences','detected_endpoint_groups','unordered_sequence_pairs']};shared[a].update(sets[a]['detected_endpoint_groups']&sets[b]['detected_endpoint_groups']);shared[b].update(sets[a]['detected_endpoint_groups']&sets[b]['detected_endpoint_groups'])
+for row in rows:
+ key=row['unordered_exact_sequence_pair_key'];split=row['source_native_split'];row['same_exact_sequence_pair_source_occurrences']=pair_counts[key] if key else None;row['same_exact_sequence_pair_opposite_labels']=len(pair_labels[key])>1 if key else None;row['detected_endpoint_group_shared_with_other_source_protocol_split']=bool({row['detected_protein_group1'],row['detected_protein_group2']}&shared[split]) if key else None
+ if row['detected_endpoint_group_shared_with_other_source_protocol_split']:splitcounts[split]['qualified_pairs_with_cross_protocol_detected_endpoint_group']+=1
+filesout=[]
+for split in ['train','validation','test']:
+ selected=[r for r in rows if r['source_native_split']==split];p=O/('pair-qualification-and-group-exposure-'+split+'.parquet');pq.write_table(pa.Table.from_pylist(selected),p,compression='zstd');assert pq.read_table(p).to_pylist()==selected;filesout.append(ref(p,rows=len(selected)))
+(O/'code.py').write_bytes(Path(__file__).read_bytes());result=dict(schema='mora3.BernettQualifiedPairAndGroupExposure/v1',status='all_native_source_pairs_qualified_and_group_audited;no_task_admission',source_handoff=ref(H),source_native_manifest=ref(S),current_master=ref(masterp),current_qualified_sequence_source=ref(baselinep),detected_group_manifest=ref(G),current_train_prior_group_refs=prior_group_refs,all_native_FASTA_hashes_lengths_and_explicit_accession_exact_sequences_rechecked=True,all_native_pair_SHA_rows_endpoint_refs_and_source_masks_rechecked=True,source_pair_counts=dict(counts),counts_by_original_source_split={k:dict(v) for k,v in splitcounts.items()},native_FASTA_dispositions=dict(dispositions),qualified_protein_IDs=len(qualified),source_protocol_intersections=intersections,qualified_unique_exact_sequence_pairs=len(pair_counts),qualified_exact_sequence_pair_duplicate_occurrences=sum(v-1 for v in pair_counts.values()),qualified_exact_sequence_pairs_opposite_source_labels=sum(len(v)>1 for v in pair_labels.values()),all_qualified_endpoint_sequences_already_in_current_train_reference_priors=True,source_train_test_ID_disjointness_not_full_corpus_blindness=True,detected_groups_are_heuristic_not_exhaustive_homology=True,source_fixed_splits_preserved=True,negative_source_sampling_seed_unpublished=True,source_KaHIP_partition_seed=1234,corpus_model_eval_allocation_not_made=True,source_specific_HIPPIE_rights_review_pending=True,source_paper_or_benchmark_license_not_inferred_to_grant_every_upstream_asset=True,STRING_or_other_pair_label_exposure_audit='pendingcompactexactprovidersequencecandidates;noabsenceclaim',source_target_ontology='benchmarksourceclassonly;positivecuratedHIPPIEpairwithoutperassaydirectbindingproof;negativealgorithmicallysamplednotexperimentalabsence',outputs=filesout,new_training_task_views=0,new_independent_experiments=0,optimizer_steps=0,seconds=time.perf_counter()-start)
+(O/'manifest.json').open('x').write(json.dumps(result,indent=2)+'\n');print(json.dumps({k:result[k] for k in ['source_pair_counts','counts_by_original_source_split','source_protocol_intersections','qualified_exact_sequence_pair_duplicate_occurrences','qualified_exact_sequence_pairs_opposite_source_labels','seconds']},indent=2))

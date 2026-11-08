@@ -1,4 +1,4 @@
-import {analogy, boltzmannStates, coolingTemperatures} from './mechanism-models.js';
+import {analogy, sourceMotif, segmentBytes, hilbertScore, boltzmannStates, coolingTemperatures} from './mechanism-models.js';
 
 const palette = ['#8de3ba', '#edc579', '#c8b5ef', '#9bdaef'];
 const ink = '#102d2b';
@@ -218,15 +218,22 @@ function drawForest(g, c, n, model) {
   }
 }
 function drawAnalogy(g, c, v, model) {
-  // Two typed motifs; same ordered incidence, distinct source/target context.
-  const colors=['#8de3ba','#edc579','#c8b5ef'];
-  for(let row=0;row<2;row++) {
-    const motif=[[-1.15,1.25,-.68+row*.86],[-.45,1.25,-.68+row*.86],[.25,1.25,-.68+row*.86]];
-    motif.forEach((point,i)=>g.gem(point,.14,colors[i]));
-    g.arrow(motif[0],motif[1],colors[0]);g.arrow(motif[1],motif[2],colors[1]);
-    if(row===0) motif.forEach(point=>g.line(point,add(point,[0,0,.86]),'#668d84'));
-    g.arrow(motif[2],[.8,.65,-.68+row*.86],c);
-  }
+  const colors={donor:'#8de3ba',junction:'#edc579',receiver:'#c8b5ef'};
+  const rows=[sourceMotif,model.matched.targetMotif];
+  const positions=rows.map((motif,row)=>motif.types.map((_,i)=>[-1.34+i*.72,1.25,-.68+row*.86]));
+  model.matched.motif.mapping.forEach((target,source)=>{
+    const color=colors[sourceMotif.types[source]];
+    g.line(positions[0][source],positions[1][target],color);
+  });
+  rows.forEach((motif,row)=>{
+    const points=positions[row];
+    motif.types.forEach((type,i)=>g.gem(points[i],.14,colors[type]));
+    motif.edges.forEach(([from,to])=>{
+      const start=mix(points[from],points[to],.22), end=mix(points[from],points[to],.78);
+      g.arrow(add(start,[0,.09,0]),add(end,[0,.09,0]),colors[motif.types[from]]);
+    });
+    g.line([.35,1.14,points[0][2]],[.8,.65,points[0][2]],c);
+  });
   g.box([.85,.62,-.18],[.34,.34,.9],mint); // shared embedding route
   model.candidates.forEach((item,i)=>{
     const x=-1.35+i*.54, color=item.refusal?'#da8e88':item.id===model.selected?'#dceaa0':c;
@@ -288,27 +295,14 @@ function harmonic(x) {
 
 export function toyModel(index, value) {
   if (index===2) {
-    const input='AC'.repeat(value), vocabulary=['ACAC','AC','A','C'];
-    const paths=Array(input.length+1).fill(null);
-    paths[0]=[];
-    for (let i=0;i<input.length;i++) {
-      if (!paths[i]) continue;
-      for (const piece of vocabulary) {
-        if (!input.startsWith(piece,i)) continue;
-        const end=i+piece.length;
-        if (!paths[end] || paths[end].length>paths[i].length+1) paths[end]=[...paths[i],piece];
-      }
-    }
-    return {input,pieces:paths.at(-1)};
+    const input='AC'.repeat(value);
+    return {input,pieces:segmentBytes(input,['ACAC','AC']).path};
   }
   if (index===3) {
     const query=[value,.3,-.25];
     const keys=[[0,.1,.4],[.7,.4,-.1],[1.3,-.25,.35]];
     const values=[[.9,.1,.2],[.3,.5,.1],[.05,.15,1.1]];
-    const scores=keys.map(key => {
-      const difference=sub(query,key);
-      return Math.min(...difference)-Math.max(...difference);
-    });
+    const scores=keys.map(key=>hilbertScore(query,key));
     const terms=query.map((_,i)=>keys.map((_,j)=>scores[j]+values[j][i]));
     const result=terms.map(row=>Math.max(...row));
     const winners=terms.map((row,i)=>row.flatMap((term,key)=>term===result[i]?[key]:[]));
@@ -324,10 +318,17 @@ export function toyModel(index, value) {
   if(index===7) {
     const {query,ranked,projected,baseline,selected}=analogy(value,0);
     const candidates=[...ranked].sort((a,b)=>a.id.localeCompare(b.id));
-    return {query,candidates,projected:projected.id,nearest:ranked[0].id,
+    const matched=selected??candidates.find(item=>item.id==="C");
+    return {query,candidates,projected:projected.id,nearest:ranked[0].id,matched,
       baseline:baseline.id,selected:selected?.id??"Abstain"};
   }
-  if(index===8) return {points:structureA.map((point,i)=>mix(point,structureB[i],value)),reference:structureA};
+  if(index===8) {
+    const points=structureA.map((point,i)=>mix(point,structureB[i],value));
+    const lengths=coordinates=>coordinates.slice(1).map((point,i)=>Math.hypot(...sub(point,coordinates[i])));
+    const referenceLengths=lengths(structureA);
+    const bondShift=Math.max(...lengths(points).map((length,i)=>Math.abs(length-referenceLengths[i])));
+    return {points,reference:structureA,bondShift};
+  }
   if(index===9) {
     const temperature=coolingTemperatures[value-1];
     const gap=value>1?coolingTemperatures[value-2]-temperature:null;

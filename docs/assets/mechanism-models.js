@@ -22,7 +22,8 @@ export function boltzmannStates(energies, baseWeights, temperature, reference = 
       || !Number.isFinite(reference) || !Number.isFinite(temperature) || temperature <= 0) {
     throw new RangeError("Finite energies, positive base weights, and positive temperature required.");
   }
-  const logReward = energies.map(energy => -(energy - reference) / (kBoltzmannEv * temperature));
+  const kT = kBoltzmannEv * temperature;
+  const logReward = energies.map(energy => -(energy - reference) / kT);
   if (!logReward.every(Number.isFinite)) throw new RangeError("Unrepresentable log reward.");
   const baseScale = Math.max(...baseWeights);
   const logBaseNormalizer = Math.log(baseScale) + Math.log(baseWeights.reduce((sum, weight) => sum + weight / baseScale, 0));
@@ -30,7 +31,7 @@ export function boltzmannStates(energies, baseWeights, temperature, reference = 
   const shift = Math.max(...logMass);
   const weights = logMass.map(value => Math.exp(value - shift));
   const sum = weights.reduce((total, weight) => total + weight, 0);
-  return {logReward, logMass, logNormalizer: shift + Math.log(sum), probabilities: weights.map(weight => weight / sum)};
+  return {reference, kT, logReward, logMass, logNormalizer: shift + Math.log(sum), probabilities: weights.map(weight => weight / sum)};
 }
 
 const matched = {relation, stage, assay, unit: "nS", protocol};
@@ -40,6 +41,8 @@ const references = [
   {...matched, id: "R3", before: [.6, .9, .1, -.1], after: [1.2, 1.55, -.2, .1],
     stage: "late epithelial", group: "reference culture 3"},
 ];
+const discordantReference = {...matched, id: "R4", before: [1.4, 1.3, .9, .2], after: [.5, .72, .24, .12],
+  group: "reference culture 4"};
 const queryBefore = [1.15, 2.12, .4, -.25];
 const candidates = [
   {...matched, id: "A", state: [2.27, 2.73, 1.13, -.08], relation: "receiver → donor"},
@@ -59,7 +62,7 @@ function rejection(item, query) {
   return reasons.join(", ");
 }
 
-// A supplied correspondence, not a discovered biological mechanism.
+// Typed roles and edges are explicit inputs to the synthetic match.
 export const sourceMotif = {
   types: ["donor", "junction", "receiver"],
   edges: [[0, 1, "opens"], [1, 2, "conducts"]],
@@ -78,9 +81,23 @@ export function checkMotif(source, target, mapping) {
     reasons.push("Directed typed edge mismatch");
   return {ok:!reasons.length,reasons,matched};
 }
-const candidateMotif = id => ({types:[...sourceMotif.types], edges:id === "B"
-  ? [[0,1,"opens"],[0,2,"conducts"]]
-  : id === "A" ? [[1,0,"opens"],[2,1,"conducts"]] : sourceMotif.edges});
+export function matchMotifByRole(source, target) {
+  const mapping = source.types.map(type => target.types.indexOf(type));
+  if (new Set(source.types).size !== source.types.length || new Set(target.types).size !== target.types.length
+      || source.types.length !== target.types.length || mapping.includes(-1)) {
+    return {mapping:null, ok:false, reasons:["Unique role correspondence unavailable"], matched:0};
+  }
+  return {mapping, ...checkMotif(source, target, mapping)};
+}
+
+function candidateMotif(id) {
+  if (id === "C") {
+    return {types:["receiver","donor","junction"], edges:[[1,2,"opens"],[2,0,"conducts"]]};
+  }
+  const edges = id === "B" ? [[0,1,"opens"],[0,2,"conducts"]]
+    : id === "A" ? [[1,0,"opens"],[2,1,"conducts"]] : sourceMotif.edges;
+  return {types:sourceMotif.types, edges};
+}
 
 export function topologyComparison(radius, scenario=0) {
   const source=[[0,0],[1,0],[1,1],[0,1]];
@@ -105,29 +122,44 @@ export function topologyComparison(radius, scenario=0) {
 
 export function analogy(scale, referenceMode, scenario = 0) {
   if (!Number.isFinite(scale) || !Number.isInteger(referenceMode) || referenceMode < 0 || referenceMode > 3
-      || ![0,1,2].includes(scenario)) throw new RangeError("Invalid analogy controls");
+      || ![0,1,2,3].includes(scenario)) throw new RangeError("Invalid analogy controls");
   const querySpec = {...matched};
   if (scenario === 1) querySpec.stage = "late epithelial";
   if (scenario === 2) querySpec.relation = "receiver → donor";
   // The explicit choice is made before the compatibility check. R3 is shown
   // for audit and can be chosen separately for the later-stage query.
-  const chosen = referenceMode === 0 ? ["R1", "R2"] : [references[referenceMode - 1].id];
-  const referenceAudit = references.map(ref => ({...ref,
+  const chosen = referenceMode === 0 ? (scenario === 3 ? ["R1", "R2", "R4"] : ["R1", "R2"])
+    : [references[referenceMode - 1].id];
+  const available = scenario === 3 ? [...references, discordantReference] : references;
+  const referenceAudit = available.map(ref => ({...ref,
     disposition: rejection(ref, querySpec) || (chosen.includes(ref.id) ? "Used" : "Outside chosen set"),
   }));
   const pairs = referenceAudit.filter(ref => ref.disposition === "Used");
   const transfer = active => {
-    const displacement = active.length ? average(active.map(pair => subtract(pair.after, pair.before))) : null;
-    return {displacement, query: displacement
-      ? queryBefore.map((value, i) => value + scale * displacement[i]) : queryBefore};
+    const deltas = active.map(pair => subtract(pair.after, pair.before));
+    const agreement = [];
+    for (const [i, first] of deltas.entries()) {
+      for (let j=i+1;j<deltas.length;j++) {
+        const second = deltas[j];
+        const cosine = first.reduce((sum, value, axis) => sum + value * second[axis], 0) / (norm(first) * norm(second));
+        agreement.push({references:[active[i].id, active[j].id], cosine});
+      }
+    }
+    const conflicts = agreement.filter(({cosine}) => !Number.isFinite(cosine) || cosine <= 0);
+    const transferReason = !active.length ? "no compatible reference pairs"
+      : conflicts.length ? "conflicting reference directions" : null;
+    const displacement = transferReason ? null : average(deltas);
+    const query = displacement ? queryBefore.map((value, i) => value + scale * displacement[i]) : queryBefore;
+    return {displacement, query, agreement, conflicts, transferReason};
   };
-  const {displacement, query} = transfer(pairs);
+  const {displacement, query, agreement, conflicts, transferReason} = transfer(pairs);
   // These are visible proposal descriptors. Query outcomes are absent from
   // every candidate record and never participate in the distance or gates.
   const ranked = candidates.map(candidate => {
     const difference = subtract(candidate.state, query);
-    const motif=checkMotif(sourceMotif,candidateMotif(candidate.id),[0,1,2]);
-    return {...candidate, motif, difference, squared:difference.map(v=>v*v), projected: norm(difference.slice(0, 2)), full: norm(difference),
+    const targetMotif = candidateMotif(candidate.id);
+    const motif = matchMotifByRole(sourceMotif,targetMotif);
+    return {...candidate, motif, targetMotif, difference, squared:difference.map(v=>v*v), projected: norm(difference.slice(0, 2)), full: norm(difference),
       refusal: [rejection(candidate, querySpec), ...motif.reasons].filter(Boolean).join(", "), masked: true};
   }).sort((a, b) => a.full - b.full || a.id.localeCompare(b.id));
   const eligible = ranked.filter(item => !item.refusal);
@@ -145,13 +177,13 @@ export function analogy(scale, referenceMode, scenario = 0) {
     return {omitted: omitted.id, remaining: remaining.map(item => item.id), selected: pick?.id ?? null,
       distance: pick?.distance ?? null, margin: pick && ranks.length > 1 ? ranks[1].distance - pick.distance : null};
   });
-  return {pairs, referenceAudit, querySpec, queryBefore, displacement, query, ranked, selected, projected,
+  return {pairs, referenceAudit, querySpec, queryBefore, displacement, query, ranked, selected, projected, agreement, conflicts, transferReason,
     projectedEligible, baseline, sensitivity,
     margin: selected && eligible.length > 1 ? eligible[1].full-selected.full : null};
 }
 
 export function segmentBytes(payload, learned) {
-  const tokens = [...learned, ...new Set(payload)].sort((a,b) => b.length-a.length);
+  const tokens = [...new Set([...learned, ...payload])].sort((a,b) => b.length-a.length);
   const costs = Array(payload.length).fill(Infinity).concat(0);
   const next = [];
   for (let i = payload.length - 1; i >= 0; i--) {
@@ -171,13 +203,18 @@ export function segmentBytes(payload, learned) {
     greedy.push(token);
     i+=token.length;
   }
-  return {path,costs,greedy};
+  const firstChoices = tokens.filter(token => payload.startsWith(token)).map(token => ({
+    token, suffixCost:costs[token.length], chosen:token === next[0],
+  }));
+  return {path,costs,greedy,firstChoices};
 }
 
-export function hilbertScore(query, key) {
+export function hilbertTerms(query, key) {
   const differences=subtract(query,key);
-  return Math.min(...differences)-Math.max(...differences);
+  const min=Math.min(...differences), max=Math.max(...differences);
+  return {differences, min, max, score:min-max};
 }
+export const hilbertScore = (query, key) => hilbertTerms(query, key).score;
 
 export function ripsAt(states, radius) {
   if (states.length!==4) throw new RangeError("The worked filtration uses four vertices");
@@ -228,20 +265,21 @@ export function trajectory(logReward, length) {
     const forward = logDensity(state, [prev[0] + .95, prev[1] + .55], [.48, .35]);
     const backward = i === 0 ? 0 : logDensity(prev, [state[0] - .86, state[1] - .58], [.52, .41]);
     const continuation = Math.log1p(-stopProbabilities[i]);
-    return {forward, backward, continuation};
+    return {forward, backward, continuation, contribution: forward + continuation - backward};
   });
   const stop = Math.log(stopProbabilities[length]);
   const logZ = .85;
-  const balance = terms.reduce((total, step) => total + step.forward + step.continuation - step.backward,
-    logZ + stop - logReward);
-  return {states, terms, stop, balance, logZ};
+  const pathSum = terms.reduce((total, step) => total + step.contribution, 0);
+  const balance = logZ + pathSum + stop - logReward;
+  return {states, terms, stop, balance, logZ, pathSum};
 }
+
+const rotateQuarterTurn = ([x,y,z]) => [x,-z,y];
 
 export function currentVelocity(coupling, frame = 0) {
   const original = [[0, 0, .1], [1.36, .55, -.18], [2.47, -.28, .28], [3.75, .57, -.1]];
   // Proper rotation about the chain axis, plus a frame translation.
-  const rotate = ([x,y,z]) => frame ? [x,-z,y] : [x,y,z];
-  const xyz = original.map(point => rotate(point).map((value,i)=>value+(frame ? [.1,-.35,.15][i] : 0)));
+  const xyz = frame ? original.map(point => rotateQuarterTurn(point).map((value,i)=>value+[.1,-.35,.15][i])) : original;
   const free = [false, true, true, true];
   const velocities = xyz.map((point, i) => {
     const contributions = xyz.map((neighbor, j) => {
@@ -255,4 +293,13 @@ export function currentVelocity(coupling, frame = 0) {
   });
   const next = xyz.map((point, i) => point.map((value, j) => value + .4 * velocities[i][j]));
   return {xyz, free, velocities, next, distance: norm(subtract(next[1], next[2]))};
+}
+
+export function frameComparison(coupling) {
+  const original = currentVelocity(coupling);
+  const transformed = currentVelocity(coupling,1);
+  const velocityError = Math.max(...original.velocities.map((v,i)=>norm(subtract(rotateQuarterTurn(v),transformed.velocities[i]))));
+  const distanceError = Math.max(...original.next.flatMap((p,i)=>original.next.slice(i+1).map((q,j)=>
+    Math.abs(norm(subtract(p,q)) - norm(subtract(transformed.next[i],transformed.next[i+j+1]))))));
+  return {original, transformed, velocityError, distanceError};
 }

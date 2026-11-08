@@ -1,10 +1,10 @@
-import {tensorScene} from "./layer-trace-scene.js";
+import {tensorScene, graphScene} from "./layer-trace-scene.js";
 import {weights, graphPreset, graphFromInput, runTrace, cdf, affinityObjective, feedbackAxes, feedbackWeight} from "./layer-trace-engine.js";
 
 const names = ["input","strength","strength-value","token","head","channel","steps","progress","prev","next",
   "title","explanation","equation","numerical","tensors","map","key","reduction","json","apply","input-status","scene","angle","pitch",
   "kernel","multiplier","multiplier-value","block-setting","multiplier-setting","hidden-setting","hidden-channel",
-  "affinity-setting","axis","coverage-setting","coverage"];
+  "affinity-setting","axis","coverage-setting","coverage","play","seek","dependency","graph","graph-svg"];
 const ui = Object.fromEntries(names.map(name => [name, document.getElementById("trace-" + name)]));
 const fmt = value => value === -Infinity ? "−∞" : typeof value === "number"
   ? (Math.abs(value) < .00005 ? "0.0000" : value.toFixed(4)) : value;
@@ -300,7 +300,7 @@ steps.push({title:"Observation masks and feedback objective",text:"Each complex 
         {rows:["experimental","teacher","total"],cols:["mean or total","weight"]})];
   }});
 
-let index = 0, graph, trace, currentInput, sceneAxes = [];
+let index = 0, graph, trace, currentInput, sceneAxes = [], playback;
 const routes = [
   [0, "Embed", n => n + " × 4"],
   ...[0, 1].flatMap(layer => {
@@ -323,7 +323,7 @@ const routes = [
 const makeButton = (i, label) => {
   const button = node("button", label);
   button.type = "button";
-  button.addEventListener("click", () => select(i, true));
+  button.addEventListener("click", () => { stopPlayback(); select(i, true); });
   return button;
 };
 const buttons = steps.map((step, i) =>
@@ -352,28 +352,77 @@ function drawScene() {
   const row=(label,values)=>[{label,values,selection:[query]}];
   const view=layer ? (index-1)%layerSteps.length : -1;
   sceneAxes = [];
-  let tensors;
-  if (view>=1 && view<=4 && ui.kernel.value==="dense") {
+  let tensors, links=[], dependency="";
+  if (view===4) {
+    const dense=ui.kernel.value==="dense";
+    const heads=layer.attention.heads;
+    const active=heads[head];
+    const terms=active.candidates[query];
+    const context=active.context[query][channel];
+    const winning=graph.valid.flatMap((valid,k)=>valid && (dense ? terms[k][channel]!==0 : terms[k][channel]===context) ? [k] : []);
+    const headTensor=i=>({label:"H"+(i+1)+" context",values:heads[i].context,head:i,
+      selection:i===head?[query,channel]:null});
+    const headAxis=i=>({row:"token",column:"channel",head:i});
+    tensors=[
+      headTensor(0),
+      {label:"H"+(head+1)+(dense?" p × V":" score + V"),values:terms,selection:[key,channel],mask:r=>!graph.valid[r]},
+      headTensor(1),
+    ];
+    sceneAxes=[headAxis(0),{row:"key",column:"channel",head},headAxis(1)];
+    links=winning.map(k=>({from:[1,k,channel],to:[head*2,query,channel],kind:dense?"weighted":"winner"}));
+    const count=winning.length;
+    dependency=dense
+      ? count+" nonzero weighted terms sum into the selected context channel. A masked key has probability zero."
+      : count+" valid "+(count===1?"key reaches":"keys tie at")+" the maximum for the selected channel. Each channel can select different keys.";
+  } else if (view===5) {
+    const a=layer.attention;
+    const dense=ui.kernel.value==="dense";
+    const global=head*2+channel;
+    tensors=[
+      {label:dense?"Joined heads":"expm1 of joined heads",values:dense?a.concatenated:a.decoded,selection:[query,global]},
+      {label:"Projected attention",values:a.output,selection:[query,global]},
+      {label:"Skip + attention",values:layer.residual,selection:[query,global]},
+    ];
+    sceneAxes=tensors.map(()=>({row:"token",packed:true}));
+    links=[...a.concatenated[query].map((_,c)=>({from:[0,query,c],to:[1,query,global],kind:"weighted"})),
+      {from:[1,query,global],to:[2,query,global],kind:"operand"}];
+    dependency="The output projection mixes the joined channels across both heads. The selected projection channel is added to its original input channel on the skip path.";
+  } else if (view===7) {
+    const hidden=Number(ui["hidden-channel"].value);
+    const global=head*2+channel;
+    tensors=[
+      {label:"FFN normalized input",values:layer.secondNorm.values,selection:[query]},
+      {label:"GELU features",values:layer.ffnActive,selection:[query,hidden]},
+      {label:"FFN projection",values:layer.ffnOutput,selection:[query,global]},
+      {label:"Block output",values:layer.output,selection:[query,global]},
+    ];
+    sceneAxes=[{row:"token",packed:true},{row:"token",column:"hidden-channel"},
+      {row:"token",packed:true},{row:"token",packed:true}];
+    links=[...layer.secondNorm.values[query].map((_,c)=>({from:[0,query,c],to:[1,query,hidden],kind:"weighted"})),
+      {from:[1,query,hidden],to:[2,query,global],kind:"weighted"},
+      {from:[2,query,global],to:[3,query,global],kind:"operand"}];
+    dependency="The highlighted route follows one hidden feature through the two affine maps, GELU, and the residual addition. The output projection also consumes every other hidden feature.";
+  } else if (view>=1 && view<=3 && ui.kernel.value==="dense") {
     const attention=layer.attention;
     if (view===1) {
       tensors=row("Packed Q · K · V",attention.packed);
       sceneAxes = [{row:"token",packed:true}];
     }
     else {
-      const name=["","","scaled","scores","probabilities"][view];
+      const name=["","","scaled","scores"][view];
       tensors=attention.heads.map((values,i)=>({label:"H"+(i+1)+" "+name,values:values[name],head:i,
         selection:i===head?[query,view>=3?key:channel]:null,
         mask:view>=3?(_,c)=>!graph.valid[c]:null}));
       sceneAxes = tensors.map((_,head)=>({row:"token",column:view>=3?"key":"channel",head}));
     }
-  } else if (view>=1 && view<=4) {
+  } else if (view>=1 && view<=3) {
     const heads=layer.attention.heads;
     if (view===2) {
       tensors=["q","k","v"].map(name=>({label:"H"+(head+1)+" "+name.toUpperCase(),values:heads[head][name],
         head,selection:[name==="q"?query:key,channel]}));
       sceneAxes = ["token","key","key"].map(row=>({row,column:"channel"}));
     } else {
-      const name=["","z","","scores","context"][view];
+      const name=["","z","","scores"][view];
       tensors=heads.map((values,i)=>({label:"H"+(i+1)+" "+name,values:values[name],head:i,
         selection:i===head?[query,view===3?key:channel]:null,
         mask:view===3?(_,c)=>!graph.valid[c]:null}));
@@ -403,7 +452,9 @@ function drawScene() {
       }
     }
   }
-  tensorScene(ui.scene,tensors,head,Number(ui.angle.value),Number(ui.pitch.value));
+  tensorScene(ui.scene,tensors,head,Number(ui.angle.value),Number(ui.pitch.value),links);
+  ui.dependency.hidden=!dependency;
+  ui.dependency.textContent=dependency;
   ui.scene.classList.toggle("is-selectable",sceneAxes.length>0);
 }
 function render() {
@@ -418,8 +469,12 @@ function render() {
   ui.explanation.textContent=step.text;
   ui.equation.textContent=step.equation;
   ui.progress.textContent="Step "+(index+1)+" of "+steps.length;
+  ui.seek.value=index+1;
+  ui.seek.setAttribute("aria-valuetext",ui.progress.textContent+" · "+title);
   ui.prev.disabled=index===0;
   ui.next.disabled=index===steps.length-1;
+  ui.graph.hidden=index!==0;
+  if(index===0) graphScene(ui["graph-svg"],graph,query);
   ui["hidden-setting"].hidden=view!==7;
   ui["affinity-setting"].hidden=index<18;
   ui["coverage-setting"].hidden=index!==19;
@@ -431,18 +486,17 @@ function render() {
   ui.tensors.replaceChildren(...figures);
   drawScene();
 }
-function select(i, focus=false) {
+function select(i, focus=false, writeHash=focus) {
   index=i;
   for (const group of [buttons, mapButtons.map(item => item.button)]) {
     group.forEach((button,j)=>{if(j===i)button.setAttribute("aria-current","step");else button.removeAttribute("aria-current");});
   }
   render();
-  if(focus) {
-    history.replaceState(null, "", "#step-" + (i + 1));
-    ui.title.focus({preventScroll:window.innerWidth>760});
-  }
+  if(writeHash) history.replaceState(null, "", "#step-" + (i + 1));
+  if(focus) ui.title.focus({preventScroll:window.innerWidth>760});
 }
 function runGraph(next) {
+  stopPlayback();
   graph = next;
   const attnMult=Number(ui.multiplier.value), dense=ui.kernel.value==="dense";
   ui["multiplier-value"].value=attnMult.toFixed(2);
@@ -492,6 +546,13 @@ ui.apply.addEventListener("click", () => {
     ui["input-status"].textContent = error instanceof SyntaxError ? "Enter valid JSON. The previous graph is still shown." : error.message;
   }
 });
+ui["graph-svg"].addEventListener("click",event=>{
+  const item=event.target.closest("[data-token]");
+  if(!item) return;
+  stopPlayback();
+  ui.token.value=item.dataset.token;
+  render();
+});
 ui.angle.addEventListener("input",drawScene);
 ui.pitch.addEventListener("input",drawScene);
 ui.scene.addEventListener("click",event=>{
@@ -500,6 +561,7 @@ ui.scene.addEventListener("click",event=>{
   const [tensor,row,column]=cell.dataset.cell.split(",").map(Number);
   const axis=sceneAxes[tensor];
   if (!axis) return;
+  stopPlayback();
   if (axis.row) ui[axis.row].value=row;
   if (axis.outputOffset!==undefined) ui.axis.value=axis.outputOffset+column;
   if (axis.column) ui[axis.column].value=column;
@@ -510,8 +572,29 @@ ui.scene.addEventListener("click",event=>{
   }
   render();
 });
-ui.prev.addEventListener("click",()=>select(index-1,true));
-ui.next.addEventListener("click",()=>select(index+1,true));
+function stopPlayback() {
+  clearInterval(playback);
+  playback=undefined;
+  ui.play.textContent="Play trace";
+}
+ui.play.addEventListener("click",()=>{
+  if(playback!==undefined) {
+    stopPlayback();
+    return;
+  }
+  if(index===steps.length-1) select(0,false,true);
+  ui.play.textContent="Pause trace";
+  playback=setInterval(()=>{
+    select(index+1,false,true);
+    if(index===steps.length-1) stopPlayback();
+  },1250);
+});
+ui.seek.addEventListener("input",()=>{
+  stopPlayback();
+  select(Number(ui.seek.value)-1,false,true);
+});
+ui.prev.addEventListener("click",()=>{ stopPlayback(); select(index-1,true); });
+ui.next.addEventListener("click",()=>{ stopPlayback(); select(index+1,true); });
 ui.input.addEventListener("change",preset);
 ui.strength.addEventListener("input",()=>{
   const edgeFeatures=currentInput.edgeFeatures.map((row,i)=>i===0?[Number(ui.strength.value),row[1]]:row);
@@ -528,6 +611,7 @@ ui.kernel.addEventListener("change",()=>{
 ui.multiplier.addEventListener("input",()=>runGraph(graph));
 [ui.token,ui.key,ui.head,ui.channel,ui["hidden-channel"],ui.axis,ui.coverage].forEach(control=>control.addEventListener("change",render));
 function fromHash() {
+  stopPlayback();
   const requested = Number(location.hash.match(/^#step-(\d+)$/)?.[1]);
   select(requested >= 1 && requested <= steps.length ? requested - 1 : 0);
 }

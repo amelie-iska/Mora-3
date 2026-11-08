@@ -44,11 +44,12 @@ function example(index,value,model) {
     case 6: return {rows:model.selected.map((ids,i)=>['Tree '+(i+1)+' selected scores',ids.map(id=>fixed(model.scores[i][id])).join(' · ')]),math:'Each toy tree has three eligible branches. Keep the highest-scoring K per tree.'};
     case 7: return {rows:[['4D query',vector(model.query)],
       ['Nearest in the 2D view',model.projected],['Nearest in the full space',model.nearest],
-      ['Selected eligible candidate',model.selected],['No-transfer baseline',model.baseline]],
+      ['Selected eligible candidate',model.selected],['No-transfer baseline',model.baseline],
+      ['Role map · '+model.matched.id,model.matched.motif.mapping.map((j,i)=>i+'→'+j).join(' · ')]],
       math:'Candidates rank by 4D Euclidean distance. The first two coordinates give the projected distance. Role, directed edges, cell state, intervention, and endpoint gates apply before selection.'};
     case 8: {
       const mean=model.points.reduce((sum,point,i)=>sum+point.reduce((s,v,j)=>s+(v-model.reference[i][j])**2,0),0)/model.points.length;
-      return {rows:[['Mapped atoms',model.points.length],['Unaligned RMS from A',`${fixed(Math.sqrt(mean),3)} Å`]],math:'Linear interpolation in a fixed frame. RMS displacement is from endpoint A without alignment.'};
+      return {rows:[['Mapped atoms',model.points.length],['Unaligned RMS from A',`${fixed(Math.sqrt(mean),3)} Å`],['Largest adjacent pair shift',`${fixed(model.bondShift,3)} Å`]],math:'Linear interpolation in a fixed frame. RMS and adjacent distances use endpoint A as the reference. Even with fixed atom IDs, adjacency lengths can drift.'};
     }
     case 9: return {rows:[['Stage temperature',model.temperature+' K'],
       ['Cooling from prior stage',model.gap===null?'Initial stage':model.gap+' K'],

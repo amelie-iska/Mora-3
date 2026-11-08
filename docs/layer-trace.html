@@ -6,7 +6,7 @@
   <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="architecture-3d.html">3D atlas</a><span aria-hidden="true">/</span><span aria-current="page">Layer trace</span></nav>
   <p class="eyebrow">Architecture internals · Computed example</p>
   <h1>Inside a TokenGT layer</h1>
-  <p class="lead">Follow a graph through two encoder layers, then inspect how a task head separates experimental affinity from teacher energy. Open any operation in the tensor map and select a head, token, or channel.</p>
+  <p class="lead">Follow a graph through two encoder layers, then inspect how a task head separates experimental affinity from teacher energy. Play the forward pass or open any operation. Select a head, token, or channel to follow the arithmetic into its output.</p>
   <p>The browser computes a 4-channel, 2-head example with fixed demonstration weights. It implements the finite tropical kernel and the ordinary softmax kernel with the μP query scaling used in the training configuration.</p>
 </header>
 <div class="trace" data-trace>
@@ -56,14 +56,23 @@
   </aside>
   <section class="trace-work" aria-labelledby="trace-title">
     <nav id="trace-map" class="trace-map" aria-label="Tensor flow by layer"></nav>
-    <div class="trace-toolbar"><span id="trace-progress"></span><div><button type="button" id="trace-prev">← Back</button><button type="button" id="trace-next">Next →</button></div></div>
+    <div class="trace-toolbar">
+      <span id="trace-progress"></span>
+      <div><button type="button" id="trace-prev">← Back</button><button type="button" id="trace-play">Play trace</button><button type="button" id="trace-next">Next →</button></div>
+    </div>
+    <label class="trace-scrub" for="trace-seek">Jump to step <input id="trace-seek" type="range" min="1" max="20" value="1"></label>
     <h2 id="trace-title" tabindex="-1"></h2>
     <p id="trace-explanation" class="trace-explanation"></p>
     <p id="trace-equation" class="trace-equation"></p>
+    <figure class="trace-input-graph" id="trace-graph" hidden>
+      <svg viewBox="0 0 620 150" id="trace-graph-svg" role="img"></svg>
+      <figcaption>Select a node or directed edge to inspect its input token. The learned graph token and padding are separate rows.</figcaption>
+    </figure>
     <figure class="trace-scene">
       <svg id="trace-scene" viewBox="0 0 740 204" role="img"></svg>
-      <figcaption><label for="trace-angle">Orbit</label><input id="trace-angle" type="range" min="-55" max="55" step="1" value="-16"><label for="trace-pitch">Tilt</label><input id="trace-pitch" type="range" min="18" max="65" step="1" value="31"><span>Click a cell to inspect it. Height shows numerical magnitude. Compare values within the same unit. Gold is negative, green marks selection, and gray marks a mask.</span></figcaption>
+      <figcaption><label for="trace-angle">Orbit</label><input id="trace-angle" type="range" min="-55" max="55" step="1" value="-16"><label for="trace-pitch">Tilt</label><input id="trace-pitch" type="range" min="18" max="65" step="1" value="31"><span>Click a cell to inspect it. Cell height shows magnitude up to a cap. Gold is negative, green marks selection, and gray marks a mask.</span></figcaption>
     </figure>
+    <p id="trace-dependency" class="trace-dependency" hidden></p>
     <div id="trace-numerical" class="trace-numerical" aria-live="polite"></div>
     <div id="trace-tensors" class="trace-tensors"></div>
   </section>

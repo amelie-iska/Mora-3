@@ -31,6 +31,13 @@
 .lab-figure .target-ring { fill: none; stroke: #ffc17c; stroke-width: 1.5; stroke-dasharray: 4 4; }
 
 .lab-figure .lab-face { fill: #37675d; }
+.lab-figure .lab-motif-figure { min-height: 0; margin-top: .35rem; }
+.lab-figure .lab-role-link { stroke-width: 2; stroke-dasharray: 4 4; }
+.lab-figure .lab-role-link.aqua { stroke: #80d4b0; }
+.lab-figure .lab-role-link.blue { stroke: #91bcef; }
+.lab-figure .lab-role-link.amber, .lab-figure .lab-extra-edge { stroke: #ffc17c; }
+.lab-figure .lab-extra-edge, .lab-figure .lab-missing-edge { stroke-width: 3; }
+.lab-figure .lab-missing-edge { stroke: #91bcef; stroke-dasharray: 7 5; }
 #lab-evidence:empty { display: none; }
 #lab-evidence { overflow-x: auto; }
 #lab-evidence table { color: #d4e2e7; font-size: .76rem; margin: .35rem 0 .8rem; }

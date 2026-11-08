@@ -77,3 +77,20 @@
 .trace-intro h1 { font-size: clamp(2.7rem, 6vw, 5.1rem); margin-bottom: .55rem; }
 .trace-intro .lead { margin-bottom: .5rem; }
 .trace-intro > p:last-child { margin-bottom: 0; }
+
+.trace-toolbar div { flex-wrap: wrap; justify-content: flex-end; }
+.trace-scrub { display: flex; align-items: center; gap: .7rem; margin-top: .55rem; color: var(--muted); font: .76rem var(--mono); }
+.trace-scrub input { accent-color: var(--pine); flex: 1; min-width: 0; }
+.trace-dependency { margin: .5rem 0 .85rem; padding-left: .7rem; border-left: 2px solid var(--pine); color: var(--muted); font-size: .83rem; }
+.trace-scene .trace-link { stroke: #e0f6c4; stroke-width: 1.45; fill: none; pointer-events: none; }
+.trace-scene .trace-link.weighted { stroke: #b9d7e3; opacity: .7; stroke-dasharray: 4 3; }
+.trace-scene #trace-arrow path { fill: #e0f6c4; }
+.trace-input-graph { margin: .75rem 0; background: var(--card); border: 1px solid var(--line); border-radius: .4rem; }
+.trace-input-graph svg { display: block; width: 100%; max-height: 10rem; }
+.trace-input-graph figcaption { border-top: 1px solid var(--line); padding: .45rem .65rem; color: var(--muted); }
+.trace-input-graph text { fill: var(--ink); font: 15px var(--mono); text-anchor: middle; }
+.trace-input-graph [data-token] { cursor: pointer; }
+.trace-input-graph circle { fill: var(--paper); stroke: var(--muted); stroke-width: 2; }
+.trace-input-graph path[data-token] { fill: none; stroke: var(--muted); stroke-width: 3; }
+.trace-input-graph :is(path.selected, .selected circle) { stroke: var(--pine); stroke-width: 4; }
+.trace-input-graph marker path { fill: var(--muted); }

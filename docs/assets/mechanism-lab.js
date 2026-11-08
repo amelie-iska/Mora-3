@@ -1,4 +1,4 @@
-import {analogy, trajectory, currentVelocity, segmentBytes, hilbertScore, ripsAt, ripsLoopIntervals, topologyComparison, boltzmannStates, coolingTemperatures, energyExamples} from "./mechanism-models.js";
+import {analogy, sourceMotif, trajectory, frameComparison, segmentBytes, hilbertTerms, hilbertScore, ripsAt, ripsLoopIntervals, topologyComparison, boltzmannStates, coolingTemperatures, energyExamples} from "./mechanism-models.js";
 
 const ui = Object.fromEntries(["method", "title", "status", "description", "formula", "control", "result", "source", "plot", "caption", "evidence"]
   .map(name => [name, document.getElementById("lab-" + name)]));
@@ -17,6 +17,22 @@ const scalar = (value, digits = 2) => Number(value).toFixed(digits);
 const xy = ([x, y]) => [68 + 85 * x, 278 - 70 * y];
 const result = (figure, summary, caption) => ({figure, summary, caption});
 
+function motifDiagram(candidate) {
+  const mapping = candidate.motif.mapping;
+  if (!mapping) return "";
+  const columns = [35, 210, 385];
+  const roleStyles = ["aqua", "blue", "amber"];
+  const roleCards = (types, y) => types.map((role, i) =>
+    box(columns[i], y, 140, 32) + label(columns[i] + 12, y + 22, i + " " + role,
+      roleStyles[sourceMotif.types.indexOf(role)])).join("");
+  return '<svg class="lab-motif-figure" viewBox="0 0 560 166" role="img" aria-label="Role correspondence to candidate '
+    + candidate.id + '. ' + mapping.map((j,i) => i + ' to ' + j).join(', ') + '">'
+    + label(35, 22, "SOURCE MOTIF ORDER", "mute")
+    + mapping.map((j,i) => line(columns[i] + 70, 64, columns[j] + 70, 104, "lab-role-link " + roleStyles[i])).join("")
+    + roleCards(sourceMotif.types, 32) + roleCards(candidate.targetMotif.types, 104)
+    + label(35, 158, "CANDIDATE " + candidate.id + " ORDER", "mute") + "</svg>";
+}
+
 const inputs = [
   {graph: ["C", "bond", "O"], names: ["atom", "bond", "atom"], output: ["assay head", "assay value or class", "endpoint, protocol, unit"]},
   {graph: ["A", "link", "V"], names: ["residue", "contact", "residue"], output: ["structure head", "Cartesian coordinates", "atom IDs, frame, Å"]},
@@ -26,8 +42,8 @@ const inputs = [
 const methods = {
   inputs: {
     title: "Graph inputs and outputs", status: "Implemented components · synthetic examples",
-    description: "TokenGT adds entity features, an ordered pair of orthogonal endpoint identifiers, and a node or edge type projection. A task readout chooses its output representation.",
-    formula: "nodes + edges → token states → task readout",
+    description: "TokenGT adds a projected entity feature vector, a projection of two concatenated orthogonal endpoint IDs, and a learned node or edge type vector. A task readout chooses its output representation.",
+    formula: "hᵢⱼ = Wfeat fᵢⱼ + Wid [pᵢ ∥ pⱼ] + e(type)",
     source: "outputs.html", sourceLabel: "Output types and evaluation",
     control: {label: "Example route", options: ["Molecular complex", "Protein structure", "Cell perturbation", "Reaction"]},
     render(index) {
@@ -39,12 +55,19 @@ const methods = {
           + label(point[0]-5,point[1]+6,entry.graph[i*2],"dark-ink")).join("");
       const tokens = ["[GRAPH]", entry.names[0] + " [i,i]", entry.names[2] + " [j,j]", entry.names[1] + " [i,j]"].map((name, i) =>
         box(206, 84 + i * 39, 125, 31) + label(214, 105 + i * 39, name, i === 3 ? "amber" : "aqua")).join("");
-      return result(label(30, 58, "GRAPH", "mute") + label(208, 58, "TOKEN STATES", "mute")
+      return {...result(label(30, 58, "GRAPH", "mute") + label(208, 58, "TOKEN STATES", "mute")
         + label(388, 58, "READOUT", "mute") + graph + arrow(155, 158, 198, 158)
         + tokens + arrow(336, 158, 379, 158) + box(387, 130, 155, 54)
         + label(399, 163, entry.output[0], "blue") + label(30, 279, entry.output[1], "ink")
         + label(30, 307, entry.output[2], "mute"), entry.output[1] + " with " + entry.output[2] + ".",
-        "Node tokens repeat their identifier. Directed edge tokens retain endpoint order. The learned graph token is separate. Different tasks can use pooled or per-entity states.");
+        "Node tokens repeat their identifier. Directed edge tokens retain endpoint order. The learned graph token is separate. Different tasks can use pooled or per-entity states."),
+        table:{caption:"Endpoint projection inputs for this graph",
+          columns:["Token", "Type", "Packed endpoint IDs"],
+          rows:[["[GRAPH]", "Special", "Separate learned vector"],
+            [entry.graph[0], "Node", "(1, 0 | 1, 0)"], [entry.graph[2], "Node", "(0, 1 | 0, 1)"],
+            [entry.graph[0] + " → " + entry.graph[2], "Edge", "(1, 0 | 0, 1)"]]},
+        notes:[["Toy ID basis", "pᵢ = (1, 0), pⱼ = (0, 1). Reversing the edge would swap the two halves to (0, 1 | 1, 0)."]],
+      };
     }
   },
   tokenizer: {
@@ -56,7 +79,7 @@ const methods = {
     render(index) {
       const payload = index === 3 ? "ACGTAC" : "ACGTACGT";
       const learned = index === 3 ? ["ACGT", "ACG", "TAC"] : ["AC", "GT", "ACGT"].slice(0, [0, 2, 3][index]);
-      const {path,costs,greedy} = segmentBytes(payload,learned);
+      const {path,costs,greedy,firstChoices} = segmentBytes(payload,learned);
       const cells = [...payload].map((c, i) => box(36 + 61 * i, 62, 52, 50) + label(58 + 61 * i, 93, c)).join("");
       let offset = 0;
       const spans = path.map(token => {
@@ -65,11 +88,15 @@ const methods = {
         return box(x, 162, 61 * token.length - 9, 49, token.length > 1 ? "aqua" : "blue")
           + label(x + 12, 192, token, "dark-ink");
       }).join("");
-      return result(label(36, 41, "INPUT BYTES", "mute") + cells + arrow(271, 116, 271, 153) + spans
+      return {...result(label(36, 41, "INPUT BYTES", "mute") + cells + arrow(271, 116, 271, 153) + spans
         + label(36, 256, "SUFFIX COST d[i] AT EACH BYTE OFFSET", "mute")
         + costs.map((cost,i)=>label(41 + 59*i, 289, String(cost), "blue")).join(""),
         "Shortest path " + path.join(" | ") + " uses " + path.length + " tokens. Greedy " + greedy.join(" | ") + " uses " + greedy.length + ".",
-        "The suffix costs run right to left and resolve ties with the longer first token. Longest-first greed can lose. Each symbol here is one ASCII byte. The example takes the learned vocabulary as given and shows encoding.");
+        "The suffix costs run right to left and resolve ties with the longer first token. Longest-first greed can lose. Each symbol here is one ASCII byte. The example takes the learned vocabulary as given and shows encoding."),
+        table:{caption:"Prefix choices at byte offset 0",
+          columns:["Prefix", "Next offset", "Suffix cost", "Total tokens", "Choice"],
+          rows:firstChoices.map(({token,suffixCost,chosen})=>[token,token.length,suffixCost,1+suffixCost,chosen?"Shortest path":"Alternative"])},
+      };
     }
   },
   attention: {
@@ -82,7 +109,8 @@ const methods = {
     render(value, mask) {
       const keys = [[0, 0], [1, -1], [1, 1]];
       const values = [[0, 1], [2, -0.5], [-0.5, 2]];
-      const scores = keys.map((key,i) => i === mask && mask > 0 ? -Infinity : hilbertScore([1,value],key));
+      const terms = keys.map(key => hilbertTerms([1,value],key));
+      const scores = terms.map(({score},i) => i === mask && mask > 0 ? -Infinity : score);
       const channels = [0, 1].map(i => scores.map((score, j) => score + values[j][i]));
       const maxima = channels.map(column => Math.max(...column));
       const winners = channels.map((column,i)=>column.indexOf(maxima[i]));
@@ -96,9 +124,16 @@ const methods = {
             j === winners[i] ? "aqua" : column[j] === maxima[i] ? "amber" : "mute")).join("") + line(32, y + 15, 514, y + 15, "grid-line");
       }).join("");
       const selected = maxima.map(s => scalar(s)).join(", ");
-      return result(headers + rows + label(32, 279, "MAX PER CHANNEL → (" + selected + ")", "aqua"),
+      return {...result(headers + rows + label(32, 279, "MAX PER CHANNEL → (" + selected + ")", "aqua"),
         "With q = (1, " + scalar(value) + "), the output is (" + selected + "). Winning key indices: " + winners.join(", ") + ".",
-        "Green is the first winning key per channel. Amber shows later ties. This is the max-plus context before the implemented expm1 and output projection.");
+        "Green is the first winning key per channel. Amber shows later ties. The two channels can choose different keys."),
+        table:{caption:"Hilbert score before the key mask",
+          columns:["Key", "q − k", "Min", "Max", "Min − max", "Valid"],
+          rows:terms.map(({differences,min,max,score},i)=>["k"+i,differences.map(v=>scalar(v)).join(", "),
+            scalar(min),scalar(max),scalar(score),Number.isFinite(scores[i])?"Yes":"Masked → −∞"])},
+        notes:[["Next operation", "The full layer joins all heads, applies expm1, and projects the result. These two channels become ("
+          + maxima.map(v=>scalar(Math.expm1(v),3)).join(", ") + ") before projection."]],
+      };
     }
   },
   ring: {
@@ -119,7 +154,12 @@ const methods = {
       }))));
       const slots = [[184, 84], [312, 137], [184, 218], [56, 137]];
       const visible = blocks.slice(0, count);
-      const max = [0, 1].map(i => Math.max(...visible.map(block => block[i])));
+      let running = [-Infinity, -Infinity];
+      const history = visible.map(block => {
+        running = block.map((value,i)=>Math.max(value,running[i]));
+        return running;
+      });
+      const max = history.at(-1);
       const dense = [2,3].map(channel => Math.max(...keyBlocks.flat().map(key =>
         hilbertScore([.6,.8],key.slice(0,2))+key[channel])));
       const links = slots.map(([x, y], i) => {
@@ -128,13 +168,20 @@ const methods = {
       }).join("");
       const shards = slots.map(([x, y], i) => dot(x, y, i < count ? "aqua" : "blue", 21)
         + label(x - 11, y + 6, "B" + i, "dark-ink")).join("");
-      return result(label(42, 36, "KEY–VALUE BLOCK RING", "mute") + links + shards
+      const channels = pair => pair.map(value=>scalar(value,2)).join(" / ");
+      return {...result(label(42, 36, "KEY–VALUE BLOCK RING", "mute") + links + shards
         + label(111, 124, "query stays at B0", "ink") + box(355, 99, 164, 95)
-        + label(369, 130, "RUNNING MAX", "mute") + label(369, 166, max.map(v => scalar(v, 1)).join("  /  "), "aqua")
+        + label(369, 130, "RUNNING MAX", "mute") + label(369, 166, channels(max), "aqua")
         + label(42, 290, "MERGED " + count + " OF " + blocks.length + " BLOCKS", "mute")
-        + label(42, 318, "DENSE CHECK  " + dense.map(v=>scalar(v,2)).join(" / "), "blue"),
-        "After " + count + " blocks, the two channel maxima are " + max.map(v => scalar(v, 1)).join(" and ") + ".",
-        "Green shows which blocks reached the local query. Each block reduces two synthetic keys with the same Hilbert score as the attention demo. The completed merge equals the unsharded reduction. The distributed ring is a design sketch.");
+        + label(42, 318, "DENSE CHECK  " + channels(dense), "blue"),
+        "After " + count + " blocks, the two channel maxima are " + max.map(v => scalar(v, 2)).join(" and ") + ".",
+        "Green shows which blocks reached the local query. Each block reduces two synthetic keys with the same Hilbert score as the attention demo. The distributed ring is a design sketch."),
+        table:{caption:"Merge history for the selected query",
+          columns:["Arrival", "Block max · channels 0 / 1", "Running max · channels 0 / 1"],
+          rows:visible.map((block,i)=>["B"+i,channels(block),channels(history[i])])},
+        notes:[["Full reduction check", count === blocks.length ? "Running and unsharded maxima agree in both channels."
+          : "Unsharded minus running maxima are " + channels(dense.map((v,i)=>v-max[i])) + ". Unseen blocks can only raise a maximum."]],
+      };
     }
   },
   concept: {
@@ -148,14 +195,22 @@ const methods = {
       const basis = [[1,0],[0,1]];
       const projection = [[.72,.54],[.48,.78]], bias=[.08,.12];
       const raw = basis.map(row => projection.map((w,i)=>w.reduce((sum,x,j)=>sum+x*row[j],bias[i])));
-      const [direction,other] = raw.map(row=>row.map(x=>x/Math.hypot(...row)));
+      const rawNorm = raw.map(row=>Math.hypot(...row));
+      const [direction,other] = raw.map((row,i)=>row.map(x=>x/rawNorm[i]));
       const cosine=direction.reduce((sum,x,i)=>sum+x*other[i],0);
-      const edit = original.map((coordinate, i) => coordinate + value * direction[i]);
-      return result(grid() + arrow(...xy(original), ...xy(original.map((x,i)=>x+other[i]))) + arrow(...xy(original), ...xy(edit))
+      const delta = direction.map(x=>value*x);
+      const edit = original.map((coordinate, i) => coordinate + delta[i]);
+      const vector = row => "(" + row.map(x=>scalar(x,3)).join(", ") + ")";
+      return {...result(grid() + arrow(...xy(original), ...xy(original.map((x,i)=>x+other[i]))) + arrow(...xy(original), ...xy(edit))
         + point(xy(original), "z", "blue") + point(xy(edit), "z′", "aqua")
         + label(48, 34, "2D LATENT SLICE", "mute") + label(339, 314, "α = " + scalar(value, 1), "amber"),
         "The state moves to (" + edit.map(v => scalar(v)).join(", ") + "). Edit norm " + scalar(Math.abs(value),2) + " · direction cosine " + scalar(cosine,3) + ".",
-        "Both directions have unit norm after the same affine projection. The high cosine shows that the two unit directions remain strongly aligned.");
+        "Both directions have unit norm after the same affine projection. The second arrow shows the other unit direction for comparison."),
+        table:{caption:"Affine transform and normalization of the fixed basis",
+          columns:["Basis", "Affine output", "Raw norm", "Unit direction"],
+          rows:[direction,other].map((unit,i)=>[vector(basis[i]),vector(raw[i]),scalar(rawNorm[i],3),vector(unit)])},
+        notes:[["Signed edit", vector(original) + " + " + vector(delta) + " = " + vector(edit) + " (rounded). The step scales the first unit direction."]],
+      };
     }
   },
   gfn: {
@@ -173,9 +228,12 @@ const methods = {
         + label(48, 315, "STOP LOG MASS " + scalar(model.stop) + "   LOG Z " + scalar(model.logZ), "aqua"),
         "Residual " + scalar(model.balance) + " yields squared loss " + scalar(model.balance ** 2, 3) + ".",
         "Densities describe continuous latent moves. Stop and continue are probability masses, with forced exit at the horizon."),
-        table:{caption:"Terms in trajectory balance",columns:["Move","Forward density","Continue","Reverse density"],
-          rows:model.terms.map((term,i)=>[String(i+1),...["forward","continuation","backward"].map(key=>scalar(term[key],3))])},
-        notes:[["Exit accounting", model.stop === 0 ? "Horizon exit is forced. Its log stop mass is zero." : "Optional exit contributes log stop " + scalar(model.stop,3) + " once."], ["Origin reverse", "Move 1 reverses to a Dirac origin, so its reverse log mass is zero."]],
+        table:{caption:"Log terms in trajectory balance",columns:["Move","Forward density","Continue mass","Reverse density or mass","Signed contribution"],
+          rows:model.terms.map((term,i)=>[String(i+1),...["forward","continuation","backward","contribution"].map(key=>scalar(term[key],3))])},
+        notes:[["Balance", "log Z (" + scalar(model.logZ,3) + ") + path sum (" + scalar(model.pathSum,3)
+          + ") + log stop (" + scalar(model.stop,3) + ") − log reward (" + scalar(reward,3) + ") = " + scalar(model.balance,3) + " (rounded)."],
+          ["Exit accounting", model.stop === 0 ? "Horizon exit is forced. Its log stop mass is zero." : "Optional exit contributes log stop " + scalar(model.stop,3) + " once."],
+          ["Origin reverse", "Move 1 reverses to a Dirac origin, so its reverse log mass is zero."]],
       };
     }
   },
@@ -205,12 +263,20 @@ const methods = {
             }
           }
           const selected=[];
+          layer.filter(item=>!item.valid).forEach(item=>{ item.disposition="Invalid"; });
           for (const item of layer.filter(item=>item.valid).sort((a,b)=>b.score-a.score)) {
-            if (selected.length===2) break;
-            if (selected.every(other=>Math.hypot(...item.state.map((v,j)=>v-other.state[j]))>=threshold)) {
-              item.selected=true;
-              selected.push(item);
+            if (selected.length===2) {
+              item.disposition="Beam full";
+              continue;
             }
+            item.separation=Math.min(...selected.map(other=>Math.hypot(...item.state.map((v,j)=>v-other.state[j]))));
+            if (item.separation<threshold) {
+              item.disposition="Too close";
+              continue;
+            }
+            item.selected=true;
+            item.disposition=item.terminal?"Retained terminal":"Retained";
+            selected.push(item);
           }
           nodes.push(...layer);
           leaves.push(...selected.filter(item=>item.terminal));
@@ -230,20 +296,23 @@ const methods = {
       const all=panels.flatMap(panel=>panel.nodes);
       return {...result(label(43,35,"ROOTS","mute") + label(198,35,"DEPTH 1","mute") + label(347,35,"DEPTH 2","mute") + branches,
         all.filter(item=>item.selected).length + " of " + all.length + " proposals retained across both trees.",
-        "Green marks retained branches. Amber marks invalid proposals. Larger markers are terminal. Scores are per-layer priorities. Budget truncation follows parent then child order."),
-        table:{caption:"Independent tree audit",columns:["Tree","Proposals","Reported leaves","Stop reason"],
-          rows:panels.map((p,i)=>["Tree "+(i+1),String(p.nodes.length),String(p.leaves.length),p.reason])},
+        "Green marks retained branches. Amber marks invalid proposals. Larger markers are terminal. The separation test compares with proposals already retained at the same depth in the same tree."),
+        table:{caption:"Candidate audit within each independent tree",
+          columns:["Candidate", "Depth", "Score", "Nearest retained", "Decision"],
+          rows:all.map(item=>[item.id,item.depth,scalar(item.score),Number.isFinite(item.separation)?scalar(item.separation,3):"—",item.disposition])},
+        notes:panels.map(({root,nodes,leaves,reason})=>[root.id, nodes.length + " proposals · stop by " + reason
+          + " · reported leaves " + (leaves.map(item=>item.id).join(", ") || "none") + "."]),
       };
     }
   },
   analogy: {
     title: "Transfer a typed relation", status: intended,
-    description: "In two independent reference cultures, compare paired before and after records for a donor-to-receiver junction-opening pulse. Transfer the matched displacement to a new assay query, then screen six candidate proposals using visible descriptors and a supplied donor → junction → receiver motif. A low embedding distance cannot override a broken typed edge. Their post-intervention outcomes stay masked throughout.",
-    formula: "Δ = mean(z(ref after) − z(ref before)); q = z(query before) + βΔ",
+    description: "Compare paired before and after records from independent reference cultures for a junction-opening pulse. Check whether the assay contexts match and the four-dimensional displacement directions agree. Match donor, junction and receiver by their roles, then verify directed edge types before ranking proposals. Candidate outcomes stay masked throughout.",
+    formula: "dᵢ = z(ref after) − z(ref before); q = z(query before) + β mean(dᵢ) when the reference gate passes",
     source: code + "reasoning/fot_selection.py", sourceLabel: "Implemented eligibility selection (analogy gates here are synthetic)",
     control: {label: "Reference displacement scale β", min: -1, max: 1.5, step: 0.05, value: 1,
-      secondaryLabel:"Reference pairs", choices: ["Both early-stage reference pairs", "Matched pair 1", "Matched pair 2", "Later-stage pair 3"],
-      scenarioLabel:"Counterfactual query context", scenarios:["Original matched query", "Later receiver cell state", "Swap donor and receiver"]},
+      secondaryLabel:"Reference pairs", choices: ["Early-stage reference set", "Matched pair 1", "Matched pair 2", "Later-stage pair 3"],
+      scenarioLabel:"Counterfactual scenario", scenarios:["Original matched query", "Later receiver cell state", "Swap donor and receiver", "Discordant reference cultures"]},
     render(scale, referenceMode, scenario) {
       const m = analogy(scale,referenceMode,scenario);
       const project = ([x,y]) => [56 + 138*x, 286 - 72*y];
@@ -262,17 +331,27 @@ const methods = {
       }).join("");
       const summary = m.selected
         ? "2D nearest " + m.projected.id + " · 4D nearest " + m.ranked[0].id + " · eligible " + m.selected.id + " · no-transfer baseline " + m.baseline.id + "."
-        : "Abstain: no selected reference pair supports this query context. Candidate outcomes remain masked.";
+        : "Abstain · " + (m.transferReason || "no eligible proposal") + ". Candidate outcomes remain masked.";
+      const example = m.selected || m.ranked.find(candidate => candidate.id === "C");
+      const walk = edges => edges.map(([i,j,type]) => i + " → " + j + " (" + type + ")").join(", ");
+      const pairAudit = m.agreement.map(({references,cosine}) => references.join(" / ") + " "
+        + (Number.isFinite(cosine) ? scalar(cosine,3) : "undefined")).join(" · ");
       return {...result(grid() + label(44, 28, "DISPLAY COORDINATES 1–2 OF 4", "mute") + marks
         + (scale !== 0 && m.displacement ? arrow(...start,...target) : "")
         + point(start,"query pre","blue") + marksById + '<circle cx="'+target[0]+'" cy="'+target[1]+'" r="10" class="target-ring"/>'
-        + label(target[0]+13,target[1]-14,"q","amber") + label(44, 316, "Blue: reference   Green: selected   Amber: refused", "mute"),
+        + label(target[0]+13,target[1]-14,m.displacement ? "q" : "q₀","amber") + label(44, 316, "Blue: reference   Green: selected   Amber: refused", "mute"),
         summary,"Fixture vectors illustrate retrieval. Reference outcomes support the displacement. Candidate descriptors contain only visible proposal inputs. A retrieval result needs independent outcome validation."),
+        diagram:motifDiagram(example),
         notes:[
           ["Query relation", m.querySpec.relation + " · " + m.querySpec.stage + " · " + m.querySpec.assay + " (" + m.querySpec.unit + ") · " + m.querySpec.protocol],
-          ["Reference audit", m.referenceAudit.map(r=>r.id + " (" + r.group + "): " + r.disposition).join(" · ")],
-          ["Typed correspondence", "Source donor 0 → junction 1 (opens), junction 1 → receiver 2 (conducts). Target mapping 0→0, 1→1, 2→2. A reverses edges; B rewires junction→receiver to donor→receiver. Both fail even when close in the plot."],
-          ["Shared representation", "All z vectors are manually assigned four-dimensional fixtures, not TokenGT outputs. Native routes share an encoder; this page does not run a checkpoint or establish cross-modal calibration."],
+          ["Reference audit", m.referenceAudit.map(r=>r.id + " (" + r.group + ") · " + (r.disposition === "Used" ? "Compared" : r.disposition)).join(" · ")],
+          ["Typed correspondence", "Source edges " + walk(sourceMotif.edges) + ". Candidate " + example.id + " edges "
+            + walk(example.targetMotif.edges) + ". Role mapping " + example.motif.mapping.map((j,i)=>i + "→" + j).join(" · ")
+            + " preserves both directed edge types. A reverses the edges. B rewires the conducting edge from the donor."],
+          ["Shared representation", "All z vectors are manually assigned four-dimensional fixtures. Native routes share a TokenGT encoder. Cross-modal calibration would require a separate evaluation."],
+          ["Direction agreement", pairAudit ? "4D pairwise cosines " + pairAudit + ". This fixture abstains if any cosine is undefined or ≤ 0."
+            : m.pairs.length ? "One compatible pair supports a provisional transfer. Checking agreement requires a second culture."
+            : "Checking agreement requires compatible reference pairs."],
           ["Matched displacement", m.displacement ? "Δ = (" + m.displacement.map(v=>scalar(v)).join(", ") + ")" : "No supported transfer direction."],
           ["Counterfactual", "β = 0 removes the transfer. Negative β reverses it. Switching to a later cell state invalidates the early pairs. Selecting R3 then tests recovery with matching evidence."],
           ["Reference sensitivity", m.sensitivity.length ? m.sensitivity.map(row => "Omit " + row.omitted + " → "
@@ -280,14 +359,14 @@ const methods = {
               + (row.margin === null ? "" : ", margin " + scalar(row.margin,3)) + ")" : "abstain")).join(" · ")
             : "No compatible reference subset to test."],
           ["Retrieval margin", m.margin === null ? "A runner-up margin requires two eligible proposals and a supported transfer."
-            : "Runner-up minus selected distance = " + scalar(m.margin,3) + ". This is a geometric separation, not calibrated confidence."],
+            : "Runner-up minus selected distance = " + scalar(m.margin,3) + ". This measures geometric separation. Confidence calibration needs independent outcome data."],
           ["Projection check", m.projectedEligible ? "Among eligible proposals, the 2D view prefers " + m.projectedEligible.id + ". The selection rule uses all four coordinates." : "No eligible 2D comparison."]
         ],
         table: {
-          caption: "Candidate audit in 4D distance order · q (" + m.query.map(value=>scalar(value)).join(", ") + ")",
+          caption: "Candidate audit in 4D distance order · " + (m.displacement ? "transferred q" : "unshifted q₀") + " (" + m.query.map(value=>scalar(value)).join(", ") + ")",
           columns: ["Candidate", "2D distance", "4D distance", "Squared residuals · four axes", "Motif edges", "Gate", "Held-out outcome"],
           rows: m.ranked.map(item => [item.id, scalar(item.projected,3), scalar(item.full,3), item.squared.map(v=>scalar(v,4)).join(" + "), item.motif.matched + "/2",
-            item.refusal || (item === m.selected ? "Selected" : "Eligible"), "Masked"]),
+            item.refusal || (item === m.selected ? "Selected" : "Passes proposal gates"), "Masked"]),
         }};
     }
   },
@@ -304,20 +383,28 @@ const methods = {
       const panels = neighborhoods.map((states, group) => {
         const position = states.map(([x, y]) => [70 + group * 255 + 116 * x, 229 - 120 * y]);
         const {edges,faces,components,loops}=ripsAt(states,radius);
-        const strokes=edges.map(([i,j])=>line(...position[i],...position[j])).join("");
+        const strokes=edges.map(([i,j])=>line(...position[i],...position[j],
+          group && comparison.extra.includes(i + ":" + j) ? "lab-extra-edge" : "stroke")).join("");
+        const missing=group ? comparison.missing.map(pair => {
+          const [i,j]=pair.split(":").map(Number);
+          return line(...position[i],...position[j],"lab-missing-edge");
+        }).join("") : "";
         const fills=faces.map(face=>'<polygon class="lab-face" points="'
           + face.map(index=>position[index].join(",")).join(" ") + '"/>').join("");
         const intervals=ripsLoopIntervals(states).map(([birth,death])=>"[" + scalar(birth,3) + ", " + scalar(death,3) + ")");
         const textX = 56 + 255 * group;
         return {
-          figure: label(textX, 58, "NEIGHBORHOOD " + (group ? "B" : "A"), "mute") + fills + strokes
+          figure: label(textX, 58, "NEIGHBORHOOD " + (group ? "B" : "A"), "mute") + fills + strokes + missing
             + position.map((p,i) => dot(...p) + label(p[0]+9,p[1]-9,String(i),"blue")).join("") + label(textX, 284, "β₀ " + components + "    β₁ " + loops, "aqua"),
           intervals, summary: " " + (group ? "B" : "A") + " has " + components + " component(s) and " + loops + " loop(s)."
         };
       });
-      return {...result(line(278, 47, 278, 291, "grid-line") + panels.map(p => p.figure).join(""),
+      const legend = comparison.preservesEdges ? "" : line(52, 313, 79, 313, "lab-missing-edge")
+        + label(90, 318, "Missing in B", "ink") + line(298, 313, 325, 313, "lab-extra-edge")
+        + label(336, 318, "Extra in B", "ink");
+      return {...result(line(278, 47, 278, 291, "grid-line") + panels.map(p => p.figure).join("") + legend,
         "At radius " + scalar(radius) + "," + panels.map(p => p.summary).join("") + (comparison.preservesEdges ? " Supplied map preserves this edge set." : " REFUSE supplied map: edge mismatch."),
-        "β₀ counts components. β₁ counts independent unfilled loops. A loop dies when filling triangles remove the independent cycle."),
+        "β₀ counts components. β₁ counts independent unfilled loops. A loop dies when filling triangles remove the independent cycle. Dashed overlays mark missing edges and are excluded from the counts."),
         table:{caption:"All six distances under the supplied map", columns:["Source pair", "Source distance", "Mapped target distance", "Absolute error"], rows:comparison.distances.map(d=>[d.pair,scalar(d.left,3),scalar(d.right,3),scalar(d.error,3)])},
         notes:[["Supplied map", comparison.mapping.map((j,i)=>i+"→"+j).join(" · ")],
           ["Correspondence audit", "Equal Betti counts: " + comparison.sameBetti + "; missing mapped edges: " + (comparison.missing.join(", ") || "none") + "; extra target edges: " + (comparison.extra.join(", ") || "none") + ". Counts alone cannot authenticate a correspondence."],
@@ -340,7 +427,7 @@ const methods = {
       const example = energyExamples[teacher];
       const temperature = coolingTemperatures[stage];
       const base = measure === 0 ? [1,1,1] : [1,1,4];
-      const {logReward, logMass, logNormalizer, probabilities} = boltzmannStates(example.energies, base, temperature);
+      const {reference, kT, logReward, logMass, logNormalizer, probabilities} = boltzmannStates(example.energies, base, temperature);
       const pct = value => scalar(100 * value,1) + "%";
       const colors = ["aqua","blue","amber"];
       const plot = coolingTemperatures.map((t,i) => {
@@ -363,8 +450,11 @@ const methods = {
         table:{caption:"Energy and target mass at the selected stage",
           columns:["State","Energy (eV)","Relative base weight","log reward","log mass","Probability"],
           rows:example.energies.map((energy,i)=>[["A","B","C"][i],scalar(energy,3),String(base[i]),scalar(logReward[i],3),scalar(logMass[i],3),pct(probabilities[i])])},
-        notes:[["Reference", "The minimum toy energy is used as a common reference. Moving that reference shifts all log rewards equally and leaves probabilities unchanged."],
+        notes:[["Energy scale", "Eref = " + scalar(reference,3) + " eV and kᴮT = " + scalar(kT,4)
+          + " eV at this stage. A shared change to Eref shifts all log rewards equally and leaves probabilities unchanged."],
           ["Normalization", "The relative base weights sum to 1 after normalization. Log mass adds the log of that normalized base weight to the log reward. The log-sum-exp of the three log masses is " + scalar(logNormalizer,3) + "."],
+          ["C to A odds", "Base-weight ratio " + scalar(base[2]/base[0],3) + " × energy factor "
+            + scalar(Math.exp(logReward[2]-logReward[0]),3) + " gives p(C)/p(A) = " + scalar(probabilities[2]/probabilities[0],3) + " (rounded)."],
           ["Teacher scope", "UMA and eSEN illustrate separate energy vectors. The browser runs no potential, DFT calculation, force evaluation, or kinetic integrator."]],
       };
     }
@@ -377,7 +467,8 @@ const methods = {
     control: {label: "Bond feature coefficient", min: -0.8, max: 1.6, step: 0.05, value: 0.9,
       secondaryLabel:"Current frame", choices:["Original coordinates", "Rotate and translate frame"]},
     render(coupling, frame) {
-      const {xyz,free,velocities,next,distance} = currentVelocity(coupling,frame);
+      const {original,transformed,velocityError,distanceError} = frameComparison(coupling);
+      const {xyz,free,velocities,next,distance} = frame ? transformed : original;
       const project = ([x,y,z]) => [79 + 98*x + 23*z, 176 - 100*y + 48*z];
       const bonds = xyz.slice(1).map((point,i) => line(...project(xyz[i]), ...project(point))).join("");
       const ghosts = next.map(point => {
@@ -391,9 +482,12 @@ const methods = {
             + dot(...from, free[i] ? "aqua" : "blue", 9) + label(from[0]-5, from[1]+32, String(i+1));
         }).join("") + label(42, 291, "PAIR 2–3 AFTER STEP  " + scalar(distance,3) + " Å", "mute"),
         "Atom 1 is fixed. Atom 2 has speed " + scalar(Math.hypot(...velocities[1]),3) + " Å per toy step unit.",
-        "Arrows magnify the velocity and rings show the Euler update. The anchor still supplies context to its neighbors. Rotating and translating the frame changes vector components while preserving distances. Time uses an illustrative scale."),
+        "Arrows magnify the velocity and rings show the Euler update. The anchor still supplies context to its neighbors. The frame selector applies a quarter-turn about x and a translation. Time uses an illustrative scale."),
         table:{caption:"Current-frame velocities",columns:["Atom","vₓ","vᵧ","v_z","Mask"],
           rows:velocities.map((v,i)=>[String(i+1),...v.map(x=>scalar(x,3)),free[i]?"Free":"Fixed"])},
+        notes:[["Rigid-frame check", "Recomputing in the transformed frame gives max ‖v′ − Rv‖ = "
+          + velocityError.toExponential(2) + ". The maximum change across all six updated pair distances is "
+          + distanceError.toExponential(2) + " Å."]],
       };
     }
   }
@@ -453,6 +547,7 @@ function show(name) {
     ui.result.textContent = display.summary;
     ui.caption.textContent = display.caption;
     ui.evidence.replaceChildren();
+    if (display.diagram) ui.evidence.insertAdjacentHTML("beforeend", display.diagram);
     if (display.notes) {
       const notes=document.createElement("dl");
       notes.className="lab-audit-notes";

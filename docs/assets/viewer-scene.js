@@ -203,16 +203,24 @@ function drawForest(g, c, n) {
   }
 }
 function drawAnalogy(g, c, v, model) {
-  const a=[-.97,.45,-.68], b=[-.97,.43,.63];
-  const displacement=mul(model.displacement,.74);
-  for (const [start,factor,tint] of [[a,1,c],[b,v,mint]]) {
-    const end=add(start,mul(displacement,factor));
-    g.gem(start,.11,tint);
-    if(factor!==0) g.arrow(start,end,tint);
-    g.gem(end,.17,tint);
+  // Two typed motifs; same ordered incidence, distinct source/target context.
+  const colors=['#8de3ba','#edc579','#c8b5ef'];
+  for(let row=0;row<2;row++) {
+    const motif=[[-1.15,1.25,-.68+row*.86],[-.45,1.25,-.68+row*.86],[.25,1.25,-.68+row*.86]];
+    motif.forEach((point,i)=>g.gem(point,.14,colors[i]));
+    g.arrow(motif[0],motif[1],colors[0]);g.arrow(motif[1],motif[2],colors[1]);
+    if(row===0) motif.forEach(point=>g.line(point,add(point,[0,0,.86]),'#668d84'));
+    g.arrow(motif[2],[.8,.65,-.68+row*.86],c);
   }
-  g.line(a,b,'#a9beae');
-  g.line(add(a,displacement),add(b,mul(displacement,v)),'#a9beae');
+  g.box([.85,.62,-.18],[.34,.34,.9],mint); // shared embedding route
+  model.candidates.forEach((item,i)=>{
+    const x=-1.15+i*.76, color=item.refusal?'#da8e88':item.id===model.selected?'#dceaa0':c;
+    const h=.12+.48/(1+item.distance);
+    g.box([x,.24+h/2,1.02],[.46,h,.35],color);
+    g.line([.85,.43,.2],[x,.26,1.02],color);
+    if(item.refusal) {g.line([x-.20,.85,.99],[x+.20,1.12,.99],color);g.line([x+.20,.85,.99],[x-.20,1.12,.99],color);}
+    else if(item.id===model.selected)g.gem([x,.98,1.02],.09,mint);
+  });
 }
 function drawStructure(g, c, v, model) {
   g.path(structureA,'#567c77');
@@ -267,7 +275,18 @@ export function toyModel(index, value) {
   }
   if(index===4) return {direction:[.8,.5,-.3]};
   if(index===5) return {masses:[value,(1-value)*value,(1-value)**2]};
-  if(index===7) return {displacement:[1.75,.74,.21]};
+  if(index===7) {
+    const displacement=[.8,.5,-.3],target=[.2,-.1,.4];
+    const query=add(target,mul(displacement,value));
+    const candidates=[
+      {id:'A',vector:[1.05,.45,.08],refusal:null,label:'Matched motif / endpoint'},
+      {id:'B',vector:[.8,.3,.16],refusal:'Reversed receptor → ligand edge',label:'Nearest, wrong topology'},
+      {id:'C',vector:[1,.4,.1],refusal:'Affinity endpoint substituted for cell response',label:'Nearest, wrong endpoint'},
+      {id:'D',vector:[.36,0,.34],refusal:null,label:'Matched motif / endpoint'}
+    ].map(x=>({...x,distance:x.vector.reduce((sum,v,i)=>sum+(v-query[i])**2,0)}));
+    const selected=[...candidates].filter(x=>!x.refusal).sort((a,b)=>a.distance-b.distance||a.id.localeCompare(b.id))[0].id;
+    return {displacement,query,candidates,selected};
+  }
   if(index===8) return {points:structureA.map((point,i)=>mix(point,structureB[i],value)),reference:structureA};
   if(index===9) return {population:1/(1+Math.exp(.06/(8.617333262e-5*value)))};
   if(index===10) return {energy:.5*.4*value**2,force:-.4*value};
@@ -325,6 +344,11 @@ export class AtlasScene {
       }
       const v=active?value:stage.control.value;
       drawers[i](g,color,v,toyModel(i,v));
+      for(let lane=0;lane<3;lane++) {
+        const y=.32+lane*.24;
+        g.box([-1.42,y,-1.18],[.18,.14,.34],lane===1?mint:color);
+        g.line([-1.30,y,-1.18],[-.94,y,-1.18],color);
+      }
     });
     const gl=this.gl;
     this.counts=[g.solids.length/6,g.lines.length/6];

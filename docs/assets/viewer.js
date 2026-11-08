@@ -62,7 +62,7 @@ function example(index,value) {
     case 4: return {rows:[['Edit Δz',vector(model.direction.map(v=>v*value))],['Edit length',fixed(Math.hypot(...model.direction)*Math.abs(value))]],math:'z′ = z + αd, using the synthetic direction d = (0.8, 0.5, −0.3).'};
     case 5: return {rows:[['Exit at steps 1 / 2 / 3',model.masses.map(percent).join(' / ')],['Total exit mass',percent(model.masses.reduce((a,b)=>a+b,0))]],math:'Stop masses are p, (1−p)p, and (1−p)². The last stop is forced. Continuous move densities are separate.'};
     case 6: return {rows:[['Trees',2],['Active / proposed',`${2*value} / 6`]],math:'Each toy tree has three eligible branches. Keep the highest-scoring K per tree.'};
-    case 7: return {rows:[['Transferred offset',vector(model.displacement.map(v=>v*value))],['Offset magnitude',fixed(Math.hypot(...model.displacement)*value)]],math:'z₄ = z₃ + λ(z₂ − z₁). Real analogical transfer requires comparable structure and task context.'};
+    case 7: return {rows:[['Shared-space query',vector(model.query)],['Selected eligible candidate',model.selected]],math:'Synthetic ranking score = −squared Euclidean distance. B and C stay refused at every λ, even when nearer than A or D. No biological transfer has been demonstrated.'};
     case 8: {
       const mean=model.points.reduce((sum,point,i)=>sum+point.reduce((s,v,j)=>s+(v-model.reference[i][j])**2,0),0)/model.points.length;
       return {rows:[['Mapped atoms',model.points.length],['RMS displacement',`${fixed(Math.sqrt(mean),3)} Å`]],math:'Linear interpolation in a fixed frame. RMS displacement here is calculated before any alignment.'};
@@ -79,6 +79,18 @@ function setNumbers() {
   const sample=example(selected,value);
   text('slider-value',`${Number(value.toFixed(3))}${stage.control.unit}`);
   text('math',sample.math);
+  const candidates=root.querySelector('#atlas-candidates');
+  candidates.replaceChildren(); candidates.hidden=selected!==7;
+  if(selected===7) {
+    const model=toyModel(7,value);
+    const heading=document.createElement('h3');heading.textContent='Candidate audit · toy values';candidates.append(heading);
+    model.candidates.forEach(item=>{
+      const row=document.createElement('div');row.className='atlas-candidate';row.dataset.refused=String(!!item.refusal);
+      const label=document.createElement('strong');label.textContent=`${item.id} · score ${fixed(-item.distance,3)}${item.id===model.selected?' · selected':''}`;
+      const reason=document.createElement('span');reason.textContent=item.refusal?`REFUSED: ${item.refusal}`:`ELIGIBLE: ${item.label}`;
+      row.append(label,reason);candidates.append(row);
+    });
+  }
   const container=root.querySelector('#atlas-numerics');
   container.replaceChildren(...sample.rows.map(([name,value])=>{
     const wrapper=document.createElement('div');
@@ -156,6 +168,7 @@ function updateInspector(index, focus=true, updateURL=true) {
   root.querySelector('#atlas-status').dataset.status=stage.status==='Scoped implementation'?'implemented':'plan';
   const {min,max,step}=stage.control;
   slider.min=min;slider.max=max;slider.step=step;slider.value=values[selected];
+  for(const [key,value] of Object.entries(stage.detail)) text(`detail-${key}`,value);
   const evidence=root.querySelector('#atlas-evidence');
   const caption=document.createElement('strong');
   caption.textContent='Project evidence';

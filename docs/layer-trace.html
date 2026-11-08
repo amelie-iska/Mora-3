@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Step through a source-faithful TokenGT computation with two layers and two tropical attention heads."><meta name="theme-color" content="#121c1b"><meta property="og:type" content="website"><meta property="og:title" content="Inside a tropical layer · Mora-3"><meta property="og:description" content="Step through a source-faithful TokenGT computation with two layers and two tropical attention heads."><title>Inside a tropical layer · Mora-3</title><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/theme.css"><script src="assets/theme.js"></script><script defer src="assets/site.js"></script><link rel="stylesheet" href="assets/layer-trace.css"><script type="module" src="assets/layer-trace.js"></script></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="site-header"><div class="wrap header-inner"><div class="header-brand"><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><button type="button" class="theme-toggle" id="theme-toggle" hidden>Light mode</button></div><nav class="nav" aria-label="Primary"><a class="nav-cta" href="paper.html">Live paper</a><a href="architecture.html">Architecture</a><a href="architecture-3d.html">3D atlas</a><a href="data.html">Data</a><a href="training.html">Training</a><a href="modalities.html">Modalities</a><a href="outputs.html">Outputs</a><a href="applications.html">Applications</a></nav></div></header>
+<main id="main" class="wrap" tabindex="-1">
+<header class="section-intro trace-intro">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="architecture-3d.html">3D atlas</a><span aria-hidden="true">/</span><span aria-current="page">Layer trace</span></nav>
+  <p class="eyebrow">Architecture internals · Computed example</p>
+  <h1>Inside a tropical layer</h1>
+  <p class="lead">Follow one graph through two TokenGT encoder layers. Select a head, token, and channel to see how each intermediate value is computed.</p>
+  <p>All parameters are fixed demonstration values. The trace implements the finite tropical code path and exposes the full intermediate tensors for this example.</p>
+</header>
+<div class="trace" data-trace>
+  <aside class="trace-controls" aria-label="Trace inputs">
+    <h2>Input and view</h2>
+    <label for="trace-input">Graph preset</label>
+    <select id="trace-input"><option value="junction">Two cells and a junction</option><option value="chain">Three-cell chain</option><option value="contact">Protein contact motif</option></select>
+    <label for="trace-strength">First edge feature <output for="trace-strength" id="trace-strength-value"></output></label>
+    <input id="trace-strength" type="range" min="-1" max="1" step=".05" value=".4">
+    <label for="trace-token">Query or selected token</label>
+    <select id="trace-token"></select>
+    <label for="trace-head">Tropical head</label>
+    <select id="trace-head"><option value="0">Head 1 · channels 1–2</option><option value="1">Head 2 · channels 3–4</option></select>
+    <label for="trace-channel">Head-local channel</label>
+    <select id="trace-channel"><option value="0">Channel 1</option><option value="1">Channel 2</option></select>
+    <nav id="trace-steps" class="trace-steps" aria-label="Computation steps"></nav>
+  </aside>
+  <section class="trace-work" aria-labelledby="trace-title">
+    <div class="trace-toolbar"><span id="trace-progress"></span><div><button type="button" id="trace-prev">← Back</button><button type="button" id="trace-next">Next →</button></div></div>
+    <h2 id="trace-title" tabindex="-1"></h2>
+    <p id="trace-explanation" class="trace-explanation"></p>
+    <p id="trace-equation" class="trace-equation"></p>
+    <div id="trace-numerical" class="trace-numerical" aria-live="polite"></div>
+    <div id="trace-tensors" class="trace-tensors"></div>
+  </section>
+</div>
+<p class="trace-foot">The graph token, feature and incidence projections, LayerNorm, finite max-plus attention, residuals and GELU match the source operations. The final scalar readout is an illustrative head. <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tokengt.py">TokenGT source</a> · <a href="https://github.com/amelie-iska/Mora-3/blob/7f016ccb2b0f93aa67e7fd21f4cb70e72ba6a57b/src/mora3/model/tropical.py">Tropical attention source</a></p>
+<noscript><p>Enable JavaScript to evaluate the trace. <a href="architecture.html">Read the architecture chapter</a> for the text explanation.</p></noscript>
+</main><footer class="footer"><div class="wrap footer-inner"><div><a class="brand" href="index.html"><img src="assets/mark.svg" width="30" height="30" alt="" style="width:30px;height:30px">Mora-3</a><p>Biomedical graph modeling · Research in development</p></div><nav class="footer-nav" aria-label="Footer"><a href="paper.html">Live paper</a><a href="applications.html">Applications</a><a href="index.html#releases">Release status</a></nav></div></footer></body></html>

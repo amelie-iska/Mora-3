@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#121c1b">
+  <title>Local model playground · Mora-3</title>
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <script src="assets/theme.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header"><div class="wrap header-inner"><div class="header-brand"><a class="brand" href="index.html">Mora-3</a><button type="button" class="theme-toggle" id="theme-toggle" hidden>Light mode</button></div><nav class="nav" aria-label="Primary"><a href="paper.html">Live paper</a><a href="architecture-3d.html">3D atlas</a></nav></div></header>
+<main id="main" class="wrap" tabindex="-1">
+
+<link rel="stylesheet" href="assets/playground.css">
+<script defer src="assets/playground.js"></script>
+<header class="section-intro">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Mora-3</a><span aria-hidden="true">/</span><a href="paper.html">Live paper</a><span aria-hidden="true">/</span><span aria-current="page">Model playground</span></nav>
+  <p class="eyebrow">Local interaction workspace · Preview</p>
+  <h1>Model playground</h1>
+  <p class="lead">Compose a biomedical request, choose its conditions and outputs, and inspect the result format.</p>
+</header>
+<section class="playground" aria-label="Model interaction workspace">
+  <p id="play-availability" class="play-availability" role="status">The playground runs on this device. Serve this page from localhost to enable the controls.</p>
+  <section class="play-runtime" aria-labelledby="play-runtime-title" hidden>
+    <div>
+      <h2 id="play-runtime-title">Local checkpoint</h2>
+      <p id="play-release" class="play-help">No qualified full-model checkpoint has been released. When weights are released, use the published checksum and manifest to verify your download. Keep the checkpoint directory on this device. <a href="https://github.com/amelie-iska/Mora-3">Follow release information on GitHub</a>.</p>
+      <p id="play-runtime-status" class="play-help" role="status"></p>
+    </div>
+    <div id="play-checkpoint-picker" hidden>
+      <label for="play-checkpoint">Checkpoint directory</label>
+      <div class="play-actions">
+        <select id="play-checkpoint"></select>
+        <button id="play-load" type="button" class="play-secondary">Load checkpoint</button>
+      </div>
+    </div>
+    <div id="play-capabilities" hidden></div>
+  </section>
+  <div class="play-grid" hidden>
+    <form id="play-form" class="play-form">
+      <h2>Compose a request</h2>
+      <label for="play-preset">Optional starting preset</label>
+      <select id="play-preset"></select>
+      <p id="play-preset-help" class="play-help"></p>
+
+      <label for="play-prompt">Instruction or follow-up</label>
+      <textarea id="play-prompt" rows="5" maxlength="8000" placeholder="Describe the question, the known conditions, and any constraints."></textarea>
+      <button type="button" id="play-add-message" class="play-secondary">Add turn to conversation</button>
+      <ol id="play-conversation" class="play-conversation" aria-label="Conversation history"></ol>
+
+      <fieldset>
+        <legend>Optional input files</legend>
+        <label for="play-modality">Modality for the next attachment</label>
+        <select id="play-modality"></select>
+        <p id="play-modality-help" class="play-help"></p>
+        <label for="play-files">Attach files</label>
+        <input id="play-files" type="file" multiple>
+        <ul id="play-file-list" class="play-file-list" aria-label="Selected attachments"></ul>
+        <p class="play-help">Up to eight files, 6 MiB each and 12 MiB total. A model request sends these files to the service on this device. Exported requests include the selected file contents.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Requested output</legend>
+        <label for="play-mode">Task</label>
+        <select id="play-mode">
+          <option value="predict">Predict or annotate</option>
+          <option value="generate">Generate candidates</option>
+        </select>
+        <label for="play-output">Output format</label>
+        <select id="play-output"></select>
+        <p id="play-output-help" class="play-help"></p>
+      </fieldset>
+      <div class="play-actions">
+        <button id="play-example" type="button" class="play-primary">Show synthetic result</button>
+        <button id="play-run" type="submit" class="play-primary" hidden>Run model</button>
+        <button id="play-export" type="button" class="play-secondary">Export request JSON</button>
+      </div>
+      <p id="play-message" class="play-message" role="status"></p>
+    </form>
+    <section class="play-results" aria-labelledby="play-results-title">
+      <p class="play-result-label" id="play-result-label">Result workspace</p>
+      <h2 id="play-results-title">Inspect an output</h2>
+      <p id="play-summary">Choose an output and show a synthetic result, or open a compatible result JSON.</p>
+      <div id="play-result" class="play-result"></div>
+      <div class="play-actions">
+        <label class="play-secondary" for="play-import">Open result JSON</label>
+        <input class="play-file-import" id="play-import" type="file" accept=".json,application/json">
+        <button class="play-secondary" type="button" id="play-result-export" hidden>Export result JSON</button>
+        <button class="play-secondary" type="button" id="play-native-export" hidden>Export native format</button>
+      </div>
+      <p class="play-help">Imported results retain their own provenance. Interpret data using the assay, frame, units and conditions shown with the result.</p>
+    </section>
+  </div>
+</section>
+<section class="section play-guide" aria-labelledby="play-guide-title" hidden>
+  <p class="kicker">Modality guide</p>
+  <h2 id="play-guide-title">What each input carries</h2>
+  <dl id="play-guide"></dl>
+  <p><a class="text-link" href="outputs.html">Read output and evaluation definitions ↗</a></p>
+</section>
+<noscript><p>Enable JavaScript to use the playground. The <a href="modalities.html">modalities chapter</a> describes the inputs.</p></noscript>
+</main>
+</body>
+</html>

@@ -85,3 +85,16 @@
   .atlas-label { font-size: .59rem; padding: 2px 4px; }
   .atlas-label:not(.is-active) .atlas-label-text { display: none; }
 }
+
+/* Detail remains readable with WebGL disabled and at narrow widths. */
+.atlas-detail { border-top:1px solid var(--line); margin-top:18px; padding-top:15px; }
+.atlas-detail h3,.atlas-candidates h3 { font:650 .82rem var(--mono); margin:0 0 12px; }
+.atlas-detail dl { margin:0; font-size:.82rem; line-height:1.55; }
+.atlas-detail dt { color:var(--accent); font-weight:650; margin:10px 0 3px; }
+.atlas-detail dd { margin:0; color:var(--muted); overflow-wrap:anywhere; }
+.atlas-detail a { display:inline-block; margin-top:12px; font-size:.8rem; }
+.atlas-candidates { margin-top:16px; border-top:1px solid var(--line); padding-top:14px; }
+.atlas-candidate { padding:9px 10px; margin-top:6px; border-left:2px solid #8de3ba; background:#8de3ba0a; font-size:.75rem; }
+.atlas-candidate strong,.atlas-candidate span { display:block; overflow-wrap:anywhere; }
+.atlas-candidate span { margin-top:4px; line-height:1.45; color:var(--muted); }
+.atlas-candidate[data-refused=true] { border-color:#da8e88; background:#da8e880a; }

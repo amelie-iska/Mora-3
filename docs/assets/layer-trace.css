@@ -1,0 +1,41 @@
+.trace-intro h1 { max-width: 17ch; }
+.trace-intro > p:last-child, .trace-foot { max-width: 82ch; color: var(--muted); font-size: .89rem; }
+.trace { display: grid; grid-template-columns: minmax(230px, .27fr) minmax(0, 1fr); gap: clamp(1rem,3vw,2.6rem); margin-top: 1.8rem; }
+.trace-controls { display: grid; align-content: start; gap: .48rem; background: var(--card); border: 1px solid var(--line); border-radius: .4rem; padding: 1rem; min-width: 0; }
+.trace-controls h2 { font-size: 1.6rem; margin-bottom: .35rem; }
+.trace-controls label { color: var(--muted); font-size: .78rem; font-weight: 720; }
+.trace-controls output { float: right; color: var(--ink); }
+.trace-controls select, .trace-controls input { width: 100%; min-width: 0; font: inherit; }
+.trace-controls select { background: var(--paper); color: var(--ink); border: 1px solid var(--line); padding: .42rem; border-radius: .25rem; }
+.trace-controls input { accent-color: var(--pine); }
+.trace-steps { display: grid; gap: .25rem; margin-top: .6rem; border-top: 1px solid var(--line); padding-top: .6rem; }
+.trace button { background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: .25rem; padding: .36rem .55rem; font-size: .78rem; }
+.trace button:disabled { opacity: .52; cursor: default; }
+.trace-steps button { text-align: left; }
+.trace-steps button[aria-current="step"] { background: var(--pine); color: var(--paper); font-weight: 750; border-color: var(--pine); }
+.trace-work { min-width: 0; }
+.trace-work h2 { margin: .8rem 0 .55rem; font-size: clamp(1.9rem, 4vw, 3.65rem); }
+.trace-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .4rem; border-bottom: 1px solid var(--line); padding-bottom: .55rem; }
+.trace-toolbar span { font: .76rem var(--mono); color: var(--muted); }
+.trace-toolbar div { display: flex; gap: .4rem; }
+.trace-explanation { color: var(--muted); max-width: 74ch; }
+.trace-equation { padding: .66rem .8rem; border-left: 3px solid var(--pine); background: var(--card); font: .87rem/1.5 var(--mono); overflow-wrap: anywhere; }
+.trace-numerical { min-height: 1.5rem; margin-bottom: .9rem; font: .87rem/1.55 var(--mono); }
+.trace-tensors { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; }
+.trace-matrix { margin: 0; min-width: 0; border: 1px solid #49675a; border-radius: .35rem; overflow: hidden; }
+.trace-matrix.is-weights { border-color: #59788f; }
+.trace-matrix figcaption { background: #1f4238; color: #e1f1e8; padding: .48rem .65rem; font-size: .68rem; }
+.trace-matrix.is-weights figcaption { background: #294758; color: #e3eff5; }
+.trace-matrix-scroll { overflow-x: auto; }
+.trace-matrix table { min-width: max-content; margin: 0; font: .74rem var(--mono); }
+.trace-matrix :is(th,td) { padding: .44rem .53rem; border-color: var(--line); }
+.trace-matrix thead { background: var(--card); color: var(--ink); }
+.trace-matrix .is-selected { background: #254c3e; color: #edf7e9; }
+.trace-matrix .is-winner { background: #3b5c31; color: #e9f7d7; }
+.trace-matrix .is-channel { font-weight: 760; text-decoration: underline; }
+.trace-foot { margin: 1.5rem 0 2.5rem; }
+@media (max-width: 950px) { .trace-tensors { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .trace { grid-template-columns: 1fr; }
+  .trace-steps { max-height: 10rem; overflow-y: auto; }
+}

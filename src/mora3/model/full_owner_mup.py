@@ -120,6 +120,7 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
             if key in declarations and declarations[key]!=r:
                 raise ValueError('conflicting shared source operator/axis/role declarations')
             declarations[key]=r
+    from mora3.extensions.scri.native_owner import NativeSCRIModel,native_scri_roles
     def visit(module):
         if id(module)in seen:return
         seen.add(id(module));t=type(module);roles=None
@@ -163,6 +164,7 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
         elif t is NativeStringScoreModel:roles=string_score_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is SharedUniProtNativeAnnotationModel:roles=uniprot_native_annotation_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is SharedUniProtFullRecordModel:roles=uniprot_full_record_parameter_roles(module,identifier_axis=identifier_axis)
+        elif t is NativeSCRIModel:roles=native_scri_roles(module,identifier_axis=identifier_axis)
         elif t is SharedLincsInverseModel:roles=lincs_inverse_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is SharedSourceTextModel:
             module.get_extra_state()

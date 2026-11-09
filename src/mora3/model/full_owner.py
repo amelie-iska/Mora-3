@@ -131,6 +131,8 @@ class SourceAssemblyInputs:
     uniprot_full_record_max_batch_size: int=16
     uniprot_full_record_max_target_bytes: int=8*1024*1024
     grayscale_forward_enabled: bool=False
+    scri_axis: object | None=None
+    scri_spatial_budget: object | None=None
 
 
 def _exact(left,right):
@@ -175,7 +177,7 @@ def unique_parameter_inventory(model):
 class SourceBoundOwner(nn.Module):
     """One registered owner; extension branches reuse exact cooperative objects."""
     def __init__(self,core,*,source_snapshot_sha256,configuration,admet=None,mcsa=None,
-                 pubchem=None,cartesian=None,source_annotations=None,cell=None,text=None,lincs_inverse=None,native_priors=None,scalar=None,pdb=None,rosetta_flow=None,gray_reverse=None,bioelectric=None,nci=None,expansionrx=None,cema_trajectory=None,reactzyme=None,tox21_source=None,hcn4_laterality=None,reactome_static=None,biogrid_chemical=None,lincx_fetch=None,string_score=None,uniprot_native_annotation=None,uniprot_full_record=None,gray_forward=None):
+                 pubchem=None,cartesian=None,source_annotations=None,cell=None,text=None,lincs_inverse=None,native_priors=None,scalar=None,pdb=None,rosetta_flow=None,gray_reverse=None,bioelectric=None,nci=None,expansionrx=None,cema_trajectory=None,reactzyme=None,tox21_source=None,hcn4_laterality=None,reactome_static=None,biogrid_chemical=None,lincx_fetch=None,string_score=None,uniprot_native_annotation=None,uniprot_full_record=None,gray_forward=None,scri=None):
         super().__init__()
         from .instance_cooperative import InstanceCooperativeModel
         from .admet_model import SharedAdmetModel
@@ -295,6 +297,13 @@ class SourceBoundOwner(nn.Module):
             from .uniprot_full_record_model import SharedUniProtFullRecordModel
             if type(uniprot_full_record) is not SharedUniProtFullRecordModel or uniprot_full_record.decoder is not pubchem:
                 raise ValueError('full-record UniProt must reuse exact registered byte decoder')
+        if scri is not None:
+            from mora3.extensions.scri.native_owner import NativeSCRIModel
+            if (type(scri) is not NativeSCRIModel or scri.core.shared is not anchor.annotation
+                    or scri.source_snapshot_sha256!=source_snapshot_sha256):
+                raise ValueError('SCRI must reuse exact native annotation owner and source snapshot')
+            scri.get_extra_state()
+        self.scri=scri
         self.core=core
         self.admet=admet
         self.mcsa=mcsa
@@ -323,7 +332,7 @@ class SourceBoundOwner(nn.Module):
         self.string_score=string_score
         self.uniprot_native_annotation=uniprot_native_annotation
         self.uniprot_full_record=uniprot_full_record
-        self._owners=(core,admet,mcsa,pubchem,cartesian,source_annotations,cell,text,lincs_inverse,native_priors,scalar,pdb,rosetta_flow,gray_reverse,gray_forward,bioelectric,nci,expansionrx,cema_trajectory,reactzyme,tox21_source,hcn4_laterality,reactome_static,biogrid_chemical,lincx_fetch,string_score,uniprot_native_annotation,uniprot_full_record)
+        self._owners=(core,admet,mcsa,pubchem,cartesian,source_annotations,cell,text,lincs_inverse,native_priors,scalar,pdb,rosetta_flow,gray_reverse,gray_forward,bioelectric,nci,expansionrx,cema_trajectory,reactzyme,tox21_source,hcn4_laterality,reactome_static,biogrid_chemical,lincx_fetch,string_score,uniprot_native_annotation,uniprot_full_record,scri)
         self._configuration=copy.deepcopy(dict(schema='mora3-source-bound-owner-v1',
             primary_arm='ordinary-attention-mup-primary-v1',source_snapshot_sha256=source_snapshot_sha256,
             primary_configuration=configuration,core=core.get_extra_state(),
@@ -404,13 +413,15 @@ class SourceBoundOwner(nn.Module):
                 uniprot_full_record=uniprot_full_record.get_extra_state())
         if gray_forward is not None:
             self._configuration['gray_forward']=gray_forward.get_extra_state()
+        if scri is not None:
+            self._configuration['scri']=scri.get_extra_state()
         self._module_topology=tuple((name,type(module).__module__+'.'+type(module).__qualname__)
             for name,module in self.named_modules(remove_duplicate=False))
         self._parameter_topology=tuple((row['aliases'],row['shape'],row['trainable'])
             for row in unique_parameter_inventory(self)['parameters'])
 
     def get_extra_state(self):
-        if any(a is not b for a,b in zip((self.core,self.admet,self.mcsa,self.pubchem,self.cartesian,self.source_annotations,self.cell,self.text,self.lincs_inverse,self.native_priors,self.scalar,self.pdb,self.rosetta_flow,self.gray_reverse,self.gray_forward,self.bioelectric,self.nci,self.expansionrx,self.cema_trajectory,self.reactzyme,self.tox21_source,self.hcn4_laterality,self.reactome_static,self.biogrid_chemical,self.lincx_fetch,self.string_score,self.uniprot_native_annotation,self.uniprot_full_record),self._owners)):
+        if any(a is not b for a,b in zip((self.core,self.admet,self.mcsa,self.pubchem,self.cartesian,self.source_annotations,self.cell,self.text,self.lincs_inverse,self.native_priors,self.scalar,self.pdb,self.rosetta_flow,self.gray_reverse,self.gray_forward,self.bioelectric,self.nci,self.expansionrx,self.cema_trajectory,self.reactzyme,self.tox21_source,self.hcn4_laterality,self.reactome_static,self.biogrid_chemical,self.lincx_fetch,self.string_score,self.uniprot_native_annotation,self.uniprot_full_record,self.scri),self._owners)):
             raise ValueError('registered owner identity drift')
         if self._module_topology!=tuple((name,type(module).__module__+'.'+type(module).__qualname__)
                 for name,module in self.named_modules(remove_duplicate=False)):
@@ -461,6 +472,8 @@ class SourceBoundOwner(nn.Module):
             current.update(uniprot_full_record=self.uniprot_full_record.get_extra_state())
         if self.gray_forward is not None:
             current['gray_forward']=self.gray_forward.get_extra_state()
+        if self.scri is not None:
+            current['scri']=self.scri.get_extra_state()
         if any(not _exact(value,self._configuration[key])for key,value in current.items()):
             raise ValueError('source-bound assembly component configuration drift')
         return copy.deepcopy(self._configuration)
@@ -534,6 +547,14 @@ def construct_primary_owner(configuration,sources):
     if type(configuration)is not PrimaryConfiguration or type(sources)is not SourceAssemblyInputs:
         raise ValueError('exact primary configuration and native source assembly inputs required')
     configuration.__post_init__()
+    if (sources.scri_axis is None)!=(sources.scri_spatial_budget is None):
+        raise ValueError('SCRI source axis and spatial budget must be supplied together')
+    if sources.scri_axis is not None:
+        from mora3.extensions.scri.model import SCRITargetAxis
+        from mora3.extensions.scri.native_owner import SpatialBudget
+        if type(sources.scri_axis) is not SCRITargetAxis or type(sources.scri_spatial_budget) is not SpatialBudget:
+            raise ValueError('exact SCRI source axis and spatial budget required')
+        sources.scri_axis.__post_init__();sources.scri_spatial_budget.__post_init__()
     from mora3.data.annotation_axes import AnnotationAxes
     from .annotation_vocabulary import AnnotationVocabulary
     from .profile_decoder import SelfiesCodec
@@ -966,6 +987,10 @@ def construct_primary_owner(configuration,sources):
             output_mult=configuration.readout_mult,attn_mult=configuration.attn_mult,
             encoder_var=configuration.encoder_var,backbone=annotation.backbone,
             source_envelope=sources.grayscale_source_envelope)
+    scri=None
+    if sources.scri_axis is not None:
+        from mora3.extensions.scri.native_owner import NativeSCRIModel
+        scri=NativeSCRIModel(annotation,sources.scri_axis,sources.scri_spatial_budget,configuration.source_snapshot_sha256)
     declared=dict(width=configuration.width,heads=2,layers=2,
         **numeric,flow_version=configuration.flow_version,sigma_min=configuration.sigma_min,
         payload_vocabulary_sha256=hashlib.sha256(sources.vocabulary.specification_json.encode()).hexdigest())
@@ -975,4 +1000,4 @@ def construct_primary_owner(configuration,sources):
                             gray_reverse=gray_reverse,gray_forward=gray_forward,bioelectric=bioelectric,nci=nci,expansionrx=expansionrx,cema_trajectory=cema_trajectory,reactzyme=reactzyme,
                             tox21_source=tox21_source,hcn4_laterality=hcn4_laterality,
                             reactome_static=reactome_static,biogrid_chemical=biogrid_chemical,lincx_fetch=lincx_fetch,
-                            string_score=string_score,uniprot_native_annotation=uniprot_native_annotation,uniprot_full_record=uniprot_full_record)
+                            string_score=string_score,uniprot_native_annotation=uniprot_native_annotation,uniprot_full_record=uniprot_full_record,scri=scri)

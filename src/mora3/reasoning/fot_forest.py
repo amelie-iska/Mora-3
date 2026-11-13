@@ -10,7 +10,7 @@ from .fot_selection import select_branches
 
 @torch.no_grad()
 def grow_forest(roots, expand, *, branches, beam, max_depth, max_candidates,
-                min_distance=0.):
+                min_distance=0., history_expand=None):
     """Grow independent trees from floating [trees,dimension] roots.
 
     expand(parent_state, arrival_depth, count) returns states[count,D],
@@ -23,6 +23,10 @@ def grow_forest(roots, expand, *, branches, beam, max_depth, max_candidates,
     Terminal selected leaves accumulate; only nonterminal selections expand.
     reasons describes why growth ended, even if earlier terminal leaves exist.
     States are cloned/detached, and neither inputs nor callback results mutate.
+    Optional history_expand replaces expand with (cloned_ancestry, depth, count).
+    It receives the full root-to-parent chain with stable node_id and parent IDs;
+    mutating a callback copy cannot change the retained forest. Default behavior
+    and its probability-free inference semantics are unchanged.
     Storage O(trees*max_candidates*dimension), excluding callback workspace.
     """
     if any(type(v) is not int or v <= 0 for v in (branches, beam, max_depth, max_candidates)):
@@ -33,6 +37,8 @@ def grow_forest(roots, expand, *, branches, beam, max_depth, max_candidates,
     if (roots.ndim != 2 or min(roots.shape) <= 0 or not roots.is_floating_point()
         or not torch.isfinite(roots).all()):
         raise ValueError('Require finite nonempty floating roots [T,D]')
+    if history_expand is not None and not callable(history_expand):
+        raise ValueError('Explicit callable history-aware proposal adapter required')
     nodes=[]; leaves=[]; reasons=[]; counts=[]
     for tree, root in enumerate(roots):
         root_id=len(nodes)
@@ -44,7 +50,16 @@ def grow_forest(roots, expand, *, branches, beam, max_depth, max_candidates,
             for parent in active:
                 count=min(branches,max_candidates-used)
                 if count==0:break
-                x,s,v,t=expand(nodes[parent]['state'].clone(),depth,count)
+                if history_expand is None:
+                    x,s,v,t=expand(nodes[parent]['state'].clone(),depth,count)
+                else:
+                    # Provide complete cloned lineage, not an endpoint-keyed cache.
+                    ancestry=[]; current=parent
+                    while current is not None:
+                        node=nodes[current]
+                        ancestry.append(dict(node, node_id=current, state=node['state'].clone()))
+                        current=node['parent']
+                    x,s,v,t=history_expand(tuple(reversed(ancestry)),depth,count)
                 if (x.shape!=(count,roots.shape[1]) or x.dtype!=roots.dtype or x.device!=roots.device
                     or s.shape!=(count,) or s.dtype!=roots.dtype or s.device!=roots.device
                     or v.shape!=(count,) or v.dtype!=torch.bool or v.device!=roots.device

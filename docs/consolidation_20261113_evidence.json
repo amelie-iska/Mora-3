@@ -1,0 +1,31 @@
+{
+  "schema": "Mora3.ConsolidationPublicEvidence/v1",
+  "date": "2026-11-13",
+  "base_completion": "8af3ecdab7f5ceeafa62c1e3500e6ad42d9780b5",
+  "campaign_source": "13ed88e39a8753e6c023965a9312fb86d2420fa1",
+  "tests": 506,
+  "subtests": 60,
+  "skips": 0,
+  "optimizer_step_attempts": 0,
+  "optimizer_updates": 0,
+  "substantive_training_runs": 0,
+  "registered_source_descriptor_count": 82262,
+  "registered_selected_taskviews": 80656029,
+  "registered_role_rows": {
+    "train": 80612917,
+    "validation": 10076,
+    "test": 33036
+  },
+  "cross_role_literal_group_keys": 0,
+  "cross_role_task_ids": 0,
+  "missing_group_rows": {
+    "train": 0,
+    "validation": 0,
+    "test": 0
+  },
+  "registered_split_audit_sha256": "288422d1c8c68266d203d41e8b6a41ff7670138073d52f4c18e91ae662a35011",
+  "all_expanded_sources_included": false,
+  "near_duplicate_search_performed": false,
+  "redistribution_approved": false,
+  "full_model_training_admitted": false
+}

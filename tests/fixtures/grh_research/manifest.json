@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "seed_classical": 20261106,
+  "dependencies": {
+    "numpy": "1.26.4",
+    "scipy": "1.13.1"
+  },
+  "sources": [
+    {
+      "path": "examples/architecture/export_traces.py",
+      "sha256": "e6429efc1c2dc8c3595632955207d5544ff6aa78dfea07ebff795d502960b0f6"
+    },
+    {
+      "path": "examples/architecture/trace_schema.py",
+      "sha256": "b42b3b32ff5a963ad4eb3e0ab59516eccf6b11ca0406430027b5e46aacbe5889"
+    },
+    {
+      "path": "examples/architecture/quantum_traces.py",
+      "sha256": "f3ca5343d9c54720fb95279d203dd47e3e925c41c0bd50663784e1dfcee053fd"
+    },
+    {
+      "path": "examples/architecture/classical_traces.py",
+      "sha256": "7817fa2e7ebabfa7d3ecce8aebaed982d083ba1397260869f261ee0b139fe4ae"
+    },
+    {
+      "path": "examples/quantum/surface_models.py",
+      "sha256": "d2bb5105d86cb45113d98298d73dc2c7fd3b5fd53095ffcfdd464547da6bbae0"
+    },
+    {
+      "path": "examples/quantum/requirements-cpu.lock",
+      "sha256": "bbda0be638105efc4f453c239c925d9e77171898fa84866146a6f55031ca7b5a"
+    }
+  ],
+  "traces": [
+    {
+      "id": "qcnn-4-0",
+      "title": "Four-qubit QCNN compression",
+      "category": "quantum-qcnn",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/qcnn-4-0-600a8317ec170d59.json",
+      "sha256": "600a8317ec170d59c66302613e7d044ac7565d6de51d20703dab5928eb1823c9",
+      "nodes": 30,
+      "checks": 7
+    },
+    {
+      "id": "qcnn-9-0",
+      "title": "Genus-four nine-qubit QCNN",
+      "category": "quantum-qcnn",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/qcnn-9-0-2ee05762de0dc79e.json",
+      "sha256": "2ee05762de0dc79e82db94e9a698a326cb356df0d936b73d9432fd2c90162bf6",
+      "nodes": 62,
+      "checks": 7
+    },
+    {
+      "id": "quantum-convolution-0",
+      "title": "Shared quantum graph convolution",
+      "category": "quantum-convolution",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/quantum-convolution-0-8e9fe51166ff8e12.json",
+      "sha256": "8e9fe51166ff8e12a0a3e82cfdceba776c775c462fb01ce36790f4ad32833be2",
+      "nodes": 18,
+      "checks": 4
+    },
+    {
+      "id": "quantum-attention-0",
+      "title": "Quantum-feature graph attention",
+      "category": "quantum-classical-attention",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/quantum-attention-0-ffdb14e17c8aaea3.json",
+      "sha256": "ffdb14e17c8aaea3fa24d63e1058e5cd9f88c771deb4c6eeb41cdd38bd8d69c5",
+      "nodes": 49,
+      "checks": 9
+    },
+    {
+      "id": "photonic-0",
+      "title": "Trained Gaussian principal-axis pooling",
+      "category": "photonic-gaussian",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/photonic-0-3c386adb2352ef78.json",
+      "sha256": "3c386adb2352ef78b58d46a6b879d3bc68b67f5d200dd6b9a4f41c52f6aade4a",
+      "nodes": 6,
+      "checks": 2
+    },
+    {
+      "id": "qcnn-4-8",
+      "title": "Four-qubit QCNN compression",
+      "category": "quantum-qcnn",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/qcnn-4-8-ff3ba77ec5529bc1.json",
+      "sha256": "ff3ba77ec5529bc1ae6b74d36d1a7edc8fbe0deae2d393d3dcc7493edcdd47d1",
+      "nodes": 30,
+      "checks": 7
+    },
+    {
+      "id": "qcnn-9-2",
+      "title": "Genus-four nine-qubit QCNN",
+      "category": "quantum-qcnn",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/qcnn-9-2-1726571270c4a9be.json",
+      "sha256": "1726571270c4a9bebbfe955e15b30338704394de334694532652a513b01dd52b",
+      "nodes": 62,
+      "checks": 7
+    },
+    {
+      "id": "quantum-convolution-29",
+      "title": "Shared quantum graph convolution",
+      "category": "quantum-convolution",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/quantum-convolution-29-57df20936113c260.json",
+      "sha256": "57df20936113c2604bac72658c85f597f44d2cdd58dae632ee0aac38378a68ba",
+      "nodes": 18,
+      "checks": 4
+    },
+    {
+      "id": "quantum-attention-24",
+      "title": "Quantum-feature graph attention",
+      "category": "quantum-classical-attention",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/quantum-attention-24-038cce49118ba5ee.json",
+      "sha256": "038cce49118ba5ee4bba0b3f66cc47ba3acd4539d8bf7882624c4e1d7049fdfb",
+      "nodes": 49,
+      "checks": 9
+    },
+    {
+      "id": "photonic-3",
+      "title": "Trained Gaussian principal-axis pooling",
+      "category": "photonic-gaussian",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/photonic-3-83fa043fb24f1828.json",
+      "sha256": "83fa043fb24f1828ce38262e95199b7d5bc6d7e429f4900810613b423292136d",
+      "nodes": 6,
+      "checks": 2
+    },
+    {
+      "id": "toricgt-quantum-hybrid-0",
+      "title": "Hybrid ToricGT spectral surrogate",
+      "category": "quantum-classical-toricgt",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/toricgt-quantum-hybrid-0-815b9525fde36810.json",
+      "sha256": "815b9525fde36810043ca1b9e85e644c93a84550b54e6ea1f43f5e632c29abcb",
+      "nodes": 20,
+      "checks": 6
+    },
+    {
+      "id": "toricgt-quantum-hybrid-1",
+      "title": "Hybrid ToricGT spectral surrogate",
+      "category": "quantum-classical-toricgt",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/toricgt-quantum-hybrid-1-a56df6bed3fa0849.json",
+      "sha256": "a56df6bed3fa084994444de51b8105d39e56944f0fff075a4f7685c10ce824bf",
+      "nodes": 20,
+      "checks": 6
+    },
+    {
+      "id": "toricgt-quantum-hybrid-2",
+      "title": "Hybrid ToricGT spectral surrogate",
+      "category": "quantum-classical-toricgt",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/toricgt-quantum-hybrid-2-86b6766151e04acd.json",
+      "sha256": "86b6766151e04acdb73fd17f9fd4fcfbe693e85f731d453a678b5557a5e4c6c6",
+      "nodes": 20,
+      "checks": 6
+    },
+    {
+      "id": "toricgt-quantum-hybrid-3",
+      "title": "Hybrid ToricGT spectral surrogate",
+      "category": "quantum-classical-toricgt",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/toricgt-quantum-hybrid-3-e8e2c41068d628cf.json",
+      "sha256": "e8e2c41068d628cf150d472dcde12773890aa38ab3cb19b958f5168062129547",
+      "nodes": 20,
+      "checks": 6
+    },
+    {
+      "id": "toricgt-quantum-hybrid-4",
+      "title": "Hybrid ToricGT spectral surrogate",
+      "category": "quantum-classical-toricgt",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/toricgt-quantum-hybrid-4-be14a9d2b694cad4.json",
+      "sha256": "be14a9d2b694cad4d863b6ade88d480249d1b8dbdf9807592396c8af33b90539",
+      "nodes": 20,
+      "checks": 6
+    },
+    {
+      "id": "toricgt-quantum-hybrid-5",
+      "title": "Hybrid ToricGT spectral surrogate",
+      "category": "quantum-classical-toricgt",
+      "kind": "trained-checkpoint-replay",
+      "file": "records/toricgt-quantum-hybrid-5-106db1f0883ccf98.json",
+      "sha256": "106db1f0883ccf98af259cd2e3f6e56ff28a22903e0a39304d025c2fd9994fe6",
+      "nodes": 20,
+      "checks": 6
+    },
+    {
+      "id": "tokengt-softmax",
+      "title": "Tokengt Softmax",
+      "category": "classical-tokengt-softmax",
+      "kind": "fixed-weight-reference",
+      "file": "records/tokengt-softmax-050f76c3bfeca19c.json",
+      "sha256": "050f76c3bfeca19c125541ee49ba9df23648088f3f7496b4b5e13ddd20280d56",
+      "nodes": 59,
+      "checks": 3
+    },
+    {
+      "id": "tropical-attention",
+      "title": "Tropical Attention",
+      "category": "classical-tropical-attention",
+      "kind": "fixed-weight-reference",
+      "file": "records/tropical-attention-cca65cf0b295848c.json",
+      "sha256": "cca65cf0b295848cc55d893accf260705c3baf4a7a16d795d060eba343aa5869",
+      "nodes": 59,
+      "checks": 3
+    },
+    {
+      "id": "tropical-ring",
+      "title": "Tropical Ring",
+      "category": "classical-tropical-ring",
+      "kind": "fixed-weight-reference",
+      "file": "records/tropical-ring-9f8f70925aae3719.json",
+      "sha256": "9f8f70925aae371990dbf214dd933b0f22ca75ab54d8c44b803e02133104f3d5",
+      "nodes": 59,
+      "checks": 3
+    },
+    {
+      "id": "attention-hybrid",
+      "title": "Attention Hybrid",
+      "category": "classical-attention-hybrid",
+      "kind": "fixed-weight-reference",
+      "file": "records/attention-hybrid-ab879be0dbdd3f10.json",
+      "sha256": "ab879be0dbdd3f108c67d94b416f9db39ce3b850f2a0830c9c58510d4bdd753c",
+      "nodes": 80,
+      "checks": 6
+    },
+    {
+      "id": "toricgt-soft-moe",
+      "title": "Toricgt Soft Moe",
+      "category": "classical-toricgt-soft-moe",
+      "kind": "fixed-weight-reference",
+      "file": "records/toricgt-soft-moe-9c85a23b67298479.json",
+      "sha256": "9c85a23b6729847930c7793856c921013a1fe7b800c54736c02f61e1ac1fe03c",
+      "nodes": 63,
+      "checks": 7
+    },
+    {
+      "id": "causal-soft-moe",
+      "title": "Causal Soft Moe",
+      "category": "classical-causal-soft-moe",
+      "kind": "fixed-weight-reference",
+      "file": "records/causal-soft-moe-3f861e5df9d3491b.json",
+      "sha256": "3f861e5df9d3491b207f0191e4b87644678846fe4b6143a9e4ed45f550289680",
+      "nodes": 66,
+      "checks": 8
+    }
+  ],
+  "interface_status": "Numerical trace layer; current inspector status is tracked in planning/IMPLEMENTATION_QUEUE.json",
+  "unavailable": "No GPU, upstream ToricGT checkpoint training, full infinite-order simulation, full-book Lean verification or GRH proof claimed"
+}

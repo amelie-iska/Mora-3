@@ -1,0 +1,209 @@
+"""Exactly two original UniProt kinetic train-source windows.
+
+The native source distinguishes Km from Vmax and preserves original literal
+units, protein/alias context, omitted assay conditions and parent construct.
+This is source-fidelity work only, not causal or clinical evidence, trained
+quality, a kinetic cross-assay comparison or a μP training authorization.
+"""
+from hashlib import sha256
+from pathlib import Path
+
+from mora3.data.admet import canonical
+from mora3.data.source_scalar_native_rows import project_native_scalar_batch
+from mora3.research.remaining_eight_registry import load_assets
+from mora3.research.native_scalar_campaign_routes import TrainOnlyScalarCampaignAdapter
+from mora3.research.primary_campaign_source_rebind import load_inactive_common_source_rebind
+from mora3.research.primary_source_factory_preflight import Ref,document
+from mora3.research.primary_native_routes import finite_view_policy_sha256
+from mora3.research.mup_campaign import executable_adapter_sha256
+from mora3.research.common_source_native_replay import (
+    _source_fingerprint,_first,_checked_rebound_position,_checked_two_window_transition,
+)
+
+_TASK='curated_kinetic_annotation_value'
+_FAMILY='UniProt-kinetics'
+_EXPECTED_MISSING=('assay_method','assay_pH','assay_temperature','assayed_construct','parent_comment_molecule_scope')
+_EXPECTED_POLICY='c3812ecfcfea8a01f81769bf5ef6fb3880e04a0ac054a6349e9272db14765393'
+
+
+def _sha(value):return sha256(value).hexdigest()
+
+
+def _native_kinetics_signature(adapter,window):
+    """Conserve one source-reported Km or Vmax without conflating assay meaning.
+
+    This does not establish source conditions absent from the original row,
+    biological comparability, independent experiments, calibrated likelihood or
+    causal relevance. Preserve reported literal unit; never infer conversion.
+    """
+    projected=project_native_scalar_batch(adapter.original_view,window.batch,split='train')
+    if projected.original_split!='train' or len(projected.scalar_rows)!=1:
+        raise ValueError('One original native UniProt kinetic train coordinate required')
+    row,=projected.scalar_rows
+    target=row.target
+    quantity=row.partition_key[2] if len(row.partition_key)==7 else None
+    context=row.condition_inputs()
+    known=context.get('known_context')
+    audit=row.audit()
+    if (row.source_family!=_FAMILY or row.task_name!=_TASK
+            or row.original_split!='train'
+            or row.disposition!='qualified-native-reported-source-coordinate'
+            or quantity not in ('Km','Vmax')
+            or target.kind!='reported_point' or target.reported_value is None
+            or not target.numeric_coordinate_available or target.raw_relation is not None
+            or target.lower is not None or target.upper is not None
+            or row.partition_key[:2]!=(_FAMILY,_TASK)
+            or type(row.partition_key[3])is not str or not row.partition_key[3]
+            or row.partition_key[4]is not None or row.partition_key[5]is not None
+            or row.partition_key[6]!='source_curated_reported_'+quantity):
+        raise ValueError('Native Km/Vmax role, quantity, literal unit or source coordinate differs')
+    alias_role='substrate_alias' if quantity=='Km' else'enzyme_alias'
+    if (type(known)is not dict
+            or set(known)!={'measurement_type','literal_unit',alias_role}
+            or known['measurement_type']!=quantity
+            or known['literal_unit']!=row.partition_key[3]
+            or type(known[alias_role])is not str or not known[alias_role]
+            or audit.get('physical_missingness')!=list(_EXPECTED_MISSING)
+            or audit.get('native_method')is not None
+            or audit.get('parent_molecule_scope')is not None
+            or not isinstance(context.get('native_entity'),dict)
+            or context['native_entity'].get('molecule_class')!='protein'):
+        raise ValueError('Source assay/construct missingness, kinetic aliases or protein entity changed')
+    original=audit.get('original_native_task',{})
+    original_measurement=original.get('audit',{}).get('original_measurement',{})
+    if (original.get('task')!=_TASK or not isinstance(original_measurement,dict)
+            or original_measurement.get('unit')!=row.partition_key[3]
+            or original_measurement.get('substrate'if quantity=='Km' else'enzyme')!=known[alias_role]
+            or any(k in original_measurement for k in('molecule','method','pH','temperature'))):
+        raise ValueError('Original measurement source unit and context must be preserved without imputation')
+    prepared=adapter.prepare(window)
+    if (prepared.observed_positions!=1 or prepared.unavailable_reason is not None
+            or prepared.evaluate is None or not callable(prepared.evaluate)):
+        raise ValueError('Original measured source coordinate lost during native kinetic preparation')
+    return dict(
+        original_target_kind=target.kind,measurement_type=quantity,
+        literal_source_unit=row.partition_key[3],
+        original_numeric_lexeme=target.native_numeric_lexeme,
+        original_float64_bits=target.reported_value_float64_bits,
+        original_native_value=target.reported_value,
+        quantity_coordinate=row.partition_key[6],kinetic_alias_role=alias_role,
+        source_alias_sha256=_sha(known[alias_role].encode()),
+        protein_identity_sha256=_sha(canonical(context['native_entity'])),
+        provider_lexemes_sha256=_sha(target.provider_lexemes_json),
+        native_target_metadata_sha256=_sha(target.native_target_metadata_json),
+        source_audit_sha256=_sha(row.source_audit_json),
+        condition_sha256=_sha(row.condition_json),
+        source_coordinate_sha256=_sha(row.source_coordinate_json),
+        native_partition_sha256=_sha(canonical(row.partition_key)),
+        assay_method=None,assayed_construct=None,physical_missingness=list(_EXPECTED_MISSING),
+        native_numeric_coordinate_exact=True,kinetic_unit_converted=False,
+        training_objective_invoked=False,
+        source_semantics='source-reported-'+quantity+'-with-original-literal-unit;missing-assay-context-not-causally-validated',
+    )
+
+
+def audit_original_uniprot_kinetics_two_windows(root,*,task_key=_TASK,max_windows=2):
+    """Read two real train windows twice, one per immutable snapshot binding.
+
+    This is bounded evidence, not a validation baseline or whole-corpus scan.
+    Do not widen max_windows or infer eligibility from equal source-row hashes.
+    """
+    if type(task_key)is not str or task_key!=_TASK or type(max_windows)is not int or max_windows!=2:
+        raise ValueError('Only the original UniProt kinetics task and exact two-window budget allowed')
+    root=Path(root).resolve()
+    if not root.is_dir() or Path.cwd().resolve()!=root:
+        raise ValueError('Exact original source checkout and current working directory required')
+    context=load_inactive_common_source_rebind(root)
+    evidence=document(root,context.evidence)
+    row,=(x for x in evidence['route_bindings'] if x['task_key']==_TASK)
+    if (row['candidate']['max_windows']!=2 or row['common']['max_windows']!=2
+            or row['common_view_policy_sha256']!=_EXPECTED_POLICY
+            or context.common_snapshot.sha256!=evidence['common_source_snapshot']['sha256']):
+        raise ValueError('Exact reviewed UniProt kinetics finite source-view plan differs')
+    candidate=Ref(**evidence['inactive_candidate_snapshot']);common=context.common_snapshot
+    if candidate.sha256==common.sha256:
+        raise ValueError('Independent candidate and common snapshot references required')
+    view,original,_,_,axis,_,_,_,_=load_assets(root)
+    if finite_view_policy_sha256(view)!=_EXPECTED_POLICY:
+        raise ValueError('Original UniProt kinetics source view/group policy changed')
+    bindings={}
+    for label,snapshot in (('candidate',candidate),('common',common)):
+        adapter=TrainOnlyScalarCampaignAdapter(original,view,axis,snapshot.sha256,_FAMILY)
+        binding=adapter.train_binding(batch_size=1)
+        expected=row[label]
+        actual=dict(task_key=binding.route.task_key,
+            initial_cursor_sha256=_sha(binding.route.initial_cursor),
+            adapter_sha256=executable_adapter_sha256(binding.prepare,root=Path(__file__).resolve().parents[3]),
+            max_windows=max_windows)
+        if (actual!=expected or binding.route.source_snapshot_sha256!=snapshot.sha256
+                or binding.route.native_view_policy_sha256!=_EXPECTED_POLICY):
+            raise ValueError('Reviewed UniProt kinetics executable adapter/cursor binding mismatch: '+label)
+        bindings[label]=(adapter,binding)
+
+    def read_two(binding):
+        route=binding.route;iterator=route.iter_from(route.initial_cursor)
+        windows=[];position=route._cursor_position(route.initial_cursor)
+        try:
+            for _ in range(2):
+                try:window=next(iterator)
+                except StopIteration as exc:
+                    raise ValueError('Source exhausted before frozen UniProt kinetics two-window scan budget') from exc
+                if window.original_source_rows!=1 or window.batch.original_split!='train':
+                    raise ValueError('Exactly one original UniProt train row per source window required')
+                route._view.require_native_rows(window.batch,split='train')
+                after=route._cursor_position(window.cursor_after)
+                _checked_two_window_transition(position,after)
+                windows.append(window);position=after
+        finally:
+            close=getattr(iterator,'close',None)
+            if close is not None:close()
+        return tuple(windows)
+
+    a=read_two(bindings['candidate'][1]);b=read_two(bindings['common'][1])
+    rows=[];identities=set()
+    for i,(left,right) in enumerate(zip(a,b,strict=True)):
+        if (left.batch.source_shard!=right.batch.source_shard
+                or left.batch.source_row_ordinals!=right.batch.source_row_ordinals
+                or not left.batch.native_rows.equals(right.batch.native_rows,check_metadata=True)):
+            raise ValueError('Changed original Arrow source/role/order under common 29-head snapshot')
+        la,lb=bindings['candidate'];ra,rb=bindings['common']
+        sig_left=_native_kinetics_signature(la,left);sig_right=_native_kinetics_signature(ra,right)
+        fingerprint=_source_fingerprint(left)
+        if sig_left!=sig_right or fingerprint!=_source_fingerprint(right):
+            raise ValueError('Original UniProt kinetics payload/condition/reported numeric coordinate changed')
+        source_digest,source_bytes,payload,ordinal=fingerprint
+        identity=(left.batch.source_shard['sha256'],ordinal)
+        if identity in identities:raise ValueError('Duplicate UniProt source row in two-window audit')
+        identities.add(identity)
+        cpos=lb.route._cursor_position(left.cursor_after)
+        npos=rb.route._cursor_position(right.cursor_after)
+        _checked_rebound_position(cpos,npos)
+        rows.append(dict(window_index=i,source_shard_sha256=identity[0],source_ordinal=ordinal,
+            native_source_fingerprint=source_digest,source_payload_bytes=source_bytes,
+            original_native_payload_sha256=payload,candidate_next_position=cpos,
+            common_next_position=npos,candidate_cursor_sha256=_sha(left.cursor_after),
+            common_cursor_sha256=_sha(right.cursor_after),**sig_left))
+    for label,windows in (('candidate',a),('common',b)):
+        adapter,binding=bindings[label]
+        restarted=_first(binding.route.iter_from(windows[0].cursor_after))
+        second=windows[1]
+        if (restarted.cursor_after!=second.cursor_after
+                or restarted.evidence_sha256!=second.evidence_sha256
+                or restarted.batch.source_shard!=second.batch.source_shard
+                or restarted.batch.source_row_ordinals!=second.batch.source_row_ordinals
+                or not restarted.batch.native_rows.equals(second.batch.native_rows,check_metadata=True)
+                or _source_fingerprint(restarted)!=_source_fingerprint(second)
+                or _native_kinetics_signature(adapter,restarted)!=_native_kinetics_signature(adapter,second)):
+            raise ValueError('Original second UniProt kinetics train window changes on independent cursor restart')
+    return dict(schema='Mora3.OriginalUniProtKineticsTwoWindowSourceReplay/v1',task_key=_TASK,
+        source_family=_FAMILY,split='train',windows_replayed=2,native_source_rows=2,
+        native_observed_targets=2,rows=tuple(rows),
+        candidate_and_common_source_equal=True,native_conditions_and_targets_equal=True,
+        second_window_restart_exact=True,native_view_policy_sha256=_EXPECTED_POLICY,
+        candidate_source_snapshot_sha256=candidate.sha256,
+        common_source_snapshot_sha256=common.sha256,
+        scalar_projection_proof_sha256=axis.proof_sha256,
+        full_source_corpus_exhausted=None,complete62_route_replay=False,
+        validation_baseline_measured=False,global_split_admitted=False,
+        training_admission=False,optimizer_updates=0,actual_campaign_runs=0,
+        source_confidence='original-source-native-row-and-kinetic-projection-not-independent-assay-or-biological-validation')

@@ -5,6 +5,7 @@ separately require the full owner, data, operator, recovery and resource gates.
 Cursor bytes are produced by source readers, never inferred from model outputs.
 """
 import copy
+import json
 import math
 from pathlib import Path
 import random
@@ -20,6 +21,25 @@ from mora3.model.mixed_payload_projection import exact_wire
 from .mup_campaign_schedule import NativeMuWarmupCosine, SCHEMA as COSINE_SCHEMA
 
 _SHA=re.compile('[0-9a-f]{64}\\Z')
+_PATHSPACE_FIELDS={'schema','trial_id','task_key','source_snapshot_sha256',
+    'policy_module_path','history_module_path','prefix_binding_sha256',
+    'reward_binding_sha256','sampling_method','terminal_object'}
+
+
+def _trajectory_freeze_wire(binding):
+    """Validate an explicit per-trial full-path method/guide/source declaration."""
+    if (type(binding)is not dict or set(binding)!=_PATHSPACE_FIELDS
+            or binding.get('schema')!='Mora3.NativePathspaceBinding/v1'
+            or any(type(binding.get(k))is not str or not binding[k] for k in
+                   ('trial_id','task_key','policy_module_path','history_module_path'))
+            or any(type(binding.get(k))is not str or not _SHA.fullmatch(binding[k]) for k in
+                   ('source_snapshot_sha256','prefix_binding_sha256','reward_binding_sha256'))
+            or binding.get('sampling_method')!='native-unpruned-history-conditioned-forced-horizon'
+            or binding.get('terminal_object')!='entire-ordered-reasoning-trajectory'):
+        raise ValueError('Exact predeclared native trajectory source/guide/method binding required')
+    return json.dumps(binding,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
+
+
 
 
 def _rng_state():
@@ -69,7 +89,8 @@ class NativeMuUpdateEngine:
     This primitive does not read credentials, initialize W&B or launch training.
     """
     def __init__(self,model,optimizer,*,binding_sha256,task_cycle,source_cursors,scheduler=None,
-                 profile_stage_controller=None,gradient_clip_max_norm=None):
+                 profile_stage_controller=None,gradient_clip_max_norm=None,sampler_generator=None,
+                 trajectory_objective_binding=None):
         if (not isinstance(model,nn.Module) or type(optimizer)is not MuAdamW
                 or optimizer._mup_model()is not model or type(binding_sha256)is not str
                 or not _SHA.fullmatch(binding_sha256)
@@ -85,6 +106,16 @@ class NativeMuUpdateEngine:
             or not math.isfinite(gradient_clip_max_norm) or gradient_clip_max_norm <= 0
         ):
             raise ValueError('Explicit finite positive global gradient clip max norm required')
+        if sampler_generator is not None and not isinstance(sampler_generator,torch.Generator):
+            raise ValueError('Exact isolated native trajectory sampler generator required')
+        if trajectory_objective_binding is not None:
+            if sampler_generator is None:
+                raise ValueError('Frozen trajectory objective requires a checkpoint-owned sampler generator')
+            if type(trajectory_objective_binding) is not dict or trajectory_objective_binding.get('task_key') not in task_cycle:
+                raise ValueError('Frozen trajectory task must belong to exact native task cycle')
+            trajectory_freeze_wire=_trajectory_freeze_wire(trajectory_objective_binding)
+        else:
+            trajectory_freeze_wire=None
         optimizer._validate_live()
         if type(scheduler) is NativeMuWarmupCosine:
             scheduler.state_dict()
@@ -103,9 +134,49 @@ class NativeMuUpdateEngine:
         self._configured_update_policy=(type(scheduler),self._gradient_clip_max_norm)
         self.binding_sha256=binding_sha256;self.task_cycle=task_cycle
         self.source_cursors=copy.deepcopy(source_cursors);self.steps=0
+        self.sampler_generator=sampler_generator
+        self._sampler_owner=(sampler_generator,)
+        self._sampler_device=None if sampler_generator is None else str(sampler_generator.device)
+        self._trajectory_objective_binding=copy.deepcopy(trajectory_objective_binding)
+        self._trajectory_frozen_wire=trajectory_freeze_wire
         self._scheduler_constants=None if type(scheduler) is not torch.optim.lr_scheduler.StepLR else {
             k:copy.deepcopy(v) for k,v in scheduler.state_dict().items()
             if k not in ('last_epoch','_step_count','_last_lr')}
+
+    def _trajectory_state(self):
+        binding=self._trajectory_objective_binding
+        if binding is None:
+            if self._trajectory_frozen_wire is not None:
+                raise ValueError('Frozen trajectory source/method binding was removed')
+            return None
+        if (_trajectory_freeze_wire(binding)!=self._trajectory_frozen_wire
+                or self.sampler_generator is None):
+            raise ValueError('Frozen trajectory source/guide/method binding changed')
+        return copy.deepcopy(binding)
+
+    def require_trajectory_objective_binding(self,**actual):
+        frozen=self._trajectory_state()
+        if frozen is None or not exact_wire(frozen,actual):
+            raise ValueError('Exact predeclared frozen trajectory source/guide/method/trial binding required')
+
+    def _sampler_state(self):
+        """Exact independent on-policy sampler cursor, separate from global Torch RNG."""
+        sampler=self.sampler_generator
+        if sampler is not self._sampler_owner[0] or (sampler is not None and
+                (not isinstance(sampler,torch.Generator) or str(sampler.device)!=self._sampler_device)):
+            raise ValueError('Exact bound trajectory sampler generator ownership required')
+        return None if sampler is None else dict(device=self._sampler_device,state=sampler.get_state().clone())
+
+    def _validate_sampler_restore(self,state):
+        if (type(state)is not dict or set(state)!={'device','state'}
+                or state['device']!=self._sampler_device or not isinstance(state['state'],torch.Tensor)
+                or state['state'].dtype!=torch.uint8 or state['state'].device.type!='cpu'
+                or state['state'].ndim!=1):
+            raise ValueError('Exact native trajectory sampler device and byte cursor required')
+        try:
+            torch.Generator(device=self._sampler_device).set_state(state['state'])
+        except (RuntimeError,ValueError) as exc:
+            raise ValueError('Invalid native trajectory sampler generator cursor') from exc
 
     def _update_policy(self):
         kind,clip = self._configured_update_policy
@@ -210,6 +281,13 @@ class NativeMuUpdateEngine:
                 reconstruction_owner_path=self._profile_owner_path,state=controller.checkpoint(self.steps)))
         if policy is not None:
             state.update(schema='Mora3.NativeMuUpdateState/v3',update_policy=policy)
+        sampler_state=self._sampler_state()
+        if sampler_state is not None:
+            state.update(schema='Mora3.NativeMuUpdateState/v4',sampler_rng=sampler_state)
+        trajectory_state=self._trajectory_state()
+        if trajectory_state is not None:
+            state.update(schema='Mora3.NativeMuUpdateState/v5',
+                         trajectory_objective_binding=trajectory_state)
         return copy.deepcopy(state)
 
     def save_checkpoint(self,path):
@@ -226,6 +304,14 @@ class NativeMuUpdateEngine:
         if policy is not None:
             keys.add('update_policy')
             schema='Mora3.NativeMuUpdateState/v3'
+        sampler_state=self._sampler_state()
+        if sampler_state is not None:
+            keys.add('sampler_rng')
+            schema='Mora3.NativeMuUpdateState/v4'
+        trajectory_state=self._trajectory_state()
+        if trajectory_state is not None:
+            keys.add('trajectory_objective_binding')
+            schema='Mora3.NativeMuUpdateState/v5'
         if (type(state)is not dict or set(state)!=keys or state['schema']!=schema
                 or state['binding_sha256']!=self.binding_sha256 or state['task_cycle']!=self.task_cycle
                 or type(state['steps'])is not int or state['steps']<0
@@ -236,6 +322,23 @@ class NativeMuUpdateEngine:
         if policy is not None and not exact_wire(state['update_policy'],policy):
             raise ValueError('exact checkpointed schedule and gradient clip policy required')
         _validate_rng(state['rng'])
+        if sampler_state is not None:self._validate_sampler_restore(state['sampler_rng'])
+        if trajectory_state is not None and not exact_wire(
+                state['trajectory_objective_binding'],trajectory_state):
+            raise ValueError('Checkpoint frozen trajectory source/guide/method binding differs')
+        # Native Adam moments are allocated only by completed optimizer updates.
+        # A checkpoint cannot carry moments at step zero or moments from a later
+        # step than its durable source-cursor/update counter. Reject before the
+        # staged copy so an impossible same-run resume never mutates live owners.
+        optimizer_state=state['optimizer']
+        if type(optimizer_state) is not dict or type(optimizer_state.get('state')) is not dict:
+            raise ValueError('exact checkpoint optimizer clock state required')
+        for slots in optimizer_state['state'].values():
+            step=slots.get('step') if type(slots) is dict else None
+            if (type(step) is not torch.Tensor or step.numel()!=1
+                    or not bool(torch.isfinite(step).all())
+                    or not 1 <= float(step.item()) <= state['steps']):
+                raise ValueError('checkpoint optimizer step exceeds completed native update clock')
         live=self.model.state_dict()
         if type(state['model'])not in(dict,type(live)) or set(state['model'])!=set(live):
             raise ValueError('complete model checkpoint keys required')
@@ -271,6 +374,7 @@ class NativeMuUpdateEngine:
         if controller is not None:controller.apply_staged_restore(staged_profile)
         self.steps=state['steps'];self.source_cursors=copy.deepcopy(state['source_cursors'])
         self.optimizer.zero_grad(set_to_none=True)
+        if sampler_state is not None:self.sampler_generator.set_state(state['sampler_rng']['state'])
         _restore_rng(state['rng'])
 
     def load_checkpoint(self,path):

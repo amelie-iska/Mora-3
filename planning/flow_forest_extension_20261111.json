@@ -1,0 +1,154 @@
+{
+  "schema": "Mora3.FlowForestExtensionPlan/v1",
+  "created_utc": "2026-11-11T12:27:12.131814+00:00",
+  "governing_scope": "new user-requested flow-forest extension; current campaign cap preserved",
+  "inspection": {
+    "active_head": "255d986e8938c90123e0050f538748e547719d97",
+    "implementation_base": "98c75212cfd708a9b3a07cb7f0f1e19df8a3c6aa",
+    "full_dataset_ready": false,
+    "construction_owner_signature": null,
+    "model_owner_signature": null,
+    "current_campaign_result": null
+  },
+  "run_policy": {
+    "maximum_substantive_runs": 26,
+    "proxy_slots": 24,
+    "target_slots": 2,
+    "fresh_retries": 0,
+    "extra_distillation_runs_allocated": 0,
+    "extra_preference_runs_allocated": 0,
+    "extra_trained_baseline_runs_allocated": 0,
+    "additional_training_status": "blocked_pending_explicit_revised_allocation",
+    "weights_updated_this_invocation": false
+  },
+  "tasks": [
+    {
+      "id": "FRF-00",
+      "name": "documentation_and_mathematical_visual_reference",
+      "depends_on": [],
+      "status": "reference_documentation_and_visuals_implemented",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-01",
+      "name": "complete_source_forest_contract",
+      "depends_on": [
+        "FRF-00"
+      ],
+      "status": "planned",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-02",
+      "name": "native_shared_flow_head",
+      "depends_on": [
+        "FRF-01"
+      ],
+      "status": "planned",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-03",
+      "name": "analogy_retrieval_whole_forest",
+      "depends_on": [
+        "FRF-01"
+      ],
+      "status": "planned",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-04",
+      "name": "versioned_token_axis_and_decoder",
+      "depends_on": [
+        "FRF-01"
+      ],
+      "status": "planned",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-05",
+      "name": "hybrid_measure_distribution_and_native_qualification",
+      "depends_on": [
+        "FRF-02",
+        "FRF-03",
+        "FRF-04"
+      ],
+      "status": "planned",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-06",
+      "name": "real24_and_two_target_campaign",
+      "depends_on": [
+        "FRF-05"
+      ],
+      "status": "planned",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-07",
+      "name": "few_step_flow_map_distillation",
+      "depends_on": [
+        "FRF-06"
+      ],
+      "status": "budget_blocked",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-08",
+      "name": "graphcg_quality_and_adapter_preference",
+      "depends_on": [
+        "FRF-06"
+      ],
+      "status": "budget_blocked",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    },
+    {
+      "id": "FRF-09",
+      "name": "final_evidence_reconciliation",
+      "depends_on": [
+        "FRF-06",
+        "FRF-07",
+        "FRF-08"
+      ],
+      "status": "planned",
+      "production_neural_implementation_claimed": false,
+      "real_training_result_claimed": false
+    }
+  ],
+  "native_policy": {
+    "preserve_existing_source_model_and_READ_ONLY_watch": true,
+    "flow_head_enabled": false,
+    "vocabulary_changed": false,
+    "tropical_operator_replaced": false,
+    "global_settings_changed": false
+  },
+  "visualization": {
+    "page": "docs/project/flow-forest.html",
+    "source_math": "docs/project/flow-forest-math.js",
+    "source_views": "docs/project/flow-forest-views.js",
+    "views": [
+      "architecture",
+      "forest",
+      "topology",
+      "decode",
+      "fewstep",
+      "quality",
+      "campaign"
+    ],
+    "rendering": "SVG+HTML,offline,no_external_dependencies",
+    "paper_figures": "paper/figures/flow-forest-*.svg",
+    "hosted_project_site_updated": false,
+    "all_numeric_illustrations": "deterministic_mathematical_fixtures_not_training_results"
+  },
+  "source_manifest": "docs/research/flow_forest_sources_20261111.json"
+}

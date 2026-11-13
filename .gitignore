@@ -10,3 +10,14 @@ __pycache__/
 /data/
 *.pt
 *.safetensors
+
+# Never publish workstation-only material. Explicit reviewed source paths only.
+/AGENTS.md
+/planning/initial_specs_prompt.md
+keys.txt
+*.pem
+*.key
+.venv*/
+/.local/
+/external/
+/references/

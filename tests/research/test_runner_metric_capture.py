@@ -14,7 +14,7 @@ def test_actual_runner_dispatches_update_and_validation_capture(monkeypatch,capt
     training=(replace(fixture.metrics[0],name='train-loss',scope='train',split='train',step=1),)
     validation=tuple(replace(row,step=1) for row in fixture.metrics)
     class Model:
-        def require_training_admission(self): pass
+        def require_training_admission(self,**scope): pass
     class Engine:
         model=Model()
         steps=0

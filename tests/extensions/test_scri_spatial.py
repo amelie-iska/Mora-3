@@ -79,6 +79,21 @@ class SpatialQueryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'truncation'):
             build(max_cells=1)
 
+    def test_mixed_original_source_rights_cannot_form_a_native_spatial_cohort(self):
+        # Original source licensing cannot be reconciled by geometric proximity.
+        # The supplied specimen population must be audited as one rights stratum,
+        # including excluded cells; do not mutate or silently drop source records.
+        query = cell('query-secret', (0., 0.))
+        for position in ((1., 0.), (100., 0.)):
+            other = cell('other', position)
+            incompatible = replace(other, source=replace(other.source, license_id='restricted-source'))
+            with self.subTest(position=position), self.assertRaisesRegex(ValueError, 'license'):
+                build((query, incompatible))
+        # Independent file locators with the SAME declared rights remain legal.
+        same_rights = replace(other, source=replace(other.source, source_locator='file:///other-file'))
+        legitimate = build((query, same_rights))
+        self.assertIs(validate_spatial_query(legitimate), legitimate)
+
     def test_unknown_or_mixed_cohorts_fail_even_outside_radius(self):
         a, b = cell('query-secret', (0., 0.)), cell('other', (100., 0.))
         variants = [replace(b, coordinate_unit='mm'), replace(b, coordinate_frame='different'),
@@ -109,6 +124,33 @@ class SpatialQueryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'native unit'):
             build((a, b))
 
+    def test_spatial_query_withholds_observed_query_target_and_rejects_reinjection(self):
+        query_cell = cell('query-secret', (0., 0.))
+        neighbor = cell('neighbor', (1., 0.))
+        query = build((query_cell, neighbor))
+        native_name = 'native:["rna","GENE_A"]'
+        observed_name = 'observed:["rna","GENE_A"]'
+        fields = {m.name: m for m in query.record.nodes[0].measurements}
+        self.assertIsNone(fields[native_name].value)
+        self.assertEqual(fields[native_name].status, 'missing')
+        self.assertFalse(fields[native_name].available)
+        self.assertFalse(fields[observed_name].value)
+        self.assertEqual({m.name: m for m in query.record.nodes[1].measurements}[native_name].value, 3)
+        changed_cell = replace(query_cell, measurements=(NativeValue('rna', 'GENE_A', 999, 'count', True),))
+        self.assertEqual(query.record, build((changed_cell, neighbor)).record)
+        # A caller cannot bypass the builder by supplying a forged query graph.
+        nodes = list(query.record.nodes)
+        injected = tuple(replace(m, value=999, available=True, status='observed')
+                         if m.name == native_name else
+                         replace(m, value=True) if m.name == observed_name else m
+                         for m in nodes[0].measurements)
+        nodes[0] = replace(nodes[0], measurements=injected)
+        roles = tuple((ref, 'condition') if ref == ('node', 0, native_name) else (ref, role)
+                      for ref, role in query.task.roles)
+        with self.assertRaisesRegex(ValueError, 'query target'):
+            validate_spatial_query(replace(query, record=replace(query.record, nodes=tuple(nodes)),
+                                           task=replace(query.task, roles=roles)))
+
     def test_target_values_cannot_be_inserted_into_query(self):
         query = build()
         nodes = list(query.record.nodes)
@@ -134,6 +176,32 @@ class SpatialQueryTests(unittest.TestCase):
                           for e in query.record.edges)
         with self.assertRaisesRegex(ValueError, 'baseline coordinates'):
             validate_spatial_query(replace(query, record=replace(query.record, edges=bad_edges)))
+
+    def test_spatial_query_validator_rejects_native_unit_spoofing(self):
+        # Source-unit binding must survive graph serialization and validation;
+        # the query's redacted target value is not permission to relabel units.
+        query = build((cell('query-secret', (0., 0.)), cell('neighbor', (1., 0.))))
+        native_name = 'native:["rna","GENE_A"]'
+        for node_index, replacement_unit in ((0, 'arbitrary'), (1, 'arbitrary')):
+            nodes = list(query.record.nodes)
+            changed = tuple(replace(m, units=replacement_unit) if m.name == native_name else m
+                            for m in nodes[node_index].measurements)
+            nodes[node_index] = replace(nodes[node_index], measurements=changed)
+            forged = replace(query, record=replace(query.record, nodes=tuple(nodes)))
+            with self.subTest(node_index=node_index), self.assertRaisesRegex(ValueError, 'native.*unit'):
+                validate_spatial_query(forged)
+        # Even a condition outside the supervised axis cannot combine values
+        # in incompatible units in the same native neighborhood.
+        rows = tuple(replace(row, measurements=(*row.measurements,
+                     NativeValue('metabolite', 'ATP', 5, 'micromolar', True)))
+                     for row in (cell('query-secret', (0., 0.)), cell('neighbor', (1., 0.))))
+        query = build(rows, target_axis=(AXIS[0],))
+        nodes = list(query.record.nodes)
+        changed = tuple(replace(m, units='millimolar') if m.name == 'native:["metabolite","ATP"]' else m
+                        for m in nodes[1].measurements)
+        nodes[1] = replace(nodes[1], measurements=changed)
+        with self.assertRaisesRegex(ValueError, 'native feature unit'):
+            validate_spatial_query(replace(query, record=replace(query.record, nodes=tuple(nodes))))
 
     def test_audit_payload_is_excluded_from_query_validation(self):
         query = build()

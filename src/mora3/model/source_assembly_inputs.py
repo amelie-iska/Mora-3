@@ -22,7 +22,7 @@ from mora3.data.molecule_profile import molecule_profile_view
 from mora3.data.lincs_native import _axis as lincs_axis
 from mora3.data.admet import canonical
 from mora3.data.finite_union_annotation_study_filter import load_study_filtered_native_view
-from mora3.data.pdb_masked_coordinates import complete_pdb_coordinate_source
+from .sealed_axis_replay import frozen_pdb_axes, verify_frozen_grayscale
 from mora3.data.rosetta_unconditional_profiles import load_rosetta_profile_axes, rosetta_view_policy_sha256
 from .raster_source_envelope import RasterSourceEnvelope
 from .annotation_vocabulary import AnnotationVocabulary
@@ -178,8 +178,9 @@ def _current_route_axes(root, view, image):
         verified_scalar.proof_sha256, hashlib.sha256(canonical(view.effective_filter)).hexdigest(),
         verified_scalar.partitions,
     )
-    pdb, _ = complete_pdb_coordinate_source(view)
-    original_pdb = json.loads(_pin(root, CURRENT_VIEW_PINS['pdb_source_axes']))['source_axes']
+    pdb_proof = json.loads(_pin(root, CURRENT_VIEW_PINS['pdb_source_axes']))
+    pdb = frozen_pdb_axes(view, pdb_proof, root)
+    original_pdb = dict(pdb_proof['source_axes'])
     rebound_pdb = json.loads(json.dumps(pdb.binding()))
     del original_pdb['native_view_policy_sha256'], rebound_pdb['native_view_policy_sha256']
     if rebound_pdb != original_pdb:
@@ -191,21 +192,7 @@ def _current_route_axes(root, view, image):
         or image['original_test_development_exposed'] is not True
     ):
         raise ValueError('Complete native grayscale train and development-exposed test envelope required')
-    expected_images = {
-        (row['source_shard']['path'], row['absolute_original_row_ordinal']):
-        (row['source_payload_sha256'], row['original_split'])
-        for row in image['rows']
-    }
-    actual_images = {}
-    paths = tuple(sorted({path for path, _ in expected_images}))
-    for split in ('train', 'validation', 'test'):
-        for batch in view.iter_native_task_batches(split=split, batch_size=16, source_paths=paths):
-            view.require_native_rows(batch, split=split)
-            for ordinal, sha in zip(batch.source_row_ordinals,
-                                    batch.native_rows['native_payload_sha256'].to_pylist()):
-                actual_images[(batch.source_shard['path'], ordinal)] = (sha, split)
-    if actual_images != expected_images or len(expected_images) != image['complete_retained_rows']:
-        raise ValueError('Complete native grayscale source roles/coordinates changed under the new filter')
+    verify_frozen_grayscale(view, image, root)
     grayscale = RasterSourceEnvelope(
         CURRENT_VIEW_PINS['grayscale_envelope'][1], image['max_height'], image['max_width'], None)
     rosetta_ref = CURRENT_VIEW_PINS['rosetta_unconditional_array_census']
@@ -346,7 +333,7 @@ def load_actual_source_assets(root,*,rfam_manifest=PINS['rfam_manifest'][0],rfam
         profile_axes,lincs_axes,rfam_axis,rfam_sha256,roles,cells,protocol,view,goa_pool,facts,extra)
 
 
-def assemble_source_inputs(assets,*,codec=None,max_decoder_tokens=None,goa_packets=None,runtime,admet_contracts=()):
+def assemble_source_inputs(assets,*,codec=None,max_decoder_tokens=None,goa_packets=None,runtime,admet_contracts=(),betse_source=None):
     """Concrete factory inputs from actual assets plus explicit reviewed choices.
 
     Caller supplies the real source-built codec/complete streamed-GOA route and
@@ -355,6 +342,10 @@ def assemble_source_inputs(assets,*,codec=None,max_decoder_tokens=None,goa_packe
     """
     if type(assets)is not NativeSourceAssets or type(runtime)is not dict:
         raise ValueError('actual native source assets and explicit reviewed runtime required')
+    if betse_source is not None:
+        from mora3.data.betse_membrane import BETSESource
+        if type(betse_source)is not BETSESource or betse_source.root!=assets.root.resolve():
+            raise ValueError('Verified BETSE source must share the exact native asset root')
     wanted={f.name for f in fields(SourceAssemblyInputs)}
     values=dict(vocabulary=assets.vocabulary,annotation_registry=assets.annotation_registry,
         response_axis=assets.response_axis,residue_feature_axis=assets.annotation_registry.axis('feature_type'),
@@ -364,7 +355,7 @@ def assemble_source_inputs(assets,*,codec=None,max_decoder_tokens=None,goa_packe
         rfam_family_axis=assets.rfam_family_axis,rfam_manifest_sha256=assets.rfam_manifest_sha256,
         goa_packets=assets.goa_pool if goa_packets is None else goa_packets,mcsa_role_vocabulary=assets.mcsa_role_vocabulary,
         residue_list_max_target_length=47,cell_vocabulary=assets.cell_vocabulary,cell_protocol=assets.cell_protocol,
-        admet_contracts=tuple(admet_contracts),pubchem_source_root=assets.root,
+        admet_contracts=tuple(admet_contracts),betse_source=betse_source,pubchem_source_root=assets.root,
         pubchem_manifest=PINS['pubchem_manifest'][0],pubchem_manifest_sha256=PINS['pubchem_manifest'][1])
     if assets.current_route_axes is not None:
         extra = assets.current_route_axes

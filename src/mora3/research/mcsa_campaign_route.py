@@ -136,6 +136,66 @@ class MCSACampaignTrainRoute:
             self._validation_rows,self._validation_symbols,
         ]))
 
+    @classmethod
+    def from_train_materialization(cls, materialization, *, admission,
+                                   source_snapshot_sha256, pass_policy,
+                                   reviewed_payload_max_tokens):
+        """Use isolated source bytes with an ALREADY genuine scoped admission.
+
+        This does not compile an admission from metadata, deserialize a token or
+        authorize the full owner. The legacy constructor and its full review
+        behavior remain available. Explicit validation access remains separate.
+        """
+        from mora3.data.mcsa_train_materialization import MCSATrainMaterialization
+        if (cls is not MCSACampaignTrainRoute or type(materialization) is not MCSATrainMaterialization
+                or type(admission) is not MCSARoleListAdmission
+                or not all(hasattr(admission,key) for key in MCSARoleListAdmission.__slots__)
+                or type(pass_policy) is not MCSAFinitePassPolicy
+                or type(source_snapshot_sha256) is not str or not _SHA256.fullmatch(source_snapshot_sha256)
+                or type(reviewed_payload_max_tokens) is not int or reviewed_payload_max_tokens<1):
+            raise ValueError('Exact materialized train source, genuine admission and native policy required')
+        pass_policy.__post_init__();materialization.require_unchanged()
+        if admission.review_packet_sha256!=materialization.review_packet_sha256:
+            raise ValueError('Source materialization and genuine admission reviews differ')
+        binding=materialization.model_binding();component=materialization.component()
+        if binding['payload_max_tokens']!=reviewed_payload_max_tokens:
+            raise ValueError('Exact literal reviewed payload owner capacity required')
+        vocabulary=materialization.vocabulary
+        records=materialization.records()
+        admission.require_batch(collate_weak_site_candidates(records,vocabulary),
+                                model_binding=binding,split='train')
+        train=dict(zip(materialization.original_ordinals,records,strict=True))
+        symbols=sum(len(site.role_ids)+1 for record in records for site in record.source_lists)
+        self=object.__new__(cls)
+        self._admission=admission;self._records=MappingProxyType(train)
+        self._ordinals=tuple(train);self._vocabulary=vocabulary
+        self._model_binding=canonical(binding);self._policy=pass_policy;self._symbols=symbols
+        self._train_materialization=materialization
+        self._train_materialization_binding=canonical(self.train_materialization_binding())
+        # Preserve the exact existing route/cursor semantics. The executable
+        # implementation hash still changes and must be rebound in a new release.
+        self._configuration=canonical(dict(
+            schema='Mora3.MCSAOriginalTrainPassRoute/v1',source_snapshot_sha256=source_snapshot_sha256,
+            source_family=FAMILY,task_name=TASK,native_schema=NATIVE,role='train',
+            review_packet_sha256=materialization.review_packet_sha256,
+            source_component_sha256=materialization._component_sha,
+            source_candidate_sha256=component['source_candidate_file']['sha256'],
+            reviewed_model_binding_sha256=digest(self._model_binding),
+            reviewed_payload_max_tokens=reviewed_payload_max_tokens,
+            native_train_record_count=len(train),native_train_role_and_EOS_symbols=symbols,
+            policy=dict(**asdict(pass_policy),order=_ORDER_POLICY,retain_incomplete_batch=True,
+                        no_pass_boundary_batch_mixing=True,no_heldout_roles=True)))
+        self._route_sha256=digest(self._configuration)
+        self._validation_shards=tuple(canonical(shard) for shard in sorted(
+            (s for s in component['shards'] if s['split']=='validation'),key=lambda s:s['path']))
+        self._validation_rows=component['source_splits']['validation']
+        self._validation_symbols=component['role_EOS_symbols_by_split']['validation']
+        self._validation_policy_sha256=digest(canonical([
+            'Mora3.MCSAOriginalValidationSource/v1',source_snapshot_sha256,
+            materialization.review_packet_sha256,materialization._component_sha,
+            tuple(_json(ref) for ref in self._validation_shards),self._validation_rows,self._validation_symbols]))
+        return self
+
     @property
     def source_snapshot_sha256(self):
         return self.binding()['source_snapshot_sha256']
@@ -174,6 +234,23 @@ class MCSACampaignTrainRoute:
         if self.maximum_updates<required:
             raise ValueError('Exact M-CSA finite pass policy cannot cover the planned task cycle')
 
+    def train_materialization_binding(self):
+        """Pin source isolation separately from unchanged mathematical cursors."""
+        material=getattr(self,'_train_materialization',None)
+        if material is None:
+            return None
+        from mora3.data import mcsa_train_materialization as implementation
+        material.require_unchanged()
+        value=dict(schema='Mora3.MCSATrainMaterializationExecutable/v1',
+            source_context_sha256=material._contexts_sha,
+            source_component_sha256=material._component_sha,
+            review_packet_sha256=material.review_packet_sha256,
+            materializer_implementation_sha256=digest(Path(implementation.__file__).read_bytes()))
+        previous=getattr(self,'_train_materialization_binding',None)
+        if previous is not None and canonical(value)!=previous:
+            raise ValueError('M-CSA source materialization or executable implementation changed')
+        return value
+
     def binding(self):
         return _json(self._configuration)
 
@@ -205,6 +282,8 @@ class MCSACampaignTrainRoute:
 
     def iter_from(self, cursor):
         """Yield the exact remaining reviewed train windows without updating the caller's cursor."""
+        if hasattr(self, '_train_materialization'):
+            self._train_materialization.require_unchanged()
         first,offset = self._position(cursor)
         model_binding = _json(self._model_binding)
         size = self._policy.batch_size
@@ -247,11 +326,13 @@ class MCSACampaignTrainRoute:
 
         if type(window) is not MCSATrainPassWindow:
             raise ValueError('Exact reviewed M-CSA train window required')
+        self.train_materialization_binding()
         self.admission.require_batch(window.batch,model_binding=_json(self._model_binding),split='train')
         if sum(len(row.target_ids) for row in window.batch.source_list_supervision)!=window.observed_targets:
             raise ValueError('Exact M-CSA train target denominator required')
 
         def evaluate(model):
+            self.train_materialization_binding()
             branch = self._owner_branch(model)
             model.require_training_admission()
             logits = branch(window.batch,purpose='training',admission=self.admission,split='train')

@@ -1,0 +1,3459 @@
+{
+  "schema": "Mora3.SyntheticFlowFoTVisualization/v1",
+  "synthetic": true,
+  "scientific_performance_result": false,
+  "training_runs": 0,
+  "optimizer_updates": 0,
+  "score": "mean(exp(-z_first_coordinate_squared)) over every non-condition node; analytic fixture only",
+  "source_code_sha256": "a9d9cab44e8e649eef2ff2b8cc42f9a71a02d0b7e0ad0d26acd15e8fc2b4df5d",
+  "seed": 17,
+  "snapshots": [
+    {
+      "rounds": 0,
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.6826042687024874,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9985562660809654,
+            0.14183500672799787,
+            0.5900554664679599,
+            0.9999703355330266
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.03801022371714318,
+              0.3126272274672141
+            ],
+            [
+              -1.397530257772317,
+              -0.20054278337727985
+            ],
+            [
+              0.7263186184715917,
+              0.9785802811131336
+            ],
+            [
+              0.005446550006420267,
+              -1.2255178435607008
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "0cefcd7f6a0e854cbcbc8fca9677cd0382268f6cfb05a0b4c9fc665e7d2ee8b2"
+        },
+        {
+          "candidate_id": 1,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.4273327680928304,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.7507519902256511,
+            0.31540825919921267,
+            0.0019715812488459122,
+            0.6411992416976117
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.5354249911416099,
+              -0.5159348553752987
+            ],
+            [
+              -1.074191518477326,
+              1.4080192005298773
+            ],
+            [
+              2.4957803176173656,
+              -0.306916080529743
+            ],
+            [
+              0.6666446136266976,
+              0.7694377444152071
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "45ecd784f8b76f18a104d62c49013fac06fae867c9ce59d86c763faae655391d"
+        },
+        {
+          "candidate_id": 2,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.7800193654781165,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.8776502325146646,
+            0.4316068887540878,
+            0.9398344745220926,
+            0.8709858661216209
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.3612577101614962,
+              -0.4683235090700213
+            ],
+            [
+              0.9166461066064916,
+              -1.382606816800212
+            ],
+            [
+              0.24910140537110653,
+              0.8648524918411393
+            ],
+            [
+              -0.371657812303975,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "d02b6c5a15397339dd5c36fc2947dabdcc8c6f4bb18bd28b7386ce53402fa4c9"
+        },
+        {
+          "candidate_id": 3,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.8730462204125908,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.949706915658174,
+            0.9666370861116321,
+            0.9863963046621655,
+            0.5894445752183913
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.22716040988693506,
+              0.23588465257159028
+            ],
+            [
+              -0.18420682049821646,
+              1.0763531123552297
+            ],
+            [
+              0.11703449673648453,
+              0.7189347614424936
+            ],
+            [
+              0.7270313496752617,
+              -0.5174081984595276
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "465e9c32df3d2b9d0600682a39b5e2fe634a642d3563f75f4c50dfef3de72b8f"
+        },
+        {
+          "candidate_id": 4,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.7508416357127781,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.7825715461401739,
+            0.44609183490646953,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.49514637025889024,
+              0.3696661692028928
+            ],
+            [
+              0.8984600382299415,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "157a21f825df834e3c467b026304bf9e72df6a069ac0c14d8449b23f2e084da9"
+        },
+        {
+          "candidate_id": 5,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.8151824906761533,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9031495562898524,
+            0.48172975974673526,
+            0.9687732580140965,
+            0.9070773886539294
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.31916628533641384,
+              0.9745646258800719
+            ],
+            [
+              -0.8546180354921539,
+              0.8259132195466582
+            ],
+            [
+              -0.17811426200660774,
+              -0.3855734792523916
+            ],
+            [
+              0.3122939460554531,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "fd2eb215fd5d4a7ef6b259003cadfff3d1a8e854fec0bad3dc2711b4c607cb8d"
+        }
+      ],
+      "output_ids": [
+        3,
+        5,
+        2
+      ],
+      "output_scores": [
+        0.873090630007239,
+        0.8151793067613913,
+        0.7799466779533628
+      ],
+      "status": "qualified-multiple-outputs",
+      "events": [
+        {
+          "kind": "proposal",
+          "candidate_id": 0,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.6826042687024874,
+          "budget_slot": 1
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 1,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.4273327680928304,
+          "budget_slot": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 2,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.7800193654781165,
+          "budget_slot": 3
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 3,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.8730462204125908,
+          "budget_slot": 4
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 4,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.7508416357127781,
+          "budget_slot": 5
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 5,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.8151824906761533,
+          "budget_slot": 6
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 0,
+          "status": "pass",
+          "score": 0.6826273714833413
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 1,
+          "status": "pass",
+          "score": 0.42737412084547394
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 2,
+          "status": "pass",
+          "score": 0.7799466779533628
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 3,
+          "status": "pass",
+          "score": 0.873090630007239
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 4,
+          "status": "pass",
+          "score": 0.7509897887006816
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 5,
+          "status": "pass",
+          "score": 0.8151793067613913
+        }
+      ],
+      "candidate_attempts": 6,
+      "counts": {
+        "initial_batched_velocity_calls": 4,
+        "edit_callback_calls": 0,
+        "full_forest_assessments": 6,
+        "decoder_calls": 6,
+        "decoded_assessments": 6,
+        "total_internal_model_calls": null,
+        "internal_callback_costs": "caller must measure; not inferred from solver steps"
+      },
+      "velocity_evaluations": 4
+    },
+    {
+      "rounds": 1,
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.6826042687024874,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9985562660809654,
+            0.14183500672799787,
+            0.5900554664679599,
+            0.9999703355330266
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.03801022371714318,
+              0.3126272274672141
+            ],
+            [
+              -1.397530257772317,
+              -0.20054278337727985
+            ],
+            [
+              0.7263186184715917,
+              0.9785802811131336
+            ],
+            [
+              0.005446550006420267,
+              -1.2255178435607008
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "0cefcd7f6a0e854cbcbc8fca9677cd0382268f6cfb05a0b4c9fc665e7d2ee8b2"
+        },
+        {
+          "candidate_id": 1,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.4273327680928304,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.7507519902256511,
+            0.31540825919921267,
+            0.0019715812488459122,
+            0.6411992416976117
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.5354249911416099,
+              -0.5159348553752987
+            ],
+            [
+              -1.074191518477326,
+              1.4080192005298773
+            ],
+            [
+              2.4957803176173656,
+              -0.306916080529743
+            ],
+            [
+              0.6666446136266976,
+              0.7694377444152071
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "45ecd784f8b76f18a104d62c49013fac06fae867c9ce59d86c763faae655391d"
+        },
+        {
+          "candidate_id": 2,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.7800193654781165,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.8776502325146646,
+            0.4316068887540878,
+            0.9398344745220926,
+            0.8709858661216209
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.3612577101614962,
+              -0.4683235090700213
+            ],
+            [
+              0.9166461066064916,
+              -1.382606816800212
+            ],
+            [
+              0.24910140537110653,
+              0.8648524918411393
+            ],
+            [
+              -0.371657812303975,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "d02b6c5a15397339dd5c36fc2947dabdcc8c6f4bb18bd28b7386ce53402fa4c9"
+        },
+        {
+          "candidate_id": 3,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.8730462204125908,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.949706915658174,
+            0.9666370861116321,
+            0.9863963046621655,
+            0.5894445752183913
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.22716040988693506,
+              0.23588465257159028
+            ],
+            [
+              -0.18420682049821646,
+              1.0763531123552297
+            ],
+            [
+              0.11703449673648453,
+              0.7189347614424936
+            ],
+            [
+              0.7270313496752617,
+              -0.5174081984595276
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "465e9c32df3d2b9d0600682a39b5e2fe634a642d3563f75f4c50dfef3de72b8f"
+        },
+        {
+          "candidate_id": 4,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.7508416357127781,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.7825715461401739,
+            0.44609183490646953,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.49514637025889024,
+              0.3696661692028928
+            ],
+            [
+              0.8984600382299415,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "157a21f825df834e3c467b026304bf9e72df6a069ac0c14d8449b23f2e084da9"
+        },
+        {
+          "candidate_id": 5,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.8151824906761533,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9031495562898524,
+            0.48172975974673526,
+            0.9687732580140965,
+            0.9070773886539294
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.31916628533641384,
+              0.9745646258800719
+            ],
+            [
+              -0.8546180354921539,
+              0.8259132195466582
+            ],
+            [
+              -0.17811426200660774,
+              -0.3855734792523916
+            ],
+            [
+              0.3122939460554531,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "fd2eb215fd5d4a7ef6b259003cadfff3d1a8e854fec0bad3dc2711b4c607cb8d"
+        },
+        {
+          "candidate_id": 6,
+          "parent_id": 3,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8926256117294742,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9967800793605812,
+            0.9978814876767584,
+            0.9863963046621655,
+            0.5894445752183913
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.056790102471733765,
+              0.23588465257159028
+            ],
+            [
+              -0.046051705124554115,
+              1.0763531123552297
+            ],
+            [
+              0.11703449673648453,
+              0.7189347614424936
+            ],
+            [
+              0.7270313496752617,
+              -0.5174081984595276
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:64544f449c2ba1b61b645b22a4db817644e58a49e63cd9a0d719cbfe4efc72e2:0",
+            "revision:64544f449c2ba1b61b645b22a4db817644e58a49e63cd9a0d719cbfe4efc72e2:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "841b355bc0ad48408d2921f0411cb787a78ed30abf6e84a1efc4c5d210f14ddb"
+        },
+        {
+          "candidate_id": 7,
+          "parent_id": 3,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8886440281226069,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9871823913482449,
+            0.9915528412616254,
+            0.9863963046621655,
+            0.5894445752183913
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.11358020494346753,
+              0.23588465257159028
+            ],
+            [
+              -0.09210341024910823,
+              1.0763531123552297
+            ],
+            [
+              0.11703449673648453,
+              0.7189347614424936
+            ],
+            [
+              0.7270313496752617,
+              -0.5174081984595276
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7bfbafc0247b594fc7a792a7d346ea1636d6362def2624f12b321db01d1fa710:0",
+            "revision:7bfbafc0247b594fc7a792a7d346ea1636d6362def2624f12b321db01d1fa710:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "ed462f9118a75f1ef0bd0056e3b6fed2088046dad432204f83e8f52204517238"
+        },
+        {
+          "candidate_id": 8,
+          "parent_id": 5,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.9562205335903537,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9936535296019826,
+            0.9553779580914067,
+            0.9687732580140965,
+            0.9070773886539294
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.07979157133410346,
+              0.9745646258800719
+            ],
+            [
+              -0.21365450887303847,
+              0.8259132195466582
+            ],
+            [
+              -0.17811426200660774,
+              -0.3855734792523916
+            ],
+            [
+              0.3122939460554531,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:0",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "e610dc911cfe4147df8479f2a1a11657f7013297c05c3aba8d7563dec2a4d287"
+        },
+        {
+          "candidate_id": 9,
+          "parent_id": 5,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.920953143621374,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9748547636647195,
+            0.8331071641527512,
+            0.9687732580140965,
+            0.9070773886539294
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.15958314266820692,
+              0.9745646258800719
+            ],
+            [
+              -0.42730901774607694,
+              0.8259132195466582
+            ],
+            [
+              -0.17811426200660774,
+              -0.3855734792523916
+            ],
+            [
+              0.3122939460554531,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:0",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "5f0f1eac3de482d80122fc1f038229f64cea7da8079519bebc84c243c1d03629"
+        },
+        {
+          "candidate_id": 10,
+          "parent_id": 2,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.937884225931063,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9918764797591008,
+            0.9488400833214381,
+            0.9398344745220926,
+            0.8709858661216209
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.09031442754037405,
+              -0.4683235090700213
+            ],
+            [
+              0.2291615266516229,
+              -1.382606816800212
+            ],
+            [
+              0.24910140537110653,
+              0.8648524918411393
+            ],
+            [
+              -0.371657812303975,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:0",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "a1201673f0473d74b12c9baead5e47b2460b451f9e721da2cc0db8f8df30229c"
+        },
+        {
+          "candidate_id": 11,
+          "parent_id": 2,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8973139160964235,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9678997285421383,
+            0.8105355951998423,
+            0.9398344745220926,
+            0.8709858661216209
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.1806288550807481,
+              -0.4683235090700213
+            ],
+            [
+              0.4583230533032458,
+              -1.382606816800212
+            ],
+            [
+              0.24910140537110653,
+              0.8648524918411393
+            ],
+            [
+              -0.371657812303975,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:2034388dea3eebb4d20b5237f4fe4e71d95f07fea4a04e19236804f7d65885eb:0",
+            "revision:2034388dea3eebb4d20b5237f4fe4e71d95f07fea4a04e19236804f7d65885eb:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "75ee17dff1e77613881e688ded8eb354e8f509cc86f54605703e8ffacd695b7e"
+        },
+        {
+          "candidate_id": 12,
+          "parent_id": 4,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.9275741254021208,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9847936811624615,
+            0.9507996586415528,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.12378659256472256,
+              0.3696661692028928
+            ],
+            [
+              0.22461500955748537,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7790426174929e1f8a1e615ae2f53de2cac9a8689a046d2086d55ac8894f49cd:0",
+            "revision:7790426174929e1f8a1e615ae2f53de2cac9a8689a046d2086d55ac8894f49cd:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "267bcb771e2b569f075388f05b7f10e4818d093de82eb375c77d7bfc2e6c1d68"
+        },
+        {
+          "candidate_id": 13,
+          "parent_id": 4,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8831258529644597,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9405481061555439,
+            0.8172521438978263,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.24757318512944512,
+              0.3696661692028928
+            ],
+            [
+              0.44923001911497074,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:02594748de2c34bf8514a7b727ab3e68b49537b7e3f5ade461e14ee448cf5292:0",
+            "revision:02594748de2c34bf8514a7b727ab3e68b49537b7e3f5ade461e14ee448cf5292:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "7d4ce405e230bdec7adbd2a9d006a937ca5519e33fcf1cca0ddd2898d10ba2df"
+        }
+      ],
+      "output_ids": [
+        8,
+        10,
+        12
+      ],
+      "output_scores": [
+        0.95622844652078,
+        0.9378723056727032,
+        0.9275475568428266
+      ],
+      "status": "qualified-multiple-outputs",
+      "events": [
+        {
+          "kind": "proposal",
+          "candidate_id": 0,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.6826042687024874,
+          "budget_slot": 1
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 1,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.4273327680928304,
+          "budget_slot": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 2,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.7800193654781165,
+          "budget_slot": 3
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 3,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.8730462204125908,
+          "budget_slot": 4
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 4,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.7508416357127781,
+          "budget_slot": 5
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 5,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.8151824906761533,
+          "budget_slot": 6
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 3,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 6,
+          "parent_id": 3,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8926256117294742,
+          "budget_slot": 7
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 7,
+          "parent_id": 3,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8886440281226069,
+          "budget_slot": 8
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 5,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 8,
+          "parent_id": 5,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.9562205335903537,
+          "budget_slot": 9
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 9,
+          "parent_id": 5,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.920953143621374,
+          "budget_slot": 10
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 2,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 10,
+          "parent_id": 2,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.937884225931063,
+          "budget_slot": 11
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 11,
+          "parent_id": 2,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8973139160964235,
+          "budget_slot": 12
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 4,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 12,
+          "parent_id": 4,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.9275741254021208,
+          "budget_slot": 13
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 13,
+          "parent_id": 4,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8831258529644597,
+          "budget_slot": 14
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 0,
+          "status": "pass",
+          "score": 0.6826273714833413
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 1,
+          "status": "pass",
+          "score": 0.42737412084547394
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 2,
+          "status": "pass",
+          "score": 0.7799466779533628
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 3,
+          "status": "pass",
+          "score": 0.873090630007239
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 4,
+          "status": "pass",
+          "score": 0.7509897887006816
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 5,
+          "status": "pass",
+          "score": 0.8151793067613913
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 6,
+          "status": "pass",
+          "score": 0.8926295556139997
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 7,
+          "status": "pass",
+          "score": 0.8886338787960463
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 8,
+          "status": "pass",
+          "score": 0.95622844652078
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 9,
+          "status": "pass",
+          "score": 0.9210271428414029
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 10,
+          "status": "pass",
+          "score": 0.9378723056727032
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 11,
+          "status": "pass",
+          "score": 0.8972978990851268
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 12,
+          "status": "pass",
+          "score": 0.9275475568428266
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 13,
+          "status": "pass",
+          "score": 0.8831459316438601
+        }
+      ],
+      "candidate_attempts": 14,
+      "counts": {
+        "initial_batched_velocity_calls": 4,
+        "edit_callback_calls": 4,
+        "full_forest_assessments": 14,
+        "decoder_calls": 14,
+        "decoded_assessments": 14,
+        "total_internal_model_calls": null,
+        "internal_callback_costs": "caller must measure; not inferred from solver steps"
+      },
+      "velocity_evaluations": 4
+    },
+    {
+      "rounds": 2,
+      "candidates": [
+        {
+          "candidate_id": 0,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.6826042687024874,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9985562660809654,
+            0.14183500672799787,
+            0.5900554664679599,
+            0.9999703355330266
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.03801022371714318,
+              0.3126272274672141
+            ],
+            [
+              -1.397530257772317,
+              -0.20054278337727985
+            ],
+            [
+              0.7263186184715917,
+              0.9785802811131336
+            ],
+            [
+              0.005446550006420267,
+              -1.2255178435607008
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "0cefcd7f6a0e854cbcbc8fca9677cd0382268f6cfb05a0b4c9fc665e7d2ee8b2"
+        },
+        {
+          "candidate_id": 1,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.4273327680928304,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.7507519902256511,
+            0.31540825919921267,
+            0.0019715812488459122,
+            0.6411992416976117
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.5354249911416099,
+              -0.5159348553752987
+            ],
+            [
+              -1.074191518477326,
+              1.4080192005298773
+            ],
+            [
+              2.4957803176173656,
+              -0.306916080529743
+            ],
+            [
+              0.6666446136266976,
+              0.7694377444152071
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "45ecd784f8b76f18a104d62c49013fac06fae867c9ce59d86c763faae655391d"
+        },
+        {
+          "candidate_id": 2,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.7800193654781165,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.8776502325146646,
+            0.4316068887540878,
+            0.9398344745220926,
+            0.8709858661216209
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.3612577101614962,
+              -0.4683235090700213
+            ],
+            [
+              0.9166461066064916,
+              -1.382606816800212
+            ],
+            [
+              0.24910140537110653,
+              0.8648524918411393
+            ],
+            [
+              -0.371657812303975,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "d02b6c5a15397339dd5c36fc2947dabdcc8c6f4bb18bd28b7386ce53402fa4c9"
+        },
+        {
+          "candidate_id": 3,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.8730462204125908,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.949706915658174,
+            0.9666370861116321,
+            0.9863963046621655,
+            0.5894445752183913
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.22716040988693506,
+              0.23588465257159028
+            ],
+            [
+              -0.18420682049821646,
+              1.0763531123552297
+            ],
+            [
+              0.11703449673648453,
+              0.7189347614424936
+            ],
+            [
+              0.7270313496752617,
+              -0.5174081984595276
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "465e9c32df3d2b9d0600682a39b5e2fe634a642d3563f75f4c50dfef3de72b8f"
+        },
+        {
+          "candidate_id": 4,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.7508416357127781,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.7825715461401739,
+            0.44609183490646953,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.49514637025889024,
+              0.3696661692028928
+            ],
+            [
+              0.8984600382299415,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "157a21f825df834e3c467b026304bf9e72df6a069ac0c14d8449b23f2e084da9"
+        },
+        {
+          "candidate_id": 5,
+          "parent_id": null,
+          "round": 0,
+          "operation": "flow_proposal",
+          "score": 0.8151824906761533,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9031495562898524,
+            0.48172975974673526,
+            0.9687732580140965,
+            0.9070773886539294
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.31916628533641384,
+              0.9745646258800719
+            ],
+            [
+              -0.8546180354921539,
+              0.8259132195466582
+            ],
+            [
+              -0.17811426200660774,
+              -0.3855734792523916
+            ],
+            [
+              0.3122939460554531,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "left",
+            "left-end",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "fd2eb215fd5d4a7ef6b259003cadfff3d1a8e854fec0bad3dc2711b4c607cb8d"
+        },
+        {
+          "candidate_id": 6,
+          "parent_id": 3,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8926256117294742,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9967800793605812,
+            0.9978814876767584,
+            0.9863963046621655,
+            0.5894445752183913
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.056790102471733765,
+              0.23588465257159028
+            ],
+            [
+              -0.046051705124554115,
+              1.0763531123552297
+            ],
+            [
+              0.11703449673648453,
+              0.7189347614424936
+            ],
+            [
+              0.7270313496752617,
+              -0.5174081984595276
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:64544f449c2ba1b61b645b22a4db817644e58a49e63cd9a0d719cbfe4efc72e2:0",
+            "revision:64544f449c2ba1b61b645b22a4db817644e58a49e63cd9a0d719cbfe4efc72e2:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "841b355bc0ad48408d2921f0411cb787a78ed30abf6e84a1efc4c5d210f14ddb"
+        },
+        {
+          "candidate_id": 7,
+          "parent_id": 3,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8886440281226069,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9871823913482449,
+            0.9915528412616254,
+            0.9863963046621655,
+            0.5894445752183913
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.11358020494346753,
+              0.23588465257159028
+            ],
+            [
+              -0.09210341024910823,
+              1.0763531123552297
+            ],
+            [
+              0.11703449673648453,
+              0.7189347614424936
+            ],
+            [
+              0.7270313496752617,
+              -0.5174081984595276
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7bfbafc0247b594fc7a792a7d346ea1636d6362def2624f12b321db01d1fa710:0",
+            "revision:7bfbafc0247b594fc7a792a7d346ea1636d6362def2624f12b321db01d1fa710:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "ed462f9118a75f1ef0bd0056e3b6fed2088046dad432204f83e8f52204517238"
+        },
+        {
+          "candidate_id": 8,
+          "parent_id": 5,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.9562205335903537,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9936535296019826,
+            0.9553779580914067,
+            0.9687732580140965,
+            0.9070773886539294
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.07979157133410346,
+              0.9745646258800719
+            ],
+            [
+              -0.21365450887303847,
+              0.8259132195466582
+            ],
+            [
+              -0.17811426200660774,
+              -0.3855734792523916
+            ],
+            [
+              0.3122939460554531,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:0",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "e610dc911cfe4147df8479f2a1a11657f7013297c05c3aba8d7563dec2a4d287"
+        },
+        {
+          "candidate_id": 9,
+          "parent_id": 5,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.920953143621374,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9748547636647195,
+            0.8331071641527512,
+            0.9687732580140965,
+            0.9070773886539294
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.15958314266820692,
+              0.9745646258800719
+            ],
+            [
+              -0.42730901774607694,
+              0.8259132195466582
+            ],
+            [
+              -0.17811426200660774,
+              -0.3855734792523916
+            ],
+            [
+              0.3122939460554531,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:0",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "5f0f1eac3de482d80122fc1f038229f64cea7da8079519bebc84c243c1d03629"
+        },
+        {
+          "candidate_id": 10,
+          "parent_id": 2,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.937884225931063,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9918764797591008,
+            0.9488400833214381,
+            0.9398344745220926,
+            0.8709858661216209
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.09031442754037405,
+              -0.4683235090700213
+            ],
+            [
+              0.2291615266516229,
+              -1.382606816800212
+            ],
+            [
+              0.24910140537110653,
+              0.8648524918411393
+            ],
+            [
+              -0.371657812303975,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:0",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "a1201673f0473d74b12c9baead5e47b2460b451f9e721da2cc0db8f8df30229c"
+        },
+        {
+          "candidate_id": 11,
+          "parent_id": 2,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8973139160964235,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9678997285421383,
+            0.8105355951998423,
+            0.9398344745220926,
+            0.8709858661216209
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.1806288550807481,
+              -0.4683235090700213
+            ],
+            [
+              0.4583230533032458,
+              -1.382606816800212
+            ],
+            [
+              0.24910140537110653,
+              0.8648524918411393
+            ],
+            [
+              -0.371657812303975,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:2034388dea3eebb4d20b5237f4fe4e71d95f07fea4a04e19236804f7d65885eb:0",
+            "revision:2034388dea3eebb4d20b5237f4fe4e71d95f07fea4a04e19236804f7d65885eb:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "75ee17dff1e77613881e688ded8eb354e8f509cc86f54605703e8ffacd695b7e"
+        },
+        {
+          "candidate_id": 12,
+          "parent_id": 4,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.9275741254021208,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9847936811624615,
+            0.9507996586415528,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.12378659256472256,
+              0.3696661692028928
+            ],
+            [
+              0.22461500955748537,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7790426174929e1f8a1e615ae2f53de2cac9a8689a046d2086d55ac8894f49cd:0",
+            "revision:7790426174929e1f8a1e615ae2f53de2cac9a8689a046d2086d55ac8894f49cd:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "267bcb771e2b569f075388f05b7f10e4818d093de82eb375c77d7bfc2e6c1d68"
+        },
+        {
+          "candidate_id": 13,
+          "parent_id": 4,
+          "round": 1,
+          "operation": "rule_correction",
+          "score": 0.8831258529644597,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9405481061555439,
+            0.8172521438978263,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.24757318512944512,
+              0.3696661692028928
+            ],
+            [
+              0.44923001911497074,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:02594748de2c34bf8514a7b727ab3e68b49537b7e3f5ade461e14ee448cf5292:0",
+            "revision:02594748de2c34bf8514a7b727ab3e68b49537b7e3f5ade461e14ee448cf5292:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "7d4ce405e230bdec7adbd2a9d006a937ca5519e33fcf1cca0ddd2898d10ba2df"
+        },
+        {
+          "candidate_id": 14,
+          "parent_id": 8,
+          "round": 2,
+          "operation": "subtree_regeneration",
+          "score": 0.985243432342892,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9936535296019826,
+            0.9553779580914067,
+            0.9980191712901232,
+            0.9939230703880557
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.07979157133410346,
+              0.9745646258800719
+            ],
+            [
+              -0.21365450887303847,
+              0.8259132195466582
+            ],
+            [
+              -0.044528565501651934,
+              -0.3855734792523916
+            ],
+            [
+              0.07807348651386327,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:0",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:1",
+            "revision:c57b127e458061ed190c5050cec8c05911a0e388eaf7868eb34f1d670cfbac06:0",
+            "revision:c57b127e458061ed190c5050cec8c05911a0e388eaf7868eb34f1d670cfbac06:1"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "5283647a810eee7dc438231e34d5c6e06061f4a6615052eb9c11e53980cad965"
+        },
+        {
+          "candidate_id": 15,
+          "parent_id": 8,
+          "round": 2,
+          "operation": "subtree_regeneration",
+          "score": 0.9792611608926207,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9936535296019826,
+            0.9553779580914067,
+            0.9921001961815845,
+            0.9759129596955091
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.07979157133410346,
+              0.9745646258800719
+            ],
+            [
+              -0.21365450887303847,
+              0.8259132195466582
+            ],
+            [
+              -0.08905713100330387,
+              -0.3855734792523916
+            ],
+            [
+              0.15614697302772654,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:0",
+            "revision:3a08d7ed76f1e9897f98f8505688a2a4f826dfb321128ab704431532d5f9f679:1",
+            "revision:593d986c53b119e68350010b6775de81995f8b268b7007ed10d76bc5200ceecd:0",
+            "revision:593d986c53b119e68350010b6775de81995f8b268b7007ed10d76bc5200ceecd:1"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "cf7d78a147ca737765a3d26acd5c3bd795a6d48f184abf0dc24c77aadd2b0551"
+        },
+        {
+          "candidate_id": 16,
+          "parent_id": 10,
+          "round": 2,
+          "operation": "subtree_regeneration",
+          "score": 0.9820624792121397,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9918764797591008,
+            0.9488400833214381,
+            0.996129291195569,
+            0.9914040625724512
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.09031442754037405,
+              -0.4683235090700213
+            ],
+            [
+              0.2291615266516229,
+              -1.382606816800212
+            ],
+            [
+              0.06227535134277663,
+              0.8648524918411393
+            ],
+            [
+              -0.09291445307599375,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:0",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:1",
+            "revision:1a673154428528293c4bd11c69ebd652898ee32989b00cc9b84f3258585ccad3:0",
+            "revision:1a673154428528293c4bd11c69ebd652898ee32989b00cc9b84f3258585ccad3:1"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "617efb7099ab3780b0409726e18401884445dab929539d77dcdc871578b619c0"
+        },
+        {
+          "candidate_id": 17,
+          "parent_id": 10,
+          "round": 2,
+          "operation": "subtree_regeneration",
+          "score": 0.9728451116020935,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9918764797591008,
+            0.9488400833214381,
+            0.9846068273568166,
+            0.9660570559710187
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.09031442754037405,
+              -0.4683235090700213
+            ],
+            [
+              0.2291615266516229,
+              -1.382606816800212
+            ],
+            [
+              0.12455070268555327,
+              0.8648524918411393
+            ],
+            [
+              -0.1858289061519875,
+              -2.069483541321204
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:0",
+            "revision:704d3e4392d99646f2b1455daaee91ba54e04490bc9b3967237b0982accbea89:1",
+            "revision:669205a4e9c4527147e0c6ae89c8a44b24715eb1d30f5b80793f9a1510a62610:0",
+            "revision:669205a4e9c4527147e0c6ae89c8a44b24715eb1d30f5b80793f9a1510a62610:1"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "b5aa83e6f3380a1f87ecda6a2a05f841dfa4bb6532da82e4644d320d106b896e"
+        },
+        {
+          "candidate_id": 18,
+          "parent_id": 12,
+          "round": 2,
+          "operation": "rule_correction",
+          "score": 0.9426494118904192,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.999042763412351,
+            0.9968517223448567,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.03094664814118064,
+              0.3696661692028928
+            ],
+            [
+              0.05615375238937134,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:eb5a9b4b1e5616b7e4752e0790d4d6974ff2b76a4210cf4b65f6c275a89af2d1:0",
+            "revision:eb5a9b4b1e5616b7e4752e0790d4d6974ff2b76a4210cf4b65f6c275a89af2d1:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "18a9c945ec10c9f852d6aa652b297799fb5087db4488cd2e3ca26d2fa5d88119"
+        },
+        {
+          "candidate_id": 19,
+          "parent_id": 12,
+          "round": 2,
+          "operation": "rule_correction",
+          "score": 0.9395864860824621,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9961765479530811,
+            0.9874662345722984,
+            0.9890774771529246,
+            0.7856256846515441
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.06189329628236128,
+              0.3696661692028928
+            ],
+            [
+              0.11230750477874268,
+              0.3615700840066095
+            ],
+            [
+              0.10479795583475579,
+              1.0170844413342608
+            ],
+            [
+              0.49119734136524124,
+              -0.32974289785530375
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:e2800fd05085c6edc707536d3c8f3a59b2b57f5d0660b94a6a35094b906b9693:0",
+            "revision:e2800fd05085c6edc707536d3c8f3a59b2b57f5d0660b94a6a35094b906b9693:1",
+            "right",
+            "right-end"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "9c51a267bdce5c79f528e0febb6f9524e7fc6625a09ae5e9eb9dd19087338af8"
+        },
+        {
+          "candidate_id": 20,
+          "parent_id": 9,
+          "round": 2,
+          "operation": "subtree_regeneration",
+          "score": 0.9499760423739123,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9748547636647195,
+            0.8331071641527512,
+            0.9980191712901232,
+            0.9939230703880557
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.15958314266820692,
+              0.9745646258800719
+            ],
+            [
+              -0.42730901774607694,
+              0.8259132195466582
+            ],
+            [
+              -0.044528565501651934,
+              -0.3855734792523916
+            ],
+            [
+              0.07807348651386327,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:0",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:1",
+            "revision:2ac0fbf60ac1987fc36ada9c9d531fe04b7bbd9fb5f759e924edae5ab208706b:0",
+            "revision:2ac0fbf60ac1987fc36ada9c9d531fe04b7bbd9fb5f759e924edae5ab208706b:1"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "ad3b8528d237f655f79e3e6971cf9a594f7530ba50c8992b5c201be136422f5c"
+        },
+        {
+          "candidate_id": 21,
+          "parent_id": 9,
+          "round": 2,
+          "operation": "subtree_regeneration",
+          "score": 0.943993770923641,
+          "status": "pass",
+          "node_scores": [
+            1.0,
+            0.9748547636647195,
+            0.8331071641527512,
+            0.9921001961815845,
+            0.9759129596955091
+          ],
+          "states": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.15958314266820692,
+              0.9745646258800719
+            ],
+            [
+              -0.42730901774607694,
+              0.8259132195466582
+            ],
+            [
+              -0.08905713100330387,
+              -0.3855734792523916
+            ],
+            [
+              0.15614697302772654,
+              0.41980296402756856
+            ]
+          ],
+          "parents": [
+            -1,
+            0,
+            1,
+            0,
+            3
+          ],
+          "node_ids": [
+            "condition",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:0",
+            "revision:7617efc97f5f96403eb6c12fe0b2c5ecd523d5d5eff22336e3ab6ddfdc4d76cb:1",
+            "revision:44303479d9476e282d68e7d1d6c31c8e403b95f6085a309341659af321dd006a:0",
+            "revision:44303479d9476e282d68e7d1d6c31c8e403b95f6085a309341659af321dd006a:1"
+          ],
+          "statuses": [
+            "open",
+            "open",
+            "terminal",
+            "open",
+            "terminal"
+          ],
+          "clamped": [
+            0
+          ],
+          "fingerprint": "160c6f837a2afc27595b5a9352faeb640e156e6d99b20ad370d07ad3cea43adb"
+        }
+      ],
+      "output_ids": [
+        14,
+        16,
+        17
+      ],
+      "output_scores": [
+        0.9851921914962517,
+        0.9820986738574429,
+        0.9728337645951777
+      ],
+      "status": "qualified-multiple-outputs",
+      "events": [
+        {
+          "kind": "proposal",
+          "candidate_id": 0,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.6826042687024874,
+          "budget_slot": 1
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 1,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.4273327680928304,
+          "budget_slot": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 2,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.7800193654781165,
+          "budget_slot": 3
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 3,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.8730462204125908,
+          "budget_slot": 4
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 4,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.7508416357127781,
+          "budget_slot": 5
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 5,
+          "parent_id": null,
+          "operation": "flow_proposal",
+          "round": 0,
+          "status": "pass",
+          "score": 0.8151824906761533,
+          "budget_slot": 6
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 3,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 6,
+          "parent_id": 3,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8926256117294742,
+          "budget_slot": 7
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 7,
+          "parent_id": 3,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8886440281226069,
+          "budget_slot": 8
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 5,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 8,
+          "parent_id": 5,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.9562205335903537,
+          "budget_slot": 9
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 9,
+          "parent_id": 5,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.920953143621374,
+          "budget_slot": 10
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 2,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 10,
+          "parent_id": 2,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.937884225931063,
+          "budget_slot": 11
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 11,
+          "parent_id": 2,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8973139160964235,
+          "budget_slot": 12
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 4,
+          "reason": "correct",
+          "round": 1,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 12,
+          "parent_id": 4,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.9275741254021208,
+          "budget_slot": 13
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 13,
+          "parent_id": 4,
+          "operation": "rule_correction",
+          "round": 1,
+          "status": "pass",
+          "score": 0.8831258529644597,
+          "budget_slot": 14
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 8,
+          "reason": "improve",
+          "round": 2,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 14,
+          "parent_id": 8,
+          "operation": "subtree_regeneration",
+          "round": 2,
+          "status": "pass",
+          "score": 0.985243432342892,
+          "budget_slot": 15
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 15,
+          "parent_id": 8,
+          "operation": "subtree_regeneration",
+          "round": 2,
+          "status": "pass",
+          "score": 0.9792611608926207,
+          "budget_slot": 16
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 10,
+          "reason": "improve",
+          "round": 2,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 16,
+          "parent_id": 10,
+          "operation": "subtree_regeneration",
+          "round": 2,
+          "status": "pass",
+          "score": 0.9820624792121397,
+          "budget_slot": 17
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 17,
+          "parent_id": 10,
+          "operation": "subtree_regeneration",
+          "round": 2,
+          "status": "pass",
+          "score": 0.9728451116020935,
+          "budget_slot": 18
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 12,
+          "reason": "correct",
+          "round": 2,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 18,
+          "parent_id": 12,
+          "operation": "rule_correction",
+          "round": 2,
+          "status": "pass",
+          "score": 0.9426494118904192,
+          "budget_slot": 19
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 19,
+          "parent_id": 12,
+          "operation": "rule_correction",
+          "round": 2,
+          "status": "pass",
+          "score": 0.9395864860824621,
+          "budget_slot": 20
+        },
+        {
+          "kind": "edit_call",
+          "parent_id": 9,
+          "reason": "improve",
+          "round": 2,
+          "proposals": 2
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 20,
+          "parent_id": 9,
+          "operation": "subtree_regeneration",
+          "round": 2,
+          "status": "pass",
+          "score": 0.9499760423739123,
+          "budget_slot": 21
+        },
+        {
+          "kind": "proposal",
+          "candidate_id": 21,
+          "parent_id": 9,
+          "operation": "subtree_regeneration",
+          "round": 2,
+          "status": "pass",
+          "score": 0.943993770923641,
+          "budget_slot": 22
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 0,
+          "status": "pass",
+          "score": 0.6826273714833413
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 1,
+          "status": "pass",
+          "score": 0.42737412084547394
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 2,
+          "status": "pass",
+          "score": 0.7799466779533628
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 3,
+          "status": "pass",
+          "score": 0.873090630007239
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 4,
+          "status": "pass",
+          "score": 0.7509897887006816
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 5,
+          "status": "pass",
+          "score": 0.8151793067613913
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 6,
+          "status": "pass",
+          "score": 0.8926295556139997
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 7,
+          "status": "pass",
+          "score": 0.8886338787960463
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 8,
+          "status": "pass",
+          "score": 0.95622844652078
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 9,
+          "status": "pass",
+          "score": 0.9210271428414029
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 10,
+          "status": "pass",
+          "score": 0.9378723056727032
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 11,
+          "status": "pass",
+          "score": 0.8972978990851268
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 12,
+          "status": "pass",
+          "score": 0.9275475568428266
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 13,
+          "status": "pass",
+          "score": 0.8831459316438601
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 14,
+          "status": "pass",
+          "score": 0.9851921914962517
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 15,
+          "status": "pass",
+          "score": 0.979231317080175
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 16,
+          "status": "pass",
+          "score": 0.9820986738574429
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 17,
+          "status": "pass",
+          "score": 0.9728337645951777
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 18,
+          "status": "pass",
+          "score": 0.9426804755241132
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 19,
+          "status": "pass",
+          "score": 0.9396278137772438
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 20,
+          "status": "pass",
+          "score": 0.9499908878168745
+        },
+        {
+          "kind": "decoded",
+          "candidate_id": 21,
+          "status": "pass",
+          "score": 0.9440300134007978
+        }
+      ],
+      "candidate_attempts": 22,
+      "counts": {
+        "initial_batched_velocity_calls": 4,
+        "edit_callback_calls": 8,
+        "full_forest_assessments": 22,
+        "decoder_calls": 22,
+        "decoded_assessments": 22,
+        "total_internal_model_calls": null,
+        "internal_callback_costs": "caller must measure; not inferred from solver steps"
+      },
+      "velocity_evaluations": 4
+    }
+  ]
+}

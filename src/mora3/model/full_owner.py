@@ -131,8 +131,15 @@ class SourceAssemblyInputs:
     uniprot_full_record_max_batch_size: int=16
     uniprot_full_record_max_target_bytes: int=8*1024*1024
     grayscale_forward_enabled: bool=False
+    betse_source: object | None=None
+    raw_cell_axis: object | None=None
     scri_axis: object | None=None
     scri_spatial_budget: object | None=None
+    forest_flow_spec: object | None=None
+    forest_analogy_spec: object | None=None
+    forest_decoder_spec: object | None=None
+    forest_decoder_codebook: object | None=None
+    forest_quality_spec: object | None=None
 
 
 def _exact(left,right):
@@ -177,7 +184,7 @@ def unique_parameter_inventory(model):
 class SourceBoundOwner(nn.Module):
     """One registered owner; extension branches reuse exact cooperative objects."""
     def __init__(self,core,*,source_snapshot_sha256,configuration,admet=None,mcsa=None,
-                 pubchem=None,cartesian=None,source_annotations=None,cell=None,text=None,lincs_inverse=None,native_priors=None,scalar=None,pdb=None,rosetta_flow=None,gray_reverse=None,bioelectric=None,nci=None,expansionrx=None,cema_trajectory=None,reactzyme=None,tox21_source=None,hcn4_laterality=None,reactome_static=None,biogrid_chemical=None,lincx_fetch=None,string_score=None,uniprot_native_annotation=None,uniprot_full_record=None,gray_forward=None,scri=None):
+                 pubchem=None,cartesian=None,source_annotations=None,cell=None,text=None,lincs_inverse=None,native_priors=None,scalar=None,pdb=None,rosetta_flow=None,gray_reverse=None,bioelectric=None,nci=None,expansionrx=None,cema_trajectory=None,reactzyme=None,tox21_source=None,hcn4_laterality=None,reactome_static=None,biogrid_chemical=None,lincx_fetch=None,string_score=None,uniprot_native_annotation=None,uniprot_full_record=None,gray_forward=None,betse=None,raw_cell=None,scri=None,forest_flow=None,forest_analogy=None,forest_decoder=None,forest_quality=None):
         super().__init__()
         from .instance_cooperative import InstanceCooperativeModel
         from .admet_model import SharedAdmetModel
@@ -198,6 +205,15 @@ class SourceBoundOwner(nn.Module):
                 or not _SHA.fullmatch(source_snapshot_sha256)):
             raise ValueError('exact cooperative owner and source snapshot required')
         anchor=core.parent.parent
+        if raw_cell is not None:
+            from .raw_count_cell_model import SharedRawCountCellModel
+            if type(raw_cell) is not SharedRawCountCellModel or raw_cell.shared is not anchor.annotation:
+                raise ValueError('raw scCello must reuse the exact native annotation owner')
+        if betse is not None:
+            from .betse_membrane import NativeBETSEMembraneHead
+            if (type(betse)is not NativeBETSEMembraneHead or betse.shared is not anchor.annotation
+                    or betse.source.owner_snapshot_sha256!=source_snapshot_sha256):
+                raise ValueError('BETSE must bind the exact composed source snapshot and shared annotation owner')
         if (getattr(anchor.native,'parameterization_policy',None)!='mup-cooperative-v1'
                 or anchor.annotation.get_extra_state().get('version')!=2
                 or getattr(anchor.residue,'parameterization_policy',None)!='mup-residue-v1'):
@@ -303,6 +319,37 @@ class SourceBoundOwner(nn.Module):
                     or scri.source_snapshot_sha256!=source_snapshot_sha256):
                 raise ValueError('SCRI must reuse exact native annotation owner and source snapshot')
             scri.get_extra_state()
+        if forest_flow is not None:
+            from .forest_flow import NativeForestFlowHead
+            if (type(forest_flow)is not NativeForestFlowHead
+                    or forest_flow.geometry is not anchor.geometry_fusion.geometry
+                    or forest_flow.spec.source_snapshot_sha256!=source_snapshot_sha256
+                    or forest_flow.parameterization!='mup-forest-flow-v1'
+                    or (forest_flow.width,forest_flow.base_width,forest_flow.readout_mult)
+                    !=(configuration['width'],configuration['base_width'],configuration['readout_mult'])):
+                raise ValueError('Forest flow must share the exact native context, source and primary width policy')
+            forest_flow.get_extra_state()
+        self.forest_flow=forest_flow
+        if forest_analogy is not None:
+            from .forest_analogy import NativeForestAnalogyHead
+            if (forest_flow is None or type(forest_analogy)is not NativeForestAnalogyHead
+                    or forest_analogy.field is not forest_flow):
+                raise ValueError('Analogy head must share the exact registered forest field')
+            forest_analogy.get_extra_state()
+        self.forest_analogy=forest_analogy
+        if forest_decoder is not None:
+            from .forest_token_decoder import NativeForestTokenDecoder
+            if (forest_flow is None or type(forest_decoder)is not NativeForestTokenDecoder
+                    or forest_decoder.field is not forest_flow):
+                raise ValueError('Token decoder must share the exact registered forest field')
+            forest_decoder.get_extra_state()
+        self.forest_decoder=forest_decoder
+        if forest_quality is not None:
+            from .forest_quality import NativeForestQualityHead
+            if (forest_flow is None or type(forest_quality)is not NativeForestQualityHead or forest_quality.field is not forest_flow):
+                raise ValueError('Quality head must share the exact registered forest field')
+            forest_quality.get_extra_state()
+        self.forest_quality=forest_quality
         self.scri=scri
         self.core=core
         self.admet=admet
@@ -319,6 +366,7 @@ class SourceBoundOwner(nn.Module):
         self.rosetta_flow=rosetta_flow
         self.gray_reverse=gray_reverse
         self.gray_forward=gray_forward
+        self.betse=betse
         self.bioelectric=bioelectric
         self.nci=nci
         self.expansionrx=expansionrx
@@ -332,7 +380,8 @@ class SourceBoundOwner(nn.Module):
         self.string_score=string_score
         self.uniprot_native_annotation=uniprot_native_annotation
         self.uniprot_full_record=uniprot_full_record
-        self._owners=(core,admet,mcsa,pubchem,cartesian,source_annotations,cell,text,lincs_inverse,native_priors,scalar,pdb,rosetta_flow,gray_reverse,gray_forward,bioelectric,nci,expansionrx,cema_trajectory,reactzyme,tox21_source,hcn4_laterality,reactome_static,biogrid_chemical,lincx_fetch,string_score,uniprot_native_annotation,uniprot_full_record,scri)
+        self.raw_cell=raw_cell
+        self._owners=(core,admet,mcsa,pubchem,cartesian,source_annotations,cell,text,lincs_inverse,native_priors,scalar,pdb,rosetta_flow,gray_reverse,gray_forward,bioelectric,nci,expansionrx,cema_trajectory,reactzyme,tox21_source,hcn4_laterality,reactome_static,biogrid_chemical,lincx_fetch,string_score,uniprot_native_annotation,uniprot_full_record,betse,raw_cell,scri,forest_flow,forest_analogy,forest_decoder,forest_quality)
         self._configuration=copy.deepcopy(dict(schema='mora3-source-bound-owner-v1',
             primary_arm='ordinary-attention-mup-primary-v1',source_snapshot_sha256=source_snapshot_sha256,
             primary_configuration=configuration,core=core.get_extra_state(),
@@ -413,15 +462,27 @@ class SourceBoundOwner(nn.Module):
                 uniprot_full_record=uniprot_full_record.get_extra_state())
         if gray_forward is not None:
             self._configuration['gray_forward']=gray_forward.get_extra_state()
+        if betse is not None:
+            self._configuration['betse']=betse.get_extra_state()
+        if raw_cell is not None:
+            self._configuration['raw_cell']=raw_cell.get_extra_state()
         if scri is not None:
             self._configuration['scri']=scri.get_extra_state()
+        if forest_flow is not None:
+            self._configuration['forest_flow']=forest_flow.get_extra_state()
+        if forest_analogy is not None:
+            self._configuration['forest_analogy']=forest_analogy.get_extra_state()
+        if forest_decoder is not None:
+            self._configuration['forest_decoder']=forest_decoder.get_extra_state()
+        if forest_quality is not None:
+            self._configuration['forest_quality']=forest_quality.get_extra_state()
         self._module_topology=tuple((name,type(module).__module__+'.'+type(module).__qualname__)
             for name,module in self.named_modules(remove_duplicate=False))
         self._parameter_topology=tuple((row['aliases'],row['shape'],row['trainable'])
             for row in unique_parameter_inventory(self)['parameters'])
 
     def get_extra_state(self):
-        if any(a is not b for a,b in zip((self.core,self.admet,self.mcsa,self.pubchem,self.cartesian,self.source_annotations,self.cell,self.text,self.lincs_inverse,self.native_priors,self.scalar,self.pdb,self.rosetta_flow,self.gray_reverse,self.gray_forward,self.bioelectric,self.nci,self.expansionrx,self.cema_trajectory,self.reactzyme,self.tox21_source,self.hcn4_laterality,self.reactome_static,self.biogrid_chemical,self.lincx_fetch,self.string_score,self.uniprot_native_annotation,self.uniprot_full_record,self.scri),self._owners)):
+        if any(a is not b for a,b in zip((self.core,self.admet,self.mcsa,self.pubchem,self.cartesian,self.source_annotations,self.cell,self.text,self.lincs_inverse,self.native_priors,self.scalar,self.pdb,self.rosetta_flow,self.gray_reverse,self.gray_forward,self.bioelectric,self.nci,self.expansionrx,self.cema_trajectory,self.reactzyme,self.tox21_source,self.hcn4_laterality,self.reactome_static,self.biogrid_chemical,self.lincx_fetch,self.string_score,self.uniprot_native_annotation,self.uniprot_full_record,self.betse,self.raw_cell,self.scri,self.forest_flow,self.forest_analogy,self.forest_decoder,self.forest_quality),self._owners)):
             raise ValueError('registered owner identity drift')
         if self._module_topology!=tuple((name,type(module).__module__+'.'+type(module).__qualname__)
                 for name,module in self.named_modules(remove_duplicate=False)):
@@ -472,8 +533,20 @@ class SourceBoundOwner(nn.Module):
             current.update(uniprot_full_record=self.uniprot_full_record.get_extra_state())
         if self.gray_forward is not None:
             current['gray_forward']=self.gray_forward.get_extra_state()
+        if self.betse is not None:
+            current['betse']=self.betse.get_extra_state()
+        if self.raw_cell is not None:
+            current['raw_cell']=self.raw_cell.get_extra_state()
         if self.scri is not None:
             current['scri']=self.scri.get_extra_state()
+        if self.forest_flow is not None:
+            current['forest_flow']=self.forest_flow.get_extra_state()
+        if self.forest_analogy is not None:
+            current['forest_analogy']=self.forest_analogy.get_extra_state()
+        if self.forest_decoder is not None:
+            current['forest_decoder']=self.forest_decoder.get_extra_state()
+        if self.forest_quality is not None:
+            current['forest_quality']=self.forest_quality.get_extra_state()
         if any(not _exact(value,self._configuration[key])for key,value in current.items()):
             raise ValueError('source-bound assembly component configuration drift')
         return copy.deepcopy(self._configuration)
@@ -516,6 +589,14 @@ class SourceBoundOwner(nn.Module):
         if local_metadata.get('assign_to_params_buffers',False) is not False:
             raise ValueError('assignment cannot replace source-bound checkpoint owners')
         self._preflight_checkpoint_state(state_dict,prefix)
+        # Validate immutable decoder buffers before any sibling/shared parameter
+        # can be copied. A late child refusal would otherwise leave partial state.
+        from .forest_token_decoder import NativeForestTokenDecoder
+        for name,module in self.named_modules(remove_duplicate=False):
+            if type(module)is NativeForestTokenDecoder:
+                key=prefix+(name+'.'if name else '')+'codebook'
+                if not torch.equal(state_dict[key],module.codebook):
+                    raise ValueError('Frozen decoder codebook differs before full-owner recovery')
         for name,module in self.named_modules(remove_duplicate=False):
             if type(module).get_extra_state is nn.Module.get_extra_state:continue
             key=prefix+(name+'.'if name else '')+'_extra_state'
@@ -533,8 +614,16 @@ class SourceBoundOwner(nn.Module):
                 raise ValueError('checkpoint values disagree across tied aliases')
         super()._load_from_state_dict(state_dict,prefix,local_metadata,strict,missing_keys,unexpected_keys,error_msgs)
 
-    def require_training_admission(self):
-        raise ValueError('construction is not full corpus/operator/recovery/resource campaign admission')
+    def authorize_primary_campaign_training(self, root, *, path, expected_sha256):
+        # Only the separately reviewed, source-bound release manager may admit
+        # an existing owner. Its approved-release set is currently empty.
+        from .full_owner_training_admission import authorize
+        authorize(self, root, path=path, expected_sha256=expected_sha256)
+
+    def require_training_admission(self, *, campaign_sha256=None, trial_id=None, window_capacity_sha256=None):
+        from .full_owner_training_admission import require
+        require(self, campaign_sha256=campaign_sha256, trial_id=trial_id,
+                window_capacity_sha256=window_capacity_sha256)
 
 
 def construct_primary_owner(configuration,sources):
@@ -547,6 +636,49 @@ def construct_primary_owner(configuration,sources):
     if type(configuration)is not PrimaryConfiguration or type(sources)is not SourceAssemblyInputs:
         raise ValueError('exact primary configuration and native source assembly inputs required')
     configuration.__post_init__()
+    if sources.forest_quality_spec is not None:
+        from .forest_quality import ForestQualitySpec
+        if type(sources.forest_quality_spec)is not ForestQualitySpec or sources.forest_flow_spec is None:
+            raise ValueError('Native quality specification requires a registered forest field')
+        sources.forest_quality_spec.__post_init__()
+    if sources.forest_decoder_spec is not None or sources.forest_decoder_codebook is not None:
+        from .forest_token_decoder import ForestDecoderSpec,ForestTokenCodebook
+        book=sources.forest_decoder_codebook;decoder_spec=sources.forest_decoder_spec
+        if type(book)is not ForestTokenCodebook or type(decoder_spec)is not ForestDecoderSpec or sources.forest_flow_spec is None:
+            raise ValueError('Decoder requires both exact codebook/specification and forest field')
+        book.__post_init__();decoder_spec.__post_init__()
+        if (book.source_snapshot_sha256!=configuration.source_snapshot_sha256
+                or book.coordinate_sha256!=sources.forest_flow_spec.coordinate_sha256
+                or book.axis.base_specification_json!=sources.vocabulary.specification_json
+                or book.values.dtype!=torch.float32
+                or decoder_spec.max_score_elements<book.values.shape[0]
+                or decoder_spec.max_slots*max(configuration.width,book.values.shape[1])>decoder_spec.max_embedding_elements):
+            raise ValueError('Decoder exact source, coordinate and base vocabulary must match full owner FP32')
+    if sources.forest_analogy_spec is not None:
+        from .forest_analogy import ForestAnalogySpec
+        if type(sources.forest_analogy_spec)is not ForestAnalogySpec or sources.forest_flow_spec is None:
+            raise ValueError('Native analogy specification requires a registered forest flow specification')
+        sources.forest_analogy_spec.__post_init__()
+    if sources.forest_flow_spec is not None:
+        from .forest_flow import ForestFlowSpec
+        spec=sources.forest_flow_spec
+        if type(spec)is not ForestFlowSpec:
+            raise ValueError('Exact native forest source/coordinate specification required')
+        spec.__post_init__()
+        if (spec.source_snapshot_sha256!=configuration.source_snapshot_sha256
+                or type(sources.geometry_id_width)is not int or spec.max_nodes>sources.geometry_id_width):
+            raise ValueError('Forest source snapshot or exact identifier rank mismatch')
+    if sources.raw_cell_axis is not None:
+        from mora3.data.sccello_raw_cell_packets import RawFitAxis
+        if (type(sources.raw_cell_axis) is not RawFitAxis
+                or sources.raw_cell_axis.evidence_kind not in
+                ('original-terminal-readback', 'native-selection-and-independent-fullsort')):
+            raise ValueError('verified inactive scCello fitted source axis required')
+    if sources.betse_source is not None:
+        from mora3.data.betse_membrane import BETSESource
+        if (type(sources.betse_source)is not BETSESource
+                or sources.betse_source.owner_snapshot_sha256!=configuration.source_snapshot_sha256):
+            raise ValueError('Exact opt-in BETSE source and composed owner snapshot required')
     if (sources.scri_axis is None)!=(sources.scri_spatial_budget is None):
         raise ValueError('SCRI source axis and spatial budget must be supplied together')
     if sources.scri_axis is not None:
@@ -991,6 +1123,31 @@ def construct_primary_owner(configuration,sources):
     if sources.scri_axis is not None:
         from mora3.extensions.scri.native_owner import NativeSCRIModel
         scri=NativeSCRIModel(annotation,sources.scri_axis,sources.scri_spatial_budget,configuration.source_snapshot_sha256)
+    betse=None
+    if sources.betse_source is not None:
+        from .betse_membrane import NativeBETSEMembraneHead
+        betse=NativeBETSEMembraneHead(annotation,sources.betse_source)
+    raw_cell=None
+    if sources.raw_cell_axis is not None:
+        from .raw_count_cell_model import SharedRawCountCellModel
+        raw_cell=SharedRawCountCellModel(annotation,sources.raw_cell_axis)
+    forest_flow=None
+    if sources.forest_flow_spec is not None:
+        from .forest_flow import NativeForestFlowHead
+        forest_flow=NativeForestFlowHead(parent.geometry_fusion.geometry,sources.forest_flow_spec,
+            readout_mult=configuration.readout_mult)
+    forest_analogy=None
+    if sources.forest_analogy_spec is not None:
+        from .forest_analogy import NativeForestAnalogyHead
+        forest_analogy=NativeForestAnalogyHead(forest_flow,sources.forest_analogy_spec)
+    forest_decoder=None
+    if sources.forest_decoder_spec is not None:
+        from .forest_token_decoder import NativeForestTokenDecoder
+        forest_decoder=NativeForestTokenDecoder(forest_flow,sources.forest_decoder_codebook,sources.forest_decoder_spec)
+    forest_quality=None
+    if sources.forest_quality_spec is not None:
+        from .forest_quality import NativeForestQualityHead
+        forest_quality=NativeForestQualityHead(forest_flow,sources.forest_quality_spec)
     declared=dict(width=configuration.width,heads=2,layers=2,
         **numeric,flow_version=configuration.flow_version,sigma_min=configuration.sigma_min,
         payload_vocabulary_sha256=hashlib.sha256(sources.vocabulary.specification_json.encode()).hexdigest())
@@ -1000,4 +1157,4 @@ def construct_primary_owner(configuration,sources):
                             gray_reverse=gray_reverse,gray_forward=gray_forward,bioelectric=bioelectric,nci=nci,expansionrx=expansionrx,cema_trajectory=cema_trajectory,reactzyme=reactzyme,
                             tox21_source=tox21_source,hcn4_laterality=hcn4_laterality,
                             reactome_static=reactome_static,biogrid_chemical=biogrid_chemical,lincx_fetch=lincx_fetch,
-                            string_score=string_score,uniprot_native_annotation=uniprot_native_annotation,uniprot_full_record=uniprot_full_record,scri=scri)
+                            string_score=string_score,uniprot_native_annotation=uniprot_native_annotation,uniprot_full_record=uniprot_full_record,betse=betse,raw_cell=raw_cell,scri=scri,forest_flow=forest_flow,forest_analogy=forest_analogy,forest_decoder=forest_decoder,forest_quality=forest_quality)

@@ -1,0 +1,219 @@
+{
+  "schema": "Mora3.FlowForestResearchReview/v1",
+  "reviewed_utc": "2026-11-11T12:27:12.131814+00:00",
+  "papers": [
+    {
+      "id": "FM",
+      "title": "Flow Matching for Generative Modeling",
+      "url": "https://arxiv.org/abs/2210.02747v2",
+      "review_scope": "method review; existing native equation checked",
+      "decision": "conditional velocity training, not topology generation"
+    },
+    {
+      "id": "CGFN",
+      "title": "A Theory of Continuous Generative Flow Networks",
+      "url": "https://arxiv.org/abs/2301.12594v2",
+      "review_scope": "method review",
+      "decision": "compatible measures/kernels; not ODE transition probability"
+    },
+    {
+      "id": "MF",
+      "title": "Mean Flows for One-step Generative Modeling",
+      "url": "https://arxiv.org/abs/2505.13447",
+      "review_scope": "method review",
+      "decision": "average velocity; not proof of biomedical forest quality"
+    },
+    {
+      "id": "DMF",
+      "title": "Decoupled MeanFlow",
+      "url": "https://arxiv.org/abs/2510.24474",
+      "review_scope": "method and selected official code review",
+      "decision": "selected for native adaptation investigation, not deployed reproduction"
+    },
+    {
+      "id": "AYF",
+      "title": "Align Your Flow",
+      "url": "https://research.nvidia.com/labs/toronto-ai/AlignYourFlow/",
+      "review_scope": "official method/project review",
+      "decision": "flow-map alternative; code listed as forthcoming when reviewed"
+    },
+    {
+      "id": "MFD",
+      "title": "Mean Flow Distillation",
+      "url": "https://arxiv.org/abs/2606.11155",
+      "review_scope": "abstract screening",
+      "decision": "newer alternative; implementation not qualified"
+    },
+    {
+      "id": "FGRPO",
+      "title": "Flow-GRPO",
+      "url": "https://arxiv.org/abs/2505.05470v3",
+      "review_scope": "method review",
+      "decision": "stochastic RL option; expected reward is not a GFN proportional-sampling guarantee"
+    },
+    {
+      "id": "NFT",
+      "title": "Diffusion Negative-aware FineTuning",
+      "url": "https://arxiv.org/abs/2509.16117",
+      "review_scope": "method review",
+      "decision": "flow/diffusion preference candidate; not native likelihood DPO"
+    },
+    {
+      "id": "DORA",
+      "title": "DoRA: Weight-Decomposed Low-Rank Adaptation",
+      "url": "https://arxiv.org/abs/2402.09353v6",
+      "review_scope": "method and pinned PEFT implementation review",
+      "decision": "BF16 DoRA quality-first candidate; QDoRA quantized candidate"
+    },
+    {
+      "id": "QLORA",
+      "title": "QLoRA",
+      "url": "https://arxiv.org/abs/2305.14314",
+      "review_scope": "method review",
+      "decision": "frozen low-bit base with high-precision adapters; reference baseline"
+    },
+    {
+      "id": "PEFT",
+      "title": "PEFT LoRA API, stable0.21.0",
+      "url": "https://huggingface.co/docs/peft/v0.21.0/en/package_reference/lora",
+      "review_scope": "official docs and selected source review",
+      "decision": "no installation; exact native alias/module/quantization qualification pending"
+    },
+    {
+      "id": "AQLORA",
+      "title": "AQLoRA",
+      "url": "https://arxiv.org/abs/2608.23816v2",
+      "review_scope": "paper screening",
+      "decision": "mixed precision speed/memory trade-off not established native80M quality winner"
+    },
+    {
+      "id": "LORAGA2",
+      "title": "LoRA-GA\u00b2",
+      "url": "https://arxiv.org/abs/2608.19800v2",
+      "review_scope": "abstract/status screening; final source check 2026-11-11",
+      "decision": "EXCLUDED: withdrawn on 2026-09-01; historical performance claims are not accepted implementation-quality evidence",
+      "withdrawn": true,
+      "withdrawn_date": "2026-09-01"
+    },
+    {
+      "id": "JEV",
+      "title": "Introducing System One Models & Jev",
+      "url": "https://typesafe.ai/blog/introducing-system-one-models-and-jev",
+      "review_scope": "primary vendor interface review",
+      "decision": "typed parallel outputs; no public special-token list established; claims not benchmarked here"
+    },
+    {
+      "id": "TAE",
+      "title": "Topological Autoencoders",
+      "url": "https://proceedings.mlr.press/v119/moor20a.html",
+      "review_scope": "method review continued from existing project implementation",
+      "decision": "critical-distance regularization, not causal or semantic equivalence"
+    },
+    {
+      "id": "PB",
+      "title": "ProteinBench",
+      "url": "https://arxiv.org/abs/2409.06744",
+      "review_scope": "benchmark scope screening",
+      "decision": "quality dimensions, not a validated evaluator for this model"
+    },
+    {
+      "id": "REFOLD",
+      "title": "Limitations of the refolding pipeline for de novo protein design",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13147959/",
+      "review_scope": "primary limitation/evaluation review",
+      "decision": "refolding consistency/confidence is not sufficient experimental stability evidence"
+    }
+  ],
+  "book": {
+    "title": "Directed Algebraic Topology: Models of Non-Reversible Worlds",
+    "author": "Marco Grandis",
+    "year": 2009,
+    "source": "user-uploaded book",
+    "pages_inspected_this_invocation": [
+      14,
+      15,
+      119,
+      120,
+      121
+    ],
+    "printed_pages": [
+      2,
+      3,
+      107,
+      108,
+      109
+    ],
+    "sha256": "f80980597a19a1b43224e990143c1ad94ad4c583f1eeec11419bcd508bb362d0",
+    "claim": "directed path classes and positive chain/homology information; not exhaustive proof review"
+  },
+  "code_reviews": [
+    {
+      "repo": "kyungmnlee/dmf",
+      "commit": "a6db0f6135e18f4a5dad6f38df3947ed61960742",
+      "files": [
+        {
+          "path": "README.md",
+          "blob": "39f569debe5d543e8f83c83c5e91a05fb1f707fb",
+          "scope": "entire"
+        },
+        {
+          "path": "train_dmf.py",
+          "blob": "203538227b876e2601d891381d24e37d862bb484",
+          "scope": "lines1-140"
+        },
+        {
+          "path": "loss.py",
+          "blob": "fa257dd27cfd39e7d736ff5f3c02e07b1b2984d3",
+          "scope": "entire returned loss implementation"
+        }
+      ],
+      "limitations": [
+        "image-specific layouts/labels and teacher pipeline",
+        "JVP and attention compatibility not established for Mora-3 tropical operators",
+        "upstream reproduction caveat retained"
+      ],
+      "executed": false,
+      "vendored": false
+    },
+    {
+      "repo": "huggingface/peft",
+      "tag": "v0.21.0",
+      "tag_object": "ec824fda1917cbe768fe34f7aa8d953db35dcf32",
+      "commit": "9dc6fa2d2093853dec3889b790d4f251efe7fcac",
+      "files": [
+        {
+          "path": "src/peft/tuners/lora/dora.py",
+          "blob": "f7a397fe51b5c6959c93d57e06660e40fafa0d8d",
+          "scope": "lines1-255"
+        }
+      ],
+      "license_header": "Apache-2.0",
+      "limitations": [
+        "whole integration not audited",
+        "native module aliases/precision/safe norm and quantization paths require qualification"
+      ],
+      "executed": false,
+      "installed": false,
+      "vendored": false
+    },
+    {
+      "repo": "NVlabs/DoRA",
+      "commit": "7e2f10abbe8efe212c8fca1d983ae1d04ef13a18",
+      "scope": "commit metadata only; actual code reviewed through pinned PEFT implementation",
+      "executed": false
+    }
+  ],
+  "selection": {
+    "flow_distillation": "DMF-informed native teacher-flow-map adaptation; no claim of exact reproduction or quality superiority",
+    "quality_adapter": "BF16 DoRA quality-first engineering candidate; QDoRA quantized candidate; QLoRA comparison reference",
+    "newest_is_not_automatically_best": true,
+    "model_specific_winner_proved": false
+  },
+  "research_limitations": [
+    "unversioned paper URLs are not claimed as immutable full-text content pins",
+    "abstract-screened papers are not implementation-qualified",
+    "no third-party weights acquired"
+  ],
+  "packages_installed": false,
+  "external_code_executed": false
+}

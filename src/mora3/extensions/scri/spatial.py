@@ -60,6 +60,9 @@ def validate_spatial_query(query):
     coordinates = []
     coordinate_unit = None
     shared_context = None
+    native_units = {}
+    target_native_units = {(modality, feature): unit
+                           for modality, feature, unit in query.target_axis}
     for i, node in enumerate(query.record.nodes):
         if node.kind != 'scri-cell':
             raise ValueError('exact native spatial node kind required')
@@ -100,6 +103,18 @@ def validate_spatial_query(query):
             if (value.units is None or mask.value is not value.available
                     or mask.status != 'observed' or not mask.available or mask.units != 'dimensionless'):
                 raise ValueError('native measurement missingness or units changed')
+            feature = tuple(json.loads(key))
+            # The exact source feature must not acquire a new physical unit in
+            # a neighbor or in the query's redacted target-coordinate field.
+            if (feature in native_units and native_units[feature] != value.units
+                    or feature in target_native_units and target_native_units[feature] != value.units):
+                raise ValueError('native feature unit differs across cells or from supervised target axis')
+            native_units[feature] = value.units
+            # Spatial query supervision cannot be an observed input at its own
+            # query node. Neighbors retain their original measured features.
+            if i == 0 and feature in target_native_units:
+                if value.value is not None or value.available or value.status != 'missing' or mask.value is not False:
+                    raise ValueError('query target feature must be withheld from conditions')
         if axes not in ({'coordinate:0', 'coordinate:1'},
                         {'coordinate:0', 'coordinate:1', 'coordinate:2'}):
             raise ValueError('complete native 2D or 3D coordinate axis required')
@@ -164,11 +179,16 @@ def _cohort(row):
         text(value, 'native cohort context')
         if value.strip().lower() in ('unknown', 'unspecified', 'none', 'na', 'n/a'):
             raise ValueError('unknown native cohort context cannot establish a neighborhood')
-    return (row.source.dataset_id, row.source.revision, row.source.study_id,
-            row.source.experiment_id, row.source.donor_id, row.source.sample_id,
-            row.source.evidence_kind, row.organism, row.coordinate_frame,
-            row.coordinate_unit, len(row.coordinates), row.time_value,
-            row.time_unit, row.time_reference, row.intervention_ids, row.official_split)
+    # An unreviewed mixture of source licenses cannot become one predictive
+    # spatial specimen simply because study/donor/geometry happen to match.
+    # Distinct file locators within an otherwise uniform rights stratum remain
+    # eligible; independent source-license reconciliation belongs upstream.
+    return (row.source.dataset_id, row.source.revision, row.source.license_id,
+            row.source.study_id, row.source.experiment_id, row.source.donor_id,
+            row.source.sample_id, row.source.evidence_kind, row.organism,
+            row.coordinate_frame, row.coordinate_unit, len(row.coordinates),
+            row.time_value, row.time_unit, row.time_reference,
+            row.intervention_ids, row.official_split)
 
 
 def _biological_key(row):
@@ -185,8 +205,10 @@ def build_neighborhood_query(baseline_records, *, query_record_id, target_axis,
 
     ``sample_id`` is the explicit specimen identity. All supplied records must
     describe one source, donor, specimen, baseline time, frame and intervention
-    cohort, including records outside the radius. No nearest-neighbor fallback,
-    normalization, implicit unit conversion, or truncation is performed.
+    cohort, including records outside the radius. Features on the requested
+    target axis are withheld from the query cell's predictive measurements;
+    original source rows and neighbor conditions are not modified. No
+    nearest-neighbor fallback, normalization, unit conversion or truncation.
     """
     if type(baseline_records) not in (tuple, list) or not baseline_records:
         raise ValueError('explicit nonempty bounded baseline record collection required')
@@ -204,7 +226,7 @@ def build_neighborhood_query(baseline_records, *, query_record_id, target_axis,
     query = by_id[query_record_id]
     cohort = _cohort(query)
     if any(_cohort(row) != cohort for row in rows):
-        raise ValueError('one coherent study, experiment, donor, specimen, organism, frame, unit, time and intervention cohort required')
+        raise ValueError('one coherent source license, study, experiment, donor, specimen, organism, frame, unit, time and intervention cohort required')
     native_units = {}
     for row in rows:
         for item in row.measurements:
@@ -226,6 +248,7 @@ def build_neighborhood_query(baseline_records, *, query_record_id, target_axis,
 
     nodes = []
     roles = []
+    withheld_query_features = {(modality, feature) for modality, feature, _ in target_axis}
     for i, row in enumerate(selected):
         values = [Measurement('is_query', i == 0, 'dimensionless', 'observed', True),
                   Measurement('organism', row.organism, None, 'observed', True),
@@ -237,10 +260,14 @@ def build_neighborhood_query(baseline_records, *, query_record_id, target_axis,
                       for j, value in enumerate(row.coordinates))
         for item in row.measurements:
             key = canonical((item.modality, item.feature_id)).decode()
+            # Keep all original source records intact, but redact the exact
+            # supervised query coordinate from predictive spatial inputs.
+            withheld = i == 0 and (item.modality, item.feature_id) in withheld_query_features
+            available = item.observed and not withheld
             status = 'predicted' if row.source.evidence_kind == 'model_prediction' else 'observed'
-            values.append(Measurement('native:' + key, item.value, item.unit,
-                                      status if item.observed else 'missing', item.observed))
-            values.append(Measurement('observed:' + key, item.observed, 'dimensionless', 'observed', True))
+            values.append(Measurement('native:' + key, None if withheld else item.value, item.unit,
+                                      status if available else 'missing', available))
+            values.append(Measurement('observed:' + key, available, 'dimensionless', 'observed', True))
         if i == 0:
             values.append(Measurement('requested_axis', canonical(target_axis).decode(), None, 'observed', True))
             values.append(Measurement('radius', radius, row.coordinate_unit, 'observed', True))

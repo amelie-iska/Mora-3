@@ -360,6 +360,37 @@ def _metrics(identity,binding,selection,*,step,evidence,update=None):
     return tuple(records)
 
 
+def require_native_route_cursor_map(bindings, source_cursors):
+    """Validate ALL native task cursors without reading targets or moving readers.
+
+    A restored checkpoint can carry corrupt cursors for tasks other than the
+    imminent update. Inspect every exact route policy and source view BEFORE
+    any source preparation, generator draw or optimizer action. This is one
+    checkpoint-boundary requirement, not proof of completed update replay.
+    """
+    if (type(bindings) is not dict or not bindings or type(source_cursors) is not dict
+            or set(bindings) != set(source_cursors)):
+        raise ValueError('Complete exact native task cursor map required')
+    for key, binding in bindings.items():
+        if (type(key) is not str or type(binding) is not NativeRouteBinding
+                or binding.route.task_key != key or type(source_cursors[key]) is not bytes):
+            raise ValueError('Exact native task binding and serialized cursor required')
+        binding.__post_init__()
+        route = binding.route
+        if type(route) is FiniteNativeTrainRoute:
+            if finite_view_policy_sha256(route._view) != route.native_view_policy_sha256:
+                raise ValueError('Native train route source view snapshot changed')
+            route._cursor_position(source_cursors[key])
+        elif type(route) is RepeatedFiniteNativeTrainRoute:
+            if finite_view_policy_sha256(route.original._view) != route.native_view_policy_sha256:
+                raise ValueError('Repeated native train route source view snapshot changed')
+            route._position(source_cursors[key])
+        elif type(route) in (MCSACampaignTrainRoute, ReviewedTextCampaignRoute):
+            route._position(source_cursors[key])
+        else:
+            raise ValueError('Unsupported native route cursor type')
+
+
 def run_native_primary_update(engine, bindings, *, metric_identity, max_windows,
                               cpu_stager=None, prefetch_limits=None):
     """Execute one authorized native update, or return an explicit no-target result.
@@ -375,6 +406,7 @@ def run_native_primary_update(engine, bindings, *, metric_identity, max_windows,
     if type(metric_identity) is not NativeMetricIdentity:
         raise ValueError('Exact canonical metric identity required')
     metric_identity.__post_init__()
+    engine.model.require_training_admission(campaign_sha256=engine.binding_sha256,trial_id=metric_identity.trial_id)
     source_snapshot = engine.model.get_extra_state()['source_snapshot_sha256']
     if (
         type(bindings) is not dict or set(bindings) != set(engine.task_cycle)
@@ -382,6 +414,7 @@ def run_native_primary_update(engine, bindings, *, metric_identity, max_windows,
                or binding.route.source_snapshot_sha256 != source_snapshot for key,binding in bindings.items())
     ):
         raise ValueError('Exact task cycle and same model/source snapshot route bindings required')
+    require_native_route_cursor_map(bindings, engine.source_cursors)
     task = engine.next_task
     binding = bindings[task]
     before = engine.source_cursors[task]

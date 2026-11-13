@@ -16,6 +16,7 @@ from mora3.data.rnacentral_prior import DOMAIN as RNACENTRAL_DOMAIN
 from .nucleotide_decoder import NucleotideDecoder
 from .pubchem_decoder import PubChemDecoder,pubchem_condition_graph
 from .source_byte_objective import validate_byte_targets,_source_token_objective
+from .source_byte_bounded_adjoint import source_byte_bounded_adjoint
 from .mixed_payload_projection import exact_wire
 
 _NUCLEOTIDES={'dna':SOURCES['DNA-native-reference-prior'][0],
@@ -103,7 +104,16 @@ class NativeSequencePriorModel(nn.Module):
         total=None;count=0
         for r,(d,ids)in zip(records,encoded):
             context=self._condition(r)
-            loss=_source_token_objective(d,context,(ids,),chunk_size=chunk_size,recompute=recompute)
+            if r.route=='protein' and recompute:
+                # Exact whole-source recurrence, with bounded first-order backward
+                # memory. Never slice a long target or implicitly raise a frozen
+                # source/owner budget. The existing target/resource gates run first.
+                loss=source_byte_bounded_adjoint(
+                    d,context,(r.target_bytes,),chunk_size=chunk_size,
+                    max_batch_size=self.max_batch_size,
+                    max_total_target_bytes=self.max_total_target_bytes)
+            else:
+                loss=_source_token_objective(d,context,(ids,),chunk_size=chunk_size,recompute=recompute)
             n=len(ids)-1;count+=n;total=loss*n if total is None else total+loss*n
         return total/count
 

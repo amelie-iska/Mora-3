@@ -193,20 +193,7 @@ https://pmc.ncbi.nlm.nih.gov/articles/PMC5443973/.
 
 ## Sweep plan and release gates
 
-`readiness.build_sweep_manifest` expands the existing registered user plan:
-
-* 24 primary proxy trials: 3 learning rates, 2 readout multipliers,
-  2 attention-key multipliers and 2 fixed seeds.
-* 8 standard-parameterization proxy comparisons.
-* 9 transfer runs: three seeds at each of two intermediate widths and the target.
-* 3 naive standard-parameterization target comparisons.
-
-The 44 runs have a combined **22 GPU-hour upper budget**, not a measured duration
-estimate. The full training run is separate. Primary trials retain the original
-5,000-update/1,800-second caps; transfer trials retain their original
-1,000-update/1,800-second caps. Target width values, actual all-head parameter
-counts, baseline details, transfer seeds, and selected hyperparameters are not
-invented by the preparatory manifest.
+The current directive supersedes the old44-run preparation manifest: **24 native μP proxies plus at most two approximately80M target full-model runs**, with validation-only selection and no fresh retries, SP baselines or intermediate-width runs. `readiness.build_sweep_manifest` retains historical preparation behavior and is NOT current executable launch authority. Use the hash-bound [current directive](../planning/current_mup_campaign.json) and [counted transfer handoff](campaign26_transfer.md). No implementation test or old green label allocates a training slot.
 
 The complete architecture must pass its native finite/infinite-axis and alias
 ledger checks, coordinate checks for every active operator, optimizer/recovery

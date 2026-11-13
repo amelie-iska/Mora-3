@@ -1,0 +1,84 @@
+{
+  "schema": "Mora3.TopologyAnalogyResearchSources/v1",
+  "reviewed_utc": "2026-11-10T11:01:06.455147+00:00",
+  "requested": [
+    {
+      "arxiv": "2505.18651v2",
+      "title": "On the Emergence of Linear Analogies in Word Embeddings",
+      "use": "factorization assumptions and limitations of additive analogies"
+    },
+    {
+      "arxiv": "2605.11258v1",
+      "title": "Unlocking LLM Creativity in Science through Analogical Reasoning",
+      "use": "relational proposal generation separated from independent feasibility"
+    },
+    {
+      "arxiv": "2602.01992v5",
+      "title": "Emergent Analogical Reasoning in Transformers",
+      "use": "structural alignment diagnostics and explicit relation preservation"
+    },
+    {
+      "arxiv": "2310.01714v3",
+      "title": "Large Language Models as Analogical Reasoners",
+      "use": "exemplar retrieval/generation and scale-dependent reliability"
+    }
+  ],
+  "book": {
+    "author": "Marco Grandis",
+    "title": "Directed Algebraic Topology: Models of Non-Reversible Worlds",
+    "year": 2009,
+    "uploaded_pdf_sha256": "f80980597a19a1b43224e990143c1ad94ad4c583f1eeec11419bcd508bb362d0",
+    "sections": [
+      "1.1",
+      "1.4",
+      "2.1",
+      "2.2",
+      "3.2",
+      "6.1",
+      "6.3"
+    ],
+    "complete_book_proof_review": false,
+    "book_text_copied": false
+  },
+  "related": [
+    {
+      "source": "https://proceedings.mlr.press/v119/moor20a.html",
+      "use": "piecewise persistence critical-distance objective; local H1 adaptation"
+    },
+    {
+      "source": "https://arxiv.org/abs/2202.04579v4",
+      "use": "typed restriction maps; not a reproduced neural sheaf model"
+    },
+    {
+      "source": "https://arxiv.org/abs/1701.00565v2",
+      "use": "directed-network asymmetry; full persistent path homology not implemented"
+    },
+    {
+      "source": "https://arxiv.org/abs/2304.00195v4",
+      "use": "relation/object separation; Abstractor architecture not installed"
+    },
+    {
+      "source": "https://arxiv.org/abs/2102.09844v3",
+      "use": "equivariance boundary; existing encoder not relabeled equivariant"
+    }
+  ],
+  "code_review": [
+    {
+      "repository": "gouki510/Analogy_in_Transformer",
+      "commit": "291dc97ead7c5a3d9781518aae8d4a3f9560e6cc",
+      "inspected_file": "pretrained_llm/src/dirichlet_energy.py",
+      "git_blob": "d69de378df5c820bbafdb3ee417f7a4462a116df",
+      "finding": "detached analysis metric; norm-zero maps to zero; not a differentiable native source objective"
+    },
+    {
+      "repository": "DJKorchinski/linear-analogies-word-embedding-reproduction",
+      "commit": "a03c36ea4c7a5fda35cd617ec1eda0554b3ac6a3",
+      "inspected_file": "compute_coocurrence.py",
+      "git_blob": "2d9c25e001b47ae814f0bcf0c3b25ef0a92639e5",
+      "finding": "dense corpus-specific co-occurrence reproduction; not run or vendored"
+    }
+  ],
+  "external_implementations_executed": false,
+  "new_dependencies_installed": false,
+  "reproduced_paper_training_results": false
+}

@@ -64,7 +64,10 @@ def execute_one_primary_proxy_trial(directory, *, engine,campaign,trial_id,pins,
     engine.model.require_training_admission()
     if type(campaign) is not FrozenPrimaryProxyCampaign:
         raise ValueError('Exact frozen primary campaign required')
-    require_runtime_window_capacity(root,campaign=campaign,bindings=bindings,request=capacity_request)
+    engine.model.require_training_admission(campaign_sha256=campaign.sha256,trial_id=trial_id)
+    capacity=require_runtime_window_capacity(root,campaign=campaign,bindings=bindings,request=capacity_request)
+    engine.model.require_training_admission(campaign_sha256=campaign.sha256,trial_id=trial_id,
+                                            window_capacity_sha256=capacity.sha256)
     journal_path=Path(journal_path).absolute()
     campaign_path=Path(directory).resolve()
     if (journal_path.resolve().is_relative_to(campaign_path)

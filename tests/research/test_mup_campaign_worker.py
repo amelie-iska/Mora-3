@@ -1,5 +1,6 @@
 from dataclasses import replace
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
@@ -14,7 +15,8 @@ def harness(monkeypatch,tmp_path):
     selection,result=execution()
     events=[]
     class Model:
-        def require_training_admission(self): events.append('admission')
+        def require_training_admission(self,**scope):
+            if not scope: events.append('admission')
     class Engine:
         model=Model()
     class Campaign:
@@ -29,7 +31,7 @@ def harness(monkeypatch,tmp_path):
     monkeypatch.setattr(worker,'NativeMuUpdateEngine',Engine)
     monkeypatch.setattr(worker,'SourceBoundOwner',Model)
     monkeypatch.setattr(worker,'FrozenPrimaryProxyCampaign',Campaign)
-    monkeypatch.setattr(worker,'require_runtime_window_capacity',lambda *args,**kwargs: None)
+    monkeypatch.setattr(worker,'require_runtime_window_capacity',lambda *args,**kwargs: SimpleNamespace(sha256='a'*64))
     monkeypatch.setattr(worker,'_require_runtime',lambda *args: events.append('runtime'))
     def run(*args,**kwargs):
         events.append('run')

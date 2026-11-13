@@ -29,10 +29,10 @@ def shared(width=8):
         width=width,heads=2,layers=2,backbone=backbone,max_tokens=8192,
         parameterization_policy='mup-annotation-v1',base_width=8)
 
-def query(n=8):
+def query(n=8, *, query_target_count=0):
     source=SourceEvidence('fixture','r1','c'*64,'fixture','CC0','synthetic_fixture','study','sample','donor','experiment',None)
     rows=tuple(StateRecord(str(i),replace(source,source_locator=str(i)),'fixture-system',None,0,'s','baseline',
-        (NativeValue('rna','G',i,'count',True),),(i/n,0.),'um','fixture-frame',(),None) for i in range(n))
+        (NativeValue('rna','G',query_target_count if i==0 else i,'count',True),),(i/n,0.),'um','fixture-frame',(),None) for i in range(n))
     return build_neighborhood_query(rows,query_record_id='0',target_axis=AXIS.features,radius=1.)
 
 def model(width=8):
@@ -57,6 +57,16 @@ def test_roles_cover_every_shared_alias_across_three_widths():
     family=width_family(*ledgers)
     assert family.total_numel==tuple(sum(p.numel() for p in m.parameters()) for m in models)
     assert any(len(e.aliases)>1 for e in ledgers[0].parameters)
+
+def test_query_target_value_is_not_a_predictor_for_the_actual_native_spatial_head():
+    m=model().eval()
+    a=query(query_target_count=0)
+    b=query(query_target_count=9876)
+    assert a.record == b.record
+    with torch.no_grad():
+        torch.testing.assert_close(m.forward_spatial((a,)),m.forward_spatial((b,)),rtol=0,atol=0)
+    assert not m.training_admitted
+
 
 def test_targets_and_audit_are_excluded_and_malformed_topology_rejected():
     m=model();q=query();z=m.forward_spatial((q,))

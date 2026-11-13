@@ -70,11 +70,11 @@ def test_staged_worker_gate_precedes_all_mutations(tmp_path,monkeypatch,admissio
     from mora3.research import mup_campaign_worker as worker
     events=[]
     class Model:
-        def require_training_admission(self):
-            events.append('admission')
+        def require_training_admission(self,**scope):
+            if not scope:events.append('admission')
             if admission_refuses:raise ValueError('owner refused')
     class Engine:model=Model()
-    class Campaign:pass
+    class Campaign:sha256='a'*64
     monkeypatch.setattr(worker,'NativeMuUpdateEngine',Engine);monkeypatch.setattr(worker,'SourceBoundOwner',Model);monkeypatch.setattr(worker,'FrozenPrimaryProxyCampaign',Campaign)
     def refuse(*a,**kw):events.append('capacity');raise gate.WindowCapacityRefusal(({'task_key':'TEST ONLY'},))
     monkeypatch.setattr(worker,'require_runtime_window_capacity',refuse)

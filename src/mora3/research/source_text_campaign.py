@@ -64,10 +64,25 @@ class ReviewedTextCampaignRoute:
         for row in rows:self.view.require_row(row,role=role)
         if sum(len(r.native_row.full_target_utf8) for r in rows)>self.budget.max_batch_target_bytes:raise ValueError('Complete native text batch exceeds explicit target-byte budget; no truncation')
         return TextWindow(tuple(rows),role,after,digest(canonical([self.native_view_policy_sha256,role,[(digest(r.native_row.source_coordinate_json),digest(r.native_row.full_target_utf8)) for r in rows]])))
+    def _position(self,cursor):
+        """Check the source-bound finite-pass cursor without yielding source rows."""
+        self.executable_binding()
+        if type(cursor) is not bytes:
+            raise ValueError('Exact finite original train cursor required')
+        try:
+            d=json.loads(cursor)
+            p,o=d.get('pass_index'),d.get('next_offset')
+        except (ValueError,UnicodeError,AttributeError) as exc:
+            raise ValueError('Exact finite original train cursor required') from exc
+        if (type(d) is not dict or type(p) is not int or type(o) is not int
+                or not 0<=p<=self.budget.max_passes or not 0<=o<=len(self._train)
+                or (p==self.budget.max_passes and o!=0)
+                or (o%self.budget.batch_size!=0 and o!=len(self._train))
+                or cursor!=self._cursor(p,o)):
+            raise ValueError('Exact finite original train cursor required')
+        return p,o
     def iter_from(self,cursor):
-        self.executable_binding();d=json.loads(cursor)
-        p,o=d.get('pass_index'),d.get('next_offset')
-        if type(cursor) is not bytes or type(p) is not int or type(o) is not int or not 0<=p<=self.budget.max_passes or not 0<=o<=len(self._train) or (p==self.budget.max_passes and o!=0) or (o%self.budget.batch_size!=0 and o!=len(self._train)) or cursor!=self._cursor(p,o):raise ValueError('Exact finite original train cursor required')
+        p,o=self._position(cursor)
         for pi in range(p,self.budget.max_passes):
             start=o if pi==p else 0
             for i in range(start,len(self._train),self.budget.batch_size):

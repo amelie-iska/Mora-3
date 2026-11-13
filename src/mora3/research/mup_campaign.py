@@ -282,9 +282,15 @@ def executable_adapter_sha256(adapter, *, root):
     from .tox21_campaign_routes import Tox21CampaignAdapter
 
     from .source_text_campaign import ReviewedTextCampaignRoute
+    from mora3.extensions.scri.native_routes import SCRICampaignAdapter
     binding = None
     if inspect.isfunction(adapter):
         function = adapter
+    elif inspect.ismethod(adapter) and type(adapter.__self__) is SCRICampaignAdapter:
+        function=adapter.__func__
+        if function not in (SCRICampaignAdapter.prepare,SCRICampaignAdapter.evaluate_validation):
+            raise ValueError('Exact typed SCRI executable method required')
+        binding=adapter.__self__.executable_binding()
     elif inspect.ismethod(adapter) and type(adapter.__self__) is Tox21CampaignAdapter:
         function = adapter.__func__
         if function not in (Tox21CampaignAdapter.prepare,Tox21CampaignAdapter.evaluate_validation):
@@ -323,6 +329,9 @@ def executable_adapter_sha256(adapter, *, root):
         if function not in (MCSACampaignTrainRoute.prepare,MCSACampaignTrainRoute.evaluate_validation):
             raise ValueError('Exact typed M-CSA executable adapter method required')
         binding = dict(route=adapter.__self__.binding(),validation_policy_sha256=adapter.__self__.validation_policy_sha256)
+        materialization=adapter.__self__.train_materialization_binding()
+        if materialization is not None:
+            binding['train_materialization']=materialization
     else:
         raise ValueError('Exact module function or supported typed executable route adapter required')
     if (
@@ -562,6 +571,7 @@ def run_primary_proxy_trial(engine,campaign,*,trial_id,terminal_trial_ids,bindin
     engine.model.require_training_admission()
     if type(campaign) is not FrozenPrimaryProxyCampaign:
         raise ValueError('Exact frozen primary proxy campaign required')
+    engine.model.require_training_admission(campaign_sha256=campaign.sha256,trial_id=trial_id)
     started = time.monotonic()
     trial = campaign.require_next_trial(trial_id,terminal_trial_ids)
     prefetch = _require_runtime(engine,campaign,trial,bindings,validation_view,validation_evaluators,

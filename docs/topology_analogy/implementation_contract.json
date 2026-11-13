@@ -1,0 +1,63 @@
+{
+  "schema": "Mora3.TopologyAnalogyImplementationContract/v1",
+  "status": "tested_component_implementation_not_full_campaign_admission",
+  "maximum_training_runs": 26,
+  "proxy_runs": 24,
+  "target_runs": 2,
+  "target_parameterization": "muP with frozen transferred hyperparameters",
+  "additional_training_ablation_runs": 0,
+  "topology": {
+    "coefficients": "F2",
+    "dimensions": [
+      0,
+      1
+    ],
+    "complete_radius_default": true,
+    "censoring": "right-censored unpaired bars at cutoff",
+    "max_complete_points_default": 64,
+    "max_simplices_default": 50000,
+    "diagram_metric": "full bottleneck including diagonal and essential matching",
+    "gradient_loss": "critical-edge union, piecewise fixed pairing plus full pairwise metric stress",
+    "learned_parameters_added": 0
+  },
+  "directed": {
+    "presentation": "finite directed square2-complex",
+    "path_relations": "only explicit evidence-bound squares",
+    "proof_exhaustion": "unknown, not pass",
+    "positive_cones": "nonnegative integer chain coefficients; supplied representative witness",
+    "betti": "exact rational ranks; no integral torsion assertion",
+    "continuous_space_reconstruction": false
+  },
+  "geometry": {
+    "domains": [
+      "molecular_structure",
+      "protein_structure",
+      "cell_spatial_geometry",
+      "morphology_landmarks"
+    ],
+    "native_units_and_frame_required": true,
+    "hidden_targets_excluded": true,
+    "latent_metric": "RMS coordinate distance",
+    "chirality": "ordered tetrahedron utility, no distance-only chirality claim",
+    "grn_geometry": "directed signed relations, not invented3D coordinates"
+  },
+  "control": {
+    "existing_owner": "mora3.reasoning.fot_forest.grow_forest",
+    "candidate_certificate": "exact state/context digest",
+    "unknown_policy": "abstain",
+    "memory_source": "train conditions only with disjoint qualified groups",
+    "changes_gfn_sampling_kernel": false
+  },
+  "training_default_enabled": false,
+  "required_before_native_activation": [
+    "freeze source/scale/policy digests and native objective coefficients",
+    "bind existing registered geometry module and exact source task schedule",
+    "preserve all current source/rights/split and complete-owner qualification",
+    "measure representative real-source context overhead",
+    "qualify numerical gradients/operator scaling across actual complete widths",
+    "retain validation-only24-trial selection and two target budgets"
+  ],
+  "full_campaign_ready": false,
+  "source_admission_issued": false,
+  "clinical_or_biological_quality_proved": false
+}

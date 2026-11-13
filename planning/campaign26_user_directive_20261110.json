@@ -1,0 +1,50 @@
+{
+  "schema": "Mora3.Campaign26UserDirective/v1",
+  "recorded_utc": "2026-11-10T09:48:33.315547+00:00",
+  "authority": "direct user instruction in current conversation",
+  "maximum_training_runs": 26,
+  "proxy_sweep_runs": 24,
+  "full_target_training_runs": 2,
+  "target_nominal_parameters": 80000000,
+  "standard_parameterization_baseline_runs": 0,
+  "intermediate_width_training_runs": 0,
+  "naive_standard_parameterization_target_runs": 0,
+  "primary_grid": {
+    "master_learning_rates": [
+      "0.0001",
+      "0.0003",
+      "0.001"
+    ],
+    "readout_multipliers": [
+      "0.5",
+      "1"
+    ],
+    "attention_key_multipliers": [
+      "0.5",
+      "1"
+    ],
+    "seeds": [
+      2026110201,
+      2026110202
+    ]
+  },
+  "target_seeds": [
+    2026111001,
+    2026111002
+  ],
+  "target_seeds_origin": "predeclared implementation choice before any sweep outcome",
+  "target_parameterization": "muP retained; ordinary full-model training with hyperparameters selected on proxy validation only",
+  "target_hp_source": "one frozen native paired-seed selector winner from all 24 terminal proxy dispositions",
+  "retries": "no automatic fresh attempts; failed/aborted reserved starts retain their run slots",
+  "target_training_budget": null,
+  "target_width": null,
+  "target_all_head_parameter_count": null,
+  "full_readiness_gates_unchanged": true,
+  "training_launch_authorized_by_this_file": false,
+  "supersedes_run_counts_in": [
+    "planning/mup_hyperparameter_transfer_plan.json",
+    "planning/mup_hyperparameter_transfer_plan.md",
+    "docs/alternate_agent/P4-transfer-audit.md"
+  ],
+  "no_additional_training_experiments_under_this_task": true
+}

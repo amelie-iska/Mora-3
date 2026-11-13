@@ -80,6 +80,7 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
     from .source_annotation_objectives import SourceAnnotationObjectives,source_annotation_objectives_parameter_roles
     from .cell_native import SharedNativeCellModel
     from .cell_mup import cell_mup_parameter_roles
+    from .raw_count_cell_model import SharedRawCountCellModel,raw_cell_parameter_roles
     from .source_text import SharedSourceTextModel
     from .lincs_inverse import SharedLincsInverseModel,lincs_inverse_parameter_roles
     from .native_sequence_priors import NativeSequencePriorModel,native_sequence_prior_parameter_roles
@@ -93,6 +94,7 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
     from .expansionrx_native_model import ExpansionRxNativeModel,expansionrx_parameter_roles
     from .reactzyme_product import NativeReactZymeProductModel,reactzyme_parameter_roles
     from .cema_trajectory_model import SharedCemaTrajectoryModel,cema_trajectory_parameter_roles
+    from .betse_membrane import NativeBETSEMembraneHead,betse_membrane_parameter_roles
     from .tox21_current_model import NativeTox21SourceModel,tox21_current_model_parameter_roles
     from .reactome_static_model import NativeReactomeStaticModel,reactome_static_parameter_roles
     from .biogrid_chemical_model import NativeBioGRIDChemicalModel,biogrid_chemical_parameter_roles
@@ -121,6 +123,10 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
                 raise ValueError('conflicting shared source operator/axis/role declarations')
             declarations[key]=r
     from mora3.extensions.scri.native_owner import NativeSCRIModel,native_scri_roles
+    from .forest_flow import NativeForestFlowHead,forest_flow_parameter_roles
+    from .forest_analogy import NativeForestAnalogyHead,forest_analogy_parameter_roles
+    from .forest_token_decoder import NativeForestTokenDecoder,forest_decoder_parameter_roles
+    from .forest_quality import NativeForestQualityHead,forest_quality_parameter_roles
     def visit(module):
         if id(module)in seen:return
         seen.add(id(module));t=type(module);roles=None
@@ -157,6 +163,8 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
         elif t is ExpansionRxNativeModel:roles=expansionrx_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is NativeReactZymeProductModel:roles=reactzyme_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is SharedCemaTrajectoryModel:roles=cema_trajectory_parameter_roles(module,identifier_axis=identifier_axis)
+        elif t is NativeBETSEMembraneHead:roles=betse_membrane_parameter_roles(module,identifier_axis=identifier_axis)
+        elif t is SharedRawCountCellModel:roles=raw_cell_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is NativeTox21SourceModel:roles=tox21_current_model_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is NativeReactomeStaticModel:roles=reactome_static_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is NativeBioGRIDChemicalModel:roles=biogrid_chemical_parameter_roles(module,identifier_axis=identifier_axis)
@@ -165,6 +173,10 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
         elif t is SharedUniProtNativeAnnotationModel:roles=uniprot_native_annotation_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is SharedUniProtFullRecordModel:roles=uniprot_full_record_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is NativeSCRIModel:roles=native_scri_roles(module,identifier_axis=identifier_axis)
+        elif t is NativeForestFlowHead:roles=forest_flow_parameter_roles(module,identifier_axis=geometry_identifier_axis)
+        elif t is NativeForestAnalogyHead:roles=forest_analogy_parameter_roles(module,identifier_axis=geometry_identifier_axis)
+        elif t is NativeForestTokenDecoder:roles=forest_decoder_parameter_roles(module,identifier_axis=geometry_identifier_axis)
+        elif t is NativeForestQualityHead:roles=forest_quality_parameter_roles(module,identifier_axis=geometry_identifier_axis)
         elif t is SharedLincsInverseModel:roles=lincs_inverse_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is SharedSourceTextModel:
             module.get_extra_state()

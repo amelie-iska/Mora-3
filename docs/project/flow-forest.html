@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="description" content="Mora-3 flow-forest research specification: interactive mathematical examples, explicit provenance and matched paper figures. Not trained results.">
+<title>Mora-3 · Flow-forest research atlas</title>
+<style>
+:root{--ink:#193747;--muted:#526672;--line:#c5d0d2;--teal:#0b756b;--blue:#206a95;--amber:#a15b15;--paper:#fff;--wash:#f4f5f1;--shadow:0 5px 20px #19374708}
+*{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;background:var(--wash);color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5}button,input,select{font:inherit}a{color:var(--blue)}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid #288bba;outline-offset:3px}button{cursor:pointer}button,select{min-height:44px}button{border:1px solid var(--line);border-radius:6px;padding:9px 15px;background:white;color:var(--ink)}button:hover{border-color:var(--teal);background:#f0f6f4}.skip{position:absolute;top:-100px;left:12px;background:white;padding:12px;z-index:10}.skip:focus{top:10px}.shell{max-width:1540px;margin:0 auto;padding:24px 34px 34px}.masthead{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:20px;border-bottom:1px solid var(--line)}.wordmark{font-weight:750;letter-spacing:-.7px;font-size:25px}.wordmark span{font-weight:400;font-size:13px;letter-spacing:1px;text-transform:uppercase;margin-left:14px;color:var(--muted)}.revision{text-align:right;font-size:12px;color:var(--muted)}.revision strong{color:var(--ink)}.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:35px;align-items:end;padding:25px 0 23px}.kicker{font-size:11px;letter-spacing:1.8px;font-weight:700;color:var(--teal);text-transform:uppercase}h1{font-size:clamp(25px,2.7vw,39px);line-height:1.12;letter-spacing:-1px;margin:8px 0 12px;max-width:950px}.hero p{margin:0;max-width:900px;color:var(--muted);font-size:15px}.hero-status{border-left:3px solid var(--amber);padding:5px 0 5px 14px;font-size:12px;max-width:225px}.hero-status strong{display:block;color:var(--amber);font-size:13px}.navscroll{overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:thin}.tabs{display:flex;width:max-content;min-width:100%;gap:4px}.tabs button{background:transparent;border:0;border-bottom:3px solid transparent;border-radius:0;padding:13px 15px;white-space:nowrap;font-size:13px;font-weight:600}.tabs button[aria-selected=true]{border-bottom-color:var(--teal);color:var(--teal);background:#eaf2ee}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;margin-top:23px}.primary{min-width:0}.viewheading{padding:0 0 14px}h2{font-size:25px;line-height:1.2;letter-spacing:-.4px;margin:7px 0 9px}.lead{color:var(--muted);margin:0;max-width:920px}.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:12px 16px;background:#f7f9f8;border:1px solid var(--line);border-bottom:0;border-radius:9px 9px 0 0;min-height:66px}.control{display:flex;align-items:center;gap:10px;min-height:40px;flex-wrap:wrap}.control label{font-size:12px;font-weight:600}.control input[type=range]{width:155px;accent-color:var(--teal)}.control output{font-family:ui-monospace,monospace;font-size:12px;min-width:36px;color:var(--teal)}.control input[type=checkbox]{accent-color:var(--teal);width:20px;height:20px}.control select{max-width:210px;padding:5px 10px;border:1px solid var(--line);border-radius:5px;background:white}.diagram-wrap{border:1px solid var(--line);border-radius:0 0 9px 9px;background:white;overflow:hidden;box-shadow:var(--shadow)}.svg-scroll{overflow-x:auto;overscroll-behavior:contain;max-width:100%;scrollbar-width:thin}.svg-scroll svg{display:block;width:100%;height:auto;min-width:680px}.pan-hint{display:none;padding:8px 14px;color:var(--muted);font-size:11px;background:#f7f9f8;border-top:1px solid #e8edee}.equation{background:#eaf2ee;border-left:3px solid var(--teal);padding:15px 17px;margin:17px 0 0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;overflow-wrap:anywhere}.caveat{border-left:3px solid #cca26e;padding:0 0 0 13px;margin:14px 0;color:#775020;font-size:12px}.aside{margin-top:1px;border-left:1px solid var(--line);padding-left:22px}.aside h3{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;margin:5px 0 13px}.aside p{font-size:13px;color:var(--muted);margin:0 0 17px}.aside .detail{padding-bottom:12px;border-bottom:1px solid #dfe5e4}.aside .tag{display:inline-block;background:#f5ecd9;color:#7b4d18;font-size:11px;letter-spacing:.4px;padding:5px 8px;border-radius:4px;margin:0 0 17px}.actionbar{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.actionbar button{font-size:12px}.secondary{margin-top:20px;border:1px solid var(--line);border-radius:9px;background:white;overflow:hidden}.secondary svg{width:100%;height:auto;min-width:680px;display:block}.token-panel,.quality-panel{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:9px;background:white}.token-panel h3,.quality-panel h3{margin:0 0 5px;font-size:16px}.token-panel p,.quality-panel p{margin:0 0 12px;color:var(--muted);font-size:12px}.token-panel input{width:100%;max-width:380px;padding:11px;border:1px solid var(--line);border-radius:5px;margin-bottom:15px}.token-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px}.token-group strong{display:block;font-size:12px;margin-bottom:8px}.token-item{display:block;font-size:10.5px;line-height:1.9;font-family:ui-monospace,monospace;color:var(--blue);overflow-wrap:anywhere}.token-item[hidden]{display:none}.quality-row{display:grid;grid-template-columns:1fr 170px;gap:12px;align-items:center;padding:9px 0;border-top:1px solid #e1e7e7}.quality-row label{font-size:13px}.quality-row select{border:1px solid var(--line);border-radius:4px;background:white;padding:5px}.result{margin-top:13px;padding:10px;background:#f6f0e7;font-size:13px;color:#795022}.result strong{font-family:ui-monospace,monospace}.sources{margin-top:35px;border-top:1px solid var(--line);padding-top:17px}.sources summary{cursor:pointer;font-weight:600;font-size:14px;padding:8px 0}.source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:9px 25px;padding:14px 0}.source-grid a{font-size:12px;text-decoration-thickness:1px;text-underline-offset:3px}.provenance{color:var(--muted);font-size:11px;line-height:1.8;margin-top:16px;max-width:1250px;overflow-wrap:anywhere}.foot{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:14px;margin-top:20px;font-size:11px;color:var(--muted)}.error{background:#fbeaec;color:#8b2436;padding:14px;border:1px solid #b45565}#announce{min-height:18px;font-size:11px;color:var(--teal);margin-top:8px}noscript{display:block;padding:25px}.pill{display:inline-block;padding:4px 8px;border-radius:5px;background:#edf3f2;font-size:11px;color:var(--teal)}
+@media(min-width:1600px){.workspace{grid-template-columns:minmax(0,1fr) 320px}}
+@media(max-width:1100px){.workspace{grid-template-columns:minmax(0,1fr)}.aside{border-left:0;border-top:1px solid var(--line);padding:20px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:0 22px}.aside h3,.aside .tag,.aside .method{grid-column:1/-1}.aside .detail{margin-bottom:10px}.hero-status{max-width:190px}.shell{padding:20px}.svg-scroll svg{min-width:700px}}
+@media(max-width:700px){.shell{padding:15px 14px 25px}.wordmark{font-size:23px}.wordmark span{display:block;font-size:10px;margin:2px 0 0}.revision{font-size:10px}.hero{grid-template-columns:1fr;gap:16px;padding:20px 0}.hero-status{max-width:none;font-size:11px}.hero-status strong{display:inline;margin-right:7px}.hero p{font-size:13px}h1{font-size:28px}.tabs button{font-size:12px;padding:12px}.workspace{margin-top:18px;gap:20px}h2{font-size:22px}.lead{font-size:13px}.controls{gap:6px;padding:10px}.control{gap:7px;min-height:38px}.control input[type=range]{width:130px}.aside{display:block}.aside h3{font-size:12px}.pan-hint{display:block}.quality-row{grid-template-columns:1fr}.quality-row select{width:100%}.foot{display:block}.token-groups{grid-template-columns:1fr 1fr}.equation{font-size:11px}.caveat{font-size:11px}.actionbar button{flex:1;padding:8px;font-size:11px}.sources{margin-top:20px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto;animation:none!important;transition:none!important}}
+@media print{.navscroll,.controls,.actionbar,.sources,.hero-status,.revision,.pan-hint{display:none}.shell{padding:0}.workspace{display:block}.aside{display:none}.svg-scroll{overflow:visible}.svg-scroll svg{min-width:0}.diagram-wrap{border:0;box-shadow:none}.foot{font-size:9px}h1{font-size:20px}h2{font-size:18px}.lead{font-size:12px}.hero{padding:12px 0}.secondary{display:none}}
+</style></head><body><a class="skip" href="#view-panel">Skip to interactive figure</a>
+<div class="shell"><header class="masthead"><div class="wordmark">Mora-3 <span>Research atlas / Flow forests</span></div><div class="revision"><strong>FRF-00 · 11 NOV 2026</strong><br>Research design + mathematical reference</div></header>
+<section class="hero"><div><div class="kicker">Geometry-aware, directed, complete-trajectory reasoning</div><h1>A forest is a generated object.<br>Not just a sequence of plausible endpoints.</h1><p>Explore the proposed flow head, whole-problem analogies, typed decoding, few-step maps and contextual quality adaptation. Each view distinguishes exact examples from untrained hypotheses.</p></div><div class="hero-status"><strong>Training not qualified</strong>Source/model gates remain open. New fine-tuning phases have no extra run allocation.</div></section>
+<nav class="navscroll" aria-label="Research views"><div class="tabs" role="tablist" id="tabs"></div></nav>
+<main id="view-panel" class="workspace" role="tabpanel" tabindex="-1"><section class="primary"><div class="viewheading"><div class="kicker" id="eyebrow"></div><h2 id="view-title"></h2><p class="lead" id="takeaway"></p></div><div id="controls" class="controls"></div><div class="diagram-wrap"><div id="diagram" class="svg-scroll" tabindex="0" aria-label="Interactive diagram. Scroll horizontally on narrow screens."></div><div class="pan-hint">Swipe or use the horizontal scrollbar to inspect the full figure. The explanation stays below.</div></div><div id="equation" class="equation"></div><p id="caveat" class="caveat"></p><div id="secondary" class="secondary svg-scroll" hidden></div><div id="extra"></div><div class="actionbar"><button id="export-svg">Download this SVG</button><button id="export-state">Download view state</button><button id="reset">Reset view</button></div><div id="announce" aria-live="polite" role="status"></div></section><aside class="aside" id="inspector" aria-label="Interpretation and limits"></aside></main>
+<details class="sources"><summary>Primary sources, source-code pins and evidence boundaries</summary><div class="source-grid"><a href="https://arxiv.org/abs/2210.02747v2" target="_blank" rel="noopener noreferrer">Flow Matching ↗</a><a href="https://arxiv.org/abs/2301.12594v2" target="_blank" rel="noopener noreferrer">Continuous GFlowNets ↗</a><a href="https://arxiv.org/abs/2505.13447" target="_blank" rel="noopener noreferrer">MeanFlow ↗</a><a href="https://arxiv.org/abs/2510.24474" target="_blank" rel="noopener noreferrer">Decoupled MeanFlow ↗</a><a href="https://research.nvidia.com/labs/toronto-ai/AlignYourFlow/" target="_blank" rel="noopener noreferrer">Align Your Flow ↗</a><a href="https://arxiv.org/abs/2505.05470v3" target="_blank" rel="noopener noreferrer">Flow-GRPO ↗</a><a href="https://arxiv.org/abs/2509.16117" target="_blank" rel="noopener noreferrer">DiffusionNFT ↗</a><a href="https://arxiv.org/abs/2402.09353v6" target="_blank" rel="noopener noreferrer">DoRA ↗</a><a href="https://arxiv.org/abs/2305.14314" target="_blank" rel="noopener noreferrer">QLoRA ↗</a><a href="https://huggingface.co/docs/peft/v0.21.0/en/package_reference/lora" target="_blank" rel="noopener noreferrer">PEFT 0.21.0 ↗</a><a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev" target="_blank" rel="noopener noreferrer">Jev: typed output interface ↗</a><a href="https://proceedings.mlr.press/v119/moor20a.html" target="_blank" rel="noopener noreferrer">Topological Autoencoders ↗</a><a href="https://arxiv.org/abs/2409.06744" target="_blank" rel="noopener noreferrer">ProteinBench ↗</a><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13147959/" target="_blank" rel="noopener noreferrer">Refolding-pipeline limitations ↗</a></div><p class="provenance">Directed topology: Marco Grandis, <i>Directed Algebraic Topology: Models of Non-Reversible Worlds</i> (2009), user-provided book. Selected definitions and diagrams, not an exhaustive proof review. Decoupled MeanFlow code inspected at a6db0f6135e18f4a5dad6f38df3947ed61960742; PEFT 0.21.0 DoRA implementation at 9dc6fa2d2093853dec3889b790d4f251efe7fcac. Neither was installed or executed. Additional newer methods were screened in the planning source manifest, not declared native winners.</p></details>
+<p class="provenance">Evidence snapshot: 2026-11-11T12:08:44Z, authorized Iska checkout. Implementation baseline 98c75212cfd708a9b3a07cb7f0f1e19df8a3c6aa. The diagrams are specification / reference fixtures, not recorded Mora-3 training results. Source exposure audits are separate from learning evidence. This companion is part of the versioned project site; its dated scientific snapshot is not live training telemetry.</p>
+<footer class="foot"><span>Offline by construction · no analytics · no remote assets · no model execution</span><span>Same renderer → interactive views + paper SVG figures</span></footer></div><noscript>This explorer needs JavaScript for its mathematical controls. Matching static SVG figures and the full methods plan accompany this file.</noscript>
+<script>/* Mora-3 FRF-00: deterministic mathematical illustrations, not a trained model.
+ * Original local reference code. No network, optimizer, model weights or training.
+ * All plotted quantities are computed by the same exported functions tested in Node.
+ */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.MoraMath = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  const finite = x => typeof x === 'number' && Number.isFinite(x);
+  const requireValue = (ok,msg) => { if (!ok) throw new Error(msg); };
+  const CONTROLS = Object.freeze({
+    Structure: Object.freeze(['FOREST_BEGIN','FOREST_END','TREE_BEGIN','TREE_END','NODE_BEGIN','NODE_END','EDGE_BEGIN','EDGE_END'].map(x=>`<MORA_${x}>`)),
+    Actions: Object.freeze(['PARENT','BRANCH','JOIN','SUBGOAL','PROPOSE','VERIFY','REVISE','FINISH'].map(x=>`<MORA_${x}>`)),
+    Evidence: Object.freeze(['CONDITION','DESIRED','PREDICTED','SOURCE_OBSERVED','SOURCE_COMPUTED','SIMULATED','HYPOTHESIS','UNKNOWN'].map(x=>`<MORA_${x}>`)),
+    Relations: Object.freeze(['ANALOGY','MAPPING','RELATION','CONSTRAINT','UNIT','FRAME','MISSING','ABSTAIN'].map(x=>`<MORA_${x}>`)),
+    Decisions: Object.freeze(['SUPPORTED','UNSUPPORTED','PASS','FAIL','UNCERTAIN','CONFLICT','INFEASIBLE','BUDGET_EXHAUSTED'].map(x=>`<MORA_${x}>`))
+  });
+  const CODEBOOK=Object.freeze([
+    {id:0,name:'SOURCE_OBSERVED',type:'source_observed',z:[.20,.25]},
+    {id:1,name:'HYPOTHESIS',type:'hypothesis',z:[.95,.45]},
+    {id:2,name:'UNKNOWN',type:'unknown',z:[.10,1.35]},
+    {id:3,name:'VERIFY',type:'verify',z:[1.05,1.50]},
+    {id:4,name:'FINISH',type:'finish',z:[1.65,.70]},
+    {id:5,name:'FAIL',type:'fail',z:[1.70,1.70]}
+  ].map(x=>Object.freeze({...x,z:Object.freeze(x.z)})));
+  const TABS=Object.freeze(['architecture','forest','topology','decode','fewstep','quality','campaign']);
+  function forest() {
+    const nodes=[],edges=[];
+    for(let tree=0;tree<2;tree++){
+      const key=tree?'B':'A';
+      const coords=tree?[[.1,-.65],[.55,-.25],[.8,-1.05],[1.4,.05],[1.45,-.5],[1.55,-.8],[1.8,-1.3]]:
+        [[-1.8,.55],[-1.2,1.05],[-1.15,.1],[-.45,1.45],[-.35,.85],[-.35,.35],[-.2,-.15]];
+      for(let i=0;i<7;i++){
+        const id=key+i,depth=i===0?0:i<3?1:2,seed=i+tree*7;
+        nodes.push({id,tree:key,depth,fixed:i===0,parent:i?key+Math.floor((i-1)/2):null,
+          target:coords[i].slice(),noise:i?[1.85*Math.sin(1.73*(seed+1)),1.35*Math.cos(2.11*(seed+1))]:coords[i].slice()});
+        if(i)edges.push({source:key+Math.floor((i-1)/2),target:id,kind:'computational-dependency'});
+      }
+    }
+    return {nodes,edges,kind:'fixed-topology-mathematical-fixture',learned:false};
+  }
+  function paths(f) {
+    requireValue(f && Array.isArray(f.nodes) && Array.isArray(f.edges),'finite forest required');
+    const ids=new Set(f.nodes.map(n=>n.id));requireValue(ids.size===f.nodes.length,'duplicate node');
+    const children=new Map(f.nodes.map(n=>[n.id,[]])),parents=new Map();
+    for(const e of f.edges){requireValue(ids.has(e.source)&&ids.has(e.target)&&!parents.has(e.target),'known one-parent forest required');
+      parents.set(e.target,e.source);children.get(e.source).push(e.target);}
+    const out=[],seen=new Set();
+    const visit=(id,path)=>{requireValue(!path.includes(id),'cycle');seen.add(id);const p=[...path,id];
+      if(!children.get(id).length)out.push(p);else children.get(id).forEach(c=>visit(c,p));};
+    f.nodes.filter(n=>!parents.has(n.id)).forEach(n=>visit(n.id,[]));
+    requireValue(seen.size===ids.size,'unreachable cycle');return out;
+  }
+  function interpolateForest(f,s){
+    requireValue(finite(s)&&s>=0&&s<=1,'flow time in [0,1] required');
+    return f.nodes.map(n=>({...n,z:n.fixed?n.target.slice():n.target.map((v,k)=>(1-s)*n.noise[k]+s*v)}));
+  }
+  function rewardProbabilities(energy,temperature=1,base=null){
+    requireValue(Array.isArray(energy)&&energy.length>0&&energy.every(x=>finite(x)&&x>=0),'finite nonnegative energies required');
+    requireValue(finite(temperature)&&temperature>0,'positive temperature required');
+    const q=base===null?energy.map(()=>1/energy.length):base;
+    requireValue(Array.isArray(q)&&q.length===energy.length&&q.every(x=>finite(x)&&x>0),'positive complete base measure required');
+    requireValue(Math.abs(q.reduce((a,b)=>a+b,0)-1)<1e-10,'base mass must sum to one');
+    const log=energy.map((e,i)=>Math.log(q[i])-e/temperature),max=Math.max(...log);
+    const weights=log.map(x=>Math.exp(x-max)),total=weights.reduce((a,b)=>a+b,0);return weights.map(x=>x/total);
+  }
+  function nearestToken(point,types=null){
+    requireValue(Array.isArray(point)&&point.length===2&&point.every(finite),'finite two-dimensional point required');
+    requireValue(types===null||(Array.isArray(types)&&types.every(x=>typeof x==='string')),'explicit type allowlist required');
+    const candidates=CODEBOOK.filter(t=>types===null||types.includes(t.type));if(!candidates.length)return null;
+    return candidates.map(t=>({...t,distance:Math.hypot(point[0]-t.z[0],point[1]-t.z[1])}))
+      .sort((a,b)=>a.distance-b.distance||a.id-b.id)[0];
+  }
+  function squarePersistence(radius){
+    requireValue(finite(radius)&&radius>=0,'nonnegative finite filtration radius required');
+    const points=[[0,0],[1,0],[1,1],[0,1]],edges=[];
+    for(let i=0;i<4;i++)for(let j=i+1;j<4;j++)if(Math.hypot(points[i][0]-points[j][0],points[i][1]-points[j][1])<=radius)edges.push([i,j]);
+    return {points,edges,h0:radius<1?4:1,h1:radius>=1&&radius<Math.SQRT2?1:0,
+      h1Interval:[1,Math.SQRT2],triangles:radius>=Math.SQRT2?4:0,
+      scope:'exact-unit-square-Rips-fixture-F2-H0-H1-not-general-persistence-solver'};
+  }
+  function directedDiamond(square){
+    requireValue(typeof square==='boolean','explicit supplied square flag required');
+    return {paths:[['a','b'],['c','d']],pathClasses:square?1:2,
+      mappingStatus:square?'proved-in-presentation':'refused',reverseReachable:false,biologicalCausality:false};
+  }
+  function eulerExp(steps){
+    requireValue(Number.isInteger(steps)&&steps>=1&&steps<=128,'bounded positive integer steps required');
+    let x=1;const points=[[0,x]];for(let i=0;i<steps;i++){x+=x/steps;points.push([(i+1)/steps,x]);}
+    return {points,final:x,exact:Math.E,error:Math.abs(Math.E-x),nfe:steps,learned:false};
+  }
+  function exactFlowMap(x,s,t){
+    requireValue([x,s,t].every(finite)&&s>=0&&t>=s&&t<=1,'finite forward interval required');
+    return x*Math.exp(t-s);
+  }
+  function adjudicate(values){
+    requireValue(Array.isArray(values)&&values.length>0&&values.every(x=>['pass','fail','unknown'].includes(x)),'explicit criterion dispositions required');
+    return {status:values.includes('fail')?'review-required':values.includes('unknown')?'unevaluated':'passes-specified-checks',
+      observed:values.filter(x=>x!=='unknown').length,total:values.length,biologicalValidation:false};
+  }
+  function adapterParameterCount(output,input,rank,method){
+    requireValue([output,input,rank].every(x=>Number.isInteger(x)&&x>0)&&rank<=Math.min(output,input),'positive bounded matrix/rank required');
+    requireValue(['lora','dora'].includes(method),'method required');return rank*(output+input)+(method==='dora'?output:0);
+  }
+  function parseState(hash){
+    const q=new URLSearchParams(String(hash).replace(/^#/,''));
+    const bounded=(key,fallback,min,max)=>{const v=q.get(key);const n=v===null?fallback:Number(v);return finite(n)?Math.min(max,Math.max(min,n)):fallback;};
+    return {tab:TABS.includes(q.get('tab'))?q.get('tab'):'architecture',s:bounded('s',.6,0,1),
+      steps:[1,2,4,8,16,32].includes(Number(q.get('steps')))?Number(q.get('steps')):4,
+      epsilon:bounded('epsilon',1.2,0,1.6),square:q.get('square')!=='0',
+      x:bounded('x',.32,-.1,1.9),y:bounded('y',.34,-.1,1.9),temperature:bounded('temperature',1,.2,3),
+      modality:['protein','molecule','cell','structure','image','reasoning'].includes(q.get('modality'))?q.get('modality'):'protein'};
+  }
+  function stateHash(state){
+    const q=new URLSearchParams({tab:state.tab,s:state.s,steps:state.steps,epsilon:state.epsilon,
+      square:state.square?'1':'0',x:state.x,y:state.y,temperature:state.temperature,modality:state.modality});return '#'+q;
+  }
+  return Object.freeze({CONTROLS,CODEBOOK,TABS,forest,paths,interpolateForest,rewardProbabilities,nearestToken,
+    squarePersistence,directedDiamond,eulerExp,exactFlowMap,adjudicate,adapterParameterCount,parseState,stateHash});
+});
+</script><script>/* Source-backed SVG architecture/math views. All numeric illustrations are fixtures. */
+(function(root,factory){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./flow-forest-math.js'));
+  else root.MoraViews=factory(root.MoraMath);
+})(typeof globalThis!=='undefined'?globalThis:this,function(M){
+ 'use strict';
+ const C={ink:'#193747',muted:'#526672',line:'#c5d0d2',teal:'#0b756b',blue:'#206a95',amber:'#a15b15',red:'#a03743',paper:'#ffffff',pale:'#f0f6f4',sand:'#fbf4e8',purple:'#635394'};
+ const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+ const text=(x,y,s,size=15,fill=C.ink,weight=400,anchor='start')=>`<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-weight="${weight}" text-anchor="${anchor}">${esc(s)}</text>`;
+ const line=(x1,y1,x2,y2,color=C.line,width=2,dash='',arrow=false)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''} ${arrow?'marker-end="url(#arrow)"':''}/>`;
+ const box=(x,y,w,h,title,sub,kind='planned')=>{
+   const col=kind==='existing'?C.teal:kind==='blocked'?C.amber:C.blue;
+   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="9" fill="${kind==='blocked'?C.sand:C.paper}" stroke="${col}" stroke-width="1.6" ${kind==='planned'?'stroke-dasharray="5 4"':''}/>`+
+    text(x+15,y+25,title,16,C.ink,650)+text(x+15,y+48,sub,12.5,C.muted)+`<circle cx="${x+w-17}" cy="${y+18}" r="4" fill="${col}"/>`;
+ };
+ const chip=(x,y,w,label,color=C.teal)=>`<rect x="${x}" y="${y}" width="${w}" height="25" rx="5" fill="${color}" fill-opacity=".09"/>`+text(x+9,y+17,label,12,color,600);
+ function shell(title,desc,body,height=500){const uid="figure-"+title.toLowerCase().replace(/[^a-z0-9]+/g,"-");return `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="${uid}-title ${uid}-desc" viewBox="0 0 960 ${height}" width="960" height="${height}"><title id="${uid}-title">${esc(title)}</title><desc id="${uid}-desc">${esc(desc)}</desc><defs><marker id="arrow" markerWidth="9" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7" fill="none" stroke="${C.muted}" stroke-width="1.3"/></marker></defs><rect width="960" height="${height}" fill="white"/><g font-family="Arial, Helvetica, sans-serif">${text(25,31,title,20,C.ink,650)}${body}</g></svg>`;}
+ // SVG coordinates are presentation values, not analysis results. Nine decimal
+ // places make exports reproducible across JS runtimes whose Math.exp may differ
+ // at the last binary bit; error is at most 5e-10 viewBox units. Numeric science
+ // outputs remain untouched. Limit normalization to geometry attributes.
+ function canonicalSvgCoordinates(svg){
+   return svg.replace(/\b(x|y|x1|y1|x2|y2|cx|cy|r|rx|ry|width|height|points|d)="([^"]*)"/g,
+     (match,name,value)=>name+'="'+value.replace(/[-+]?(?:\d*\.)?\d+(?:[eE][-+]?\d+)?/g,
+       token=>String(Number(Number(token).toFixed(9))))+'"');
+ }
+ const META={
+  architecture:{name:'Architecture',eyebrow:'01 · SYSTEM DESIGN',title:'Generate a forest. Preserve its meaning.',
+   takeaway:'A topology policy, continuous flow, retrieval, and final decoder have distinct responsibilities. The new system must preserve the existing shared owner.',
+   equation:'F = (T, Z, A)    ·    π*(F | c) ∝ R(F, c)',
+   caveat:'Dashed boxes are proposed components, not implemented neural capabilities. Existing component tests do not establish full-model readiness.',
+   detail:['Topology is discrete. A fixed-dimensional ODE does not choose arbitrary branches or length.','Condition-only retrieval proposes complete exemplars; directed and domain checks may abstain.','GFlowNet transition accounting and flow transport are separate mathematical objects.','All new axes, parameters, token rows and objectives must be frozen before the applicable μP campaign.'],
+   source:'Plan §§2–5; Flow Matching; continuous GFN theory.'},
+  forest:{name:'Forest flow',eyebrow:'02 · TWO TIMES, ONE OBJECT',title:'Transport the entire latent forest—not one token at a time.',
+   takeaway:'Move solver time while all eight root-to-terminal paths remain present. Two conditioning roots are clamped; twelve non-root states are transported.',
+   equation:'Zₛ = (1 − s) ε + s Z₁    ·    d = reasoning depth, s = solver time',
+   caveat:'This is target-aware analytic interpolation of a fixed 2D fixture. It is not a learned sampler, a molecular geometry, or a speed benchmark.',
+   detail:['Two trees share no root with each other; shared prefixes within each tree are stored once.','The reference path exposes known targets for teaching. A deployed learned velocity field cannot read clean target forests.','The probability bars normalize four finite forest rewards with an explicit nonuniform base mass.','A proper forest policy must also account for topology and construction-history multiplicity.'],
+   source:'Plan §§2–4; existing gaussian_path reference; exact fixture calculations.'},
+  topology:{name:'Analogy & topology',eyebrow:'03 · ORDER IS INFORMATION',title:'Equal endpoints do not make two arguments equivalent.',
+   takeaway:'Toggle the target relation: a declared square identifies two directed paths; without it, the same mapping fails. Metric persistence is a separate descriptor.',
+   equation:'F(b) ∘ F(a) = F(d) ∘ F(c)    only when a defining relation is supported',
+   caveat:'The square is supplied evidence in a finite presentation. Neither it nor equal persistence barcodes establishes semantic or biological causal equivalence.',
+   detail:['Reverse traversal is not permitted merely because an underlying undirected route exists.','The left example checks one relation; production analogy checks every required intermediate step and complete branch.','The right example is exact F₂ Rips H₀/H₁ of a unit square. At √2, diagonals and triangles kill its H₁ class.','Physical orientation, chirality and computational direction are distinct; distance-only topology cannot distinguish mirror images.'],
+   source:'Grandis, printed pp.2–3 and §§1.4,2.1,3.2; Topological Autoencoders.'},
+  decode:{name:'Decode & tokens',eyebrow:'04 · CONTINUOUS TO DISCRETE',title:'Nearest is an initializer. Valid is a stronger requirement.',
+   takeaway:'Move the proposed latent token. Unrestricted nearest projection may select an inadmissible evidence label; the typed hypothesis grammar restricts the final choice.',
+   equation:'token = argminₖ∈allowed(role) ‖z − eₖ‖²    ·    mass(token) = ∫cell(token) p(z) dz',
+   caveat:'The six displayed vectors are a schematic codebook, not trained embeddings. A generated SOURCE_OBSERVED token does not confer source authority.',
+   detail:['The current payload pooling is lossy. A learned token-slot decoder and aligned codebook are additional requirements.','After projection, discrete probability mass is integrated over decoding regions; latent reward proportionality is not automatically retained.','Forty proposed controls are reserved outside ConvexTok’s learned byte-token budget. IDs are not allocated here.','Appending controls changes metadata offsets and checkpoint/token-axis bindings. No current vocabulary is modified.'],
+   source:'Plan §6; existing PayloadEncoder/ConvexTok contracts; Jev typed-output interface, not a claimed Jev token list.'},
+  fewstep:{name:'Few-step maps',eyebrow:'05 · REDUCE SOLVER WORK, NOT REASONING',title:'One solver step can still represent a deep forest.',
+   takeaway:'The analytic ODE below shows why coarse Euler updates lose accuracy and why an interval flow map can skip intermediate solver points. Learned maps need real validation.',
+   equation:'M(x,s,t) ≈ solution at t    ·    M(M(x,s,t),t,u) ≈ M(x,s,u)',
+   caveat:'Exact x(s)=exp(s) is an oracle for this scalar fixture—not a trained one-step Mora-3 result. No runtime or biological-quality improvement is measured.',
+   detail:['The selected investigation is DMF-informed conversion of a trained native flow, not changing Euler steps and calling it distillation.','Initial native teacher-pair regression avoids presuming JVP support in first-order tropical kernels.','Evaluate 1,2,4 solver steps with the same full forest and held-out problems; record all guidance, retrieval and decoding work.','An additional distillation training run exceeds the current 24+2 allocation and remains budget-blocked.'],
+   source:'Plan §7; MeanFlow; Decoupled MeanFlow; Align Your Flow; MFD screened alternative.'},
+  quality:{name:'Quality & adapters',eyebrow:'06 · CONTEXTUAL PREFERENCE, NOT BLIND SUPPRESSION',title:'A steering direction is not globally good or bad.',
+   takeaway:'Compare matched contexts, retain uncertainty and exclude unsupported labels. DoRA is a qualification candidate; quantization is a measured trade-off, not a synonym for quality.',
+   equation:'z′ = z + α dₖ    ·    same context + independent evidence → eligible preference pair',
+   caveat:'These are planned evaluation and adapter contracts. No useful GraphCG factors, protein stability, causal cell response, or preference-training benefit is established.',
+   detail:['Use signed amplitudes and an unedited control. Do not delete a direction just because one context produced a poor outcome.','Unknown, neutral, conflicting and infeasible are distinct states. A missing assay is not a negative training label.','Quality-first candidate: BF16 DoRA. Quantized candidate: QDoRA. Reference comparison: QLoRA. No universal winner is asserted.','The current environment lacks PEFT/bitsandbytes. No installation or new fine-tuning run is authorized by this figure.'],
+   source:'Plan §8; GraphCG; DoRA/QLoRA; PEFT0.21.0; protein-quality and refolding limitations.'},
+  campaign:{name:'Campaign & evidence',eyebrow:'07 · REAL RUNS, FIXED BOUNDARIES',title:'Twenty-four proxies. Two targets. No hidden extra runs.',
+   takeaway:'The original campaign cap remains 26. Distillation, preference adaptation and a trained baseline comparison cannot be hidden inside the completed campaign.',
+   equation:'3 learning rates × 2 readout scales × 2 attention scales × 2 seeds = 24',
+   caveat:'This is an evidence snapshot, not live telemetry. Real campaign results remain unavailable; no training receipt is fabricated from a test or schematic.',
+   detail:['Live inspection: 11 November 2026,12:08 UTC; full_dataset_ready=false and both owner attestations absent.','Actual source-exposure/group qualifications have progressed; they do not establish optimizer training or a full model release.','New head/vocabulary/family settings must be frozen before applicable proxies, and cannot be inserted into an already running campaign.','Post-training stages are specified but cannot launch without a revised explicit run allocation and all native qualifications.'],
+   source:'Current campaign26 directive; source/model ledgers; commit98c7521 snapshot.'}
+ };
+ const QUALITY={
+  protein:[['Sequence ↔ structure','Exact residues, requested backbone and independent compatibility'],['Stability & assembly','Relevant assay or calibrated evidence; preserve legitimate disorder'],['Function & context','Task function, oligomerization and environment are distinct from confidence']],
+  molecule:[['Identity & chemistry','Valence, stereochemistry, protonation and atom mapping'],['Geometry & assay','Strain, pose context, concentration, units and uncertainty'],['Developability','Supported solubility/ADMET evidence, not a valid-string proxy']],
+  cell:[['Cell-state context','Donor, type, mixture, baseline, dose and sampling time'],['Communication','Supported intercellular effects; co-expression is not causation'],['Confounding & coverage','Composition shifts, batch/doublets, unknown targets and rare types']],
+  structure:[['Frame & identity','Exact atom/residue maps, transforms and source roles'],['Physical constraints','Conservation, clashes and separately defined pose/template criteria'],['Mechanistic evidence','A plausible shape is not evidence of a transition state']],
+  image:[['Channel & scale','Native channel identity, physical or pixel units and registration'],['Objects & masks','Instance validity, compartments, morphology and uncertainty'],['Evidence class','Generated image plus its mask is internal consistency, not experiment']],
+  reasoning:[['Prerequisites','No future, sibling or hidden-target facts'],['Relational transfer','Complete directed paths, grounded mappings and uncovered branches'],['Truth & uncertainty','Citations, units, abstention and independent outcome evidence']]
+ };
+ function architecture(){
+   let b=text(25,59,'Existing source components are not a fully qualified trained system.',13,C.muted);
+   b+=box(25,91,250,73,'Native multimodal context','TokenGT · ConvexTok · typed masks','existing');
+   b+=box(355,91,250,73,'Analogy retrieval','Train-only problems + whole forests');
+   b+=box(685,91,250,73,'Topology / action policy','Discrete branches · lengths · stops');
+   b+=line(275,127,345,127,C.muted,2,'',true)+line(605,127,675,127,C.muted,2,'',true);
+   b+=box(355,222,250,80,'Conditional forest flow','Continuous node / token-slot transport');
+   b+=line(480,164,480,212,C.muted,2,'',true)+line(810,164,810,261,C.muted)+line(810,261,615,261,C.muted,2,'',true);
+   b+=box(25,222,250,80,'Native GFlowNet teacher','Qualified stochastic mass accounting');
+   b+=line(275,260,345,260,C.teal,2,'',true);
+   b+=text(284,246,'distill',11,C.teal);
+   b+=box(355,361,250,75,'Final typed decoder','Projection + constrained refinement');
+   b+=line(480,302,480,351,C.muted,2,'',true);
+   b+=box(685,361,250,75,'Quality / uncertainty','Independent evidence · full coverage');
+   b+=line(605,399,675,399,C.muted,2,'',true);
+   b+=box(25,361,250,75,'Flow-map / DoRA tuning','Additional runs need allocation','blocked');
+   b+=`<path d="M275,399 H325 V280 H345" fill="none" stroke="${C.amber}" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>`;
+   b+=`<path d="M935,399 H947 V193 H150 V212" fill="none" stroke="${C.muted}" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#arrow)"/>`+text(25,185,'Independently qualified reward feedback',11,C.muted);
+   b+=text(25,478,'Solid border: existing foundation',12,C.teal)+text(330,478,'Dashed: proposed extension',12,C.blue)+text(635,478,'Amber: post-training budget blocked',12,C.amber);
+   return shell('A hybrid, complete-forest architecture','Components and mathematical boundaries of the proposed Mora-3 flow-forest extension.',b);
+ }
+ function forest(s){
+   const f=M.forest(),z=M.interpolateForest(f,s.s),look=new Map(f.nodes.map(n=>[n.id,n]));let b='';
+   b+=text(25,65,'Fixed reasoning topology',16,C.ink,600)+text(492,65,`Continuous latent fixture · s = ${s.s.toFixed(2)}`,16,C.ink,600);
+   b+=line(463,75,463,390,C.line,1);
+   const treePos=n=>{const i=Number(n.id.slice(1));const xx=[210,120,300,70,165,260,355][i];return [xx,105+n.depth*60+(n.tree==='B'?171:0)];};
+   for(const e of f.edges){const [x,y]=treePos(look.get(e.source)),[a,c]=treePos(look.get(e.target));b+=line(x,y+11,a,c-13,C.line,2,'',true);}
+   for(const n of f.nodes){const[x,y]=treePos(n);b+=`<circle cx="${x}" cy="${y}" r="16" fill="${n.fixed?C.ink:n.tree==='A'?C.teal:C.blue}"/>`+text(x,y+4,n.id,11,'#fff',600,'middle');}
+   b+=text(25,430,'2 trees · 14 states · 12 edges · 8 complete paths',13,C.muted);
+   const xp=v=>701+v*99,yp=v=>238-v*83;
+   b+=line(491,381,936,381,C.line,1)+line(501,94,501,383,C.line,1);
+   b+=text(911,400,'z₁',14,C.muted)+text(483,90,'z₂',14,C.muted);
+   for(const n of f.nodes){b+=`<circle cx="${xp(n.target[0])}" cy="${yp(n.target[1])}" r="5" fill="none" stroke="${C.line}"/>`;}
+   const zl=new Map(z.map(n=>[n.id,n]));
+   for(const e of f.edges){const a=zl.get(e.source),c=zl.get(e.target);b+=line(xp(a.z[0]),yp(a.z[1]),xp(c.z[0]),yp(c.z[1]),a.tree==='A'?C.teal:C.blue,1.3,'3 3',false);}
+   for(const n of z){b+=`<circle cx="${xp(n.z[0])}" cy="${yp(n.z[1])}" r="${n.fixed?8:6}" fill="${n.fixed?C.ink:n.tree==='A'?C.teal:C.blue}"/>`+text(xp(n.z[0])+9,yp(n.z[1])-6,n.id,11,C.muted);}
+   b+=text(492,430,'Filled: current state · rings: target · dark: clamped root',12,C.muted);
+   b+=chip(25,460,322,'Analytic interpolation; clean target known',C.amber)+chip(492,460,415,'No learned field, optimizer or biological coordinates',C.amber);
+   return shell('Solver time moves all free states; reasoning edges remain','Two complete trees retain all eight paths as solver time moves between fixed noise and a target fixture.',b);
+ }
+ function topology(s){
+   let b=text(25,65,'Directed target presentation',16,C.ink,600)+text(535,65,'Separate metric Rips filtration',16,C.ink,600);
+   const P=[[210,110],[90,230],[330,230],[210,350]];
+   if(s.square)b+=`<polygon points="210,110 90,230 210,350 330,230" fill="${C.teal}" fill-opacity=".1"/>`;
+   for(const [i,j,l] of [[0,1,'a'],[1,3,'b'],[0,2,'c'],[2,3,'d']]){const dx=P[j][0]-P[i][0],dy=P[j][1]-P[i][1],len=Math.hypot(dx,dy);b+=line(P[i][0],P[i][1],P[j][0]-14*dx/len,P[j][1]-14*dy/len,C.teal,2,'',true)+text((P[i][0]+P[j][0])/2+(i<2?-15:8),(P[i][1]+P[j][1])/2,l,17,C.teal,600);}
+   for(let i=0;i<4;i++)b+=`<circle cx="${P[i][0]}" cy="${P[i][1]}" r="10" fill="${C.ink}"/>`+text(P[i][0]+15,P[i][1]-10,i===0?'start':i===3?'finish':`state ${i}`,12,C.muted);
+   b+=text(210,224,s.square?'ab ∼ cd':'ab ≁ cd',22,s.square?C.teal:C.red,600,'middle')+text(210,252,s.square?'supplied 2-cell':'no supplied 2-cell',13,C.muted,400,'middle');
+   const d=M.directedDiamond(s.square);
+   b+=chip(32,399,391,`${d.pathClasses} path class${d.pathClasses===1?'':'es'} · mapping ${s.square?'preserved':'refused'}`,s.square?C.teal:C.red);
+   b+=text(32,450,'Reverse finish → start is not reachable.',13,C.muted);
+   const ph=M.squarePersistence(s.epsilon),Q=[[615,110],[825,110],[825,320],[615,320]];
+   if(ph.triangles)b+=`<rect x="615" y="110" width="210" height="210" fill="${C.blue}" fill-opacity=".08"/>`;
+   for(const [i,j]of ph.edges)b+=line(...Q[i],...Q[j],C.blue,2);
+   for(let i=0;i<4;i++)b+=`<circle cx="${Q[i][0]}" cy="${Q[i][1]}" r="8" fill="${C.blue}"/>`;
+   b+=text(720,217,`H₀=${ph.h0}    H₁=${ph.h1}`,20,C.ink,650,'middle');
+   b+=text(535,350,`ε = ${s.epsilon.toFixed(2)} · complete H₁ interval [1, √2)`,13,C.muted);
+   const barx=v=>550+v*222;
+   b+=line(barx(0),385,barx(1.6),385,C.line,2)+line(barx(1),385,barx(Math.SQRT2),385,C.blue,7);
+   b+=`<circle cx="${barx(1)}" cy="385" r="5" fill="${C.blue}"/><circle cx="${barx(Math.SQRT2)}" cy="385" r="5" fill="white" stroke="${C.blue}" stroke-width="2"/>`;
+   b+=line(barx(s.epsilon),365,barx(s.epsilon),408,C.amber,2)+text(barx(1),426,'1',12,C.muted,400,'middle')+text(barx(Math.SQRT2),426,'√2',12,C.muted,400,'middle');
+   b+=text(535,463,'Barcode similarity cannot certify a directed analogy.',12,C.amber);
+   return shell('Directed composition and metric persistence answer different questions','Two directed paths remain different unless a defining square is supplied. A separate unit-square metric example has one H1 interval from one to square root two.',b);
+ }
+ function decode(s){
+   let b=text(25,65,'Schematic token embedding codebook',16,C.ink,600);
+   const px=x=>65+x*220,py=y=>398-y*150;
+   b+=line(55,405,510,405,C.line,1)+line(55,85,55,405,C.line,1);
+   const allowed=['hypothesis','unknown'],raw=M.nearestToken([s.x,s.y],null),typed=M.nearestToken([s.x,s.y],allowed);
+   b+=line(px(s.x),py(s.y),px(raw.z[0]),py(raw.z[1]),C.amber,2,'4 3');
+   b+=line(px(s.x),py(s.y),px(typed.z[0]),py(typed.z[1]),C.teal,2);
+   for(const t of M.CODEBOOK){const ok=allowed.includes(t.type);b+=`<circle cx="${px(t.z[0])}" cy="${py(t.z[1])}" r="${ok?8:6}" fill="${ok?C.teal:'#a7b2b7'}"/>`+text(px(t.z[0])+9,py(t.z[1])-10,t.name,11,ok?C.teal:C.muted,ok?650:400);}
+   b+=`<path d="M ${px(s.x)} ${py(s.y)-10} l 10 10 l -10 10 l -10 -10 Z" fill="${C.ink}"/>`+text(px(s.x)+14,py(s.y)+15,'proposed z',11,C.ink,650);
+   b+=text(25,451,'Green candidates satisfy the declared hypothesis-role grammar.',12,C.muted);
+   b+=box(560,99,365,84,'Unrestricted nearest',raw.name+' · distance '+raw.distance.toFixed(3),'planned');
+   b+=line(740,183,740,225,C.muted,2,'',true);
+   b+=box(560,235,365,84,'Typed refinement',typed.name+' · distance '+typed.distance.toFixed(3),'existing');
+   b+=text(565,360,'40 proposed controls. No token IDs allocated.',14,C.ink,650);
+   b+=text(565,389,'Byte coverage remains; checkpoints are versioned.',13,C.muted);
+   b+=text(565,427,'Token labels are not provenance evidence.',13,C.amber,650);
+   b+=text(565,452,'Discrete output mass changes after projection.',13,C.amber);
+   return shell('Final decoding must preserve grammar, roles and evidence boundaries','A proposed latent point can have a nearest token that is disallowed by the current grammar. Constrained refinement chooses among valid token types.',b);
+ }
+ function fewstep(s){
+   let b=text(25,65,'Exact analytic fixture: dx/ds = x, x(0)=1',16,C.ink,600);
+   const px=t=>70+550*t,py=x=>391-(x-1)*158; b+=line(80,89,110,89,C.ink,2.5)+text(118,94,'Exact exp(s)',12,C.ink)+line(280,89,310,89,C.teal,2.5)+text(318,94,'Euler approximation',12,C.teal);
+   b+=line(70,391,640,391,C.line,1)+line(70,90,70,400,C.line,1);
+   for(const v of [1,1.5,2,2.5])b+=line(70,py(v),630,py(v),'#e7ecee',1)+text(54,py(v)+4,v.toFixed(1),12,C.muted,400,'end');
+   const exact=Array.from({length:101},(_,i)=>[i/100,Math.exp(i/100)]),r=M.eulerExp(s.steps);
+   b+=`<polyline points="${exact.map(p=>px(p[0])+','+py(p[1])).join(' ')}" fill="none" stroke="${C.ink}" stroke-width="2.5"/>`;
+   b+=`<polyline points="${r.points.map(p=>px(p[0])+','+py(p[1])).join(' ')}" fill="none" stroke="${C.teal}" stroke-width="2.5"/>`;
+   for(const [t,x]of r.points)b+=`<circle cx="${px(t)}" cy="${py(x)}" r="4" fill="${C.teal}"/>`;
+   b+=text(70,420,'0',12,C.muted)+text(610,420,'1',12,C.muted)+text(310,447,'solver time s',14,C.muted);
+   b+=text(686,114,`${s.steps}`,46,C.teal,650)+text(685,143,'Euler field evaluations',13,C.muted);
+   b+=text(685,198,r.final.toFixed(5),25,C.ink,650)+text(685,225,'Euler x(1)',13,C.muted);
+   b+=text(685,273,r.error.toFixed(5),25,C.amber,650)+text(685,301,'absolute endpoint error',13,C.muted);
+   b+=text(685,350,'Exact flow map',15,C.ink,650)+text(685,377,'M(x,s,t)=e^(t−s) x',15,C.ink);
+   b+=text(685,410,'Analytic oracle; not a trained head.',12,C.amber);
+   b+=chip(25,466,430,'1–4-step neural quality requires a trained student',C.amber);
+   return shell('A flow map is not a coarse Euler step','The exact exponential solution is compared with Euler integration at the selected number of steps. Endpoint errors are mathematical fixture errors, not learned model measurements.',b);
+ }
+ function quality(s){
+   let b=text(25,65,'Steering is conditional; labels require evidence',16,C.ink,600);
+   b+=line(40,245,390,245,C.line,1)+line(210,100,210,375,C.line,1);
+   b+=`<circle cx="210" cy="245" r="8" fill="${C.ink}"/>`+text(222,269,'unedited z',12,C.muted);
+   b+=line(210,245,345,140,C.teal,3,'',true)+line(210,245,75,350,C.purple,3,'',true);
+   b+=text(310,118,'+ αdₖ',18,C.teal,650)+text(60,378,'− αdₖ',18,C.purple,650);
+   b+=text(45,406,'Same direction + different context',15,C.ink,650)+text(45,432,'can yield a different quality disposition.',13,C.muted);
+   const items=QUALITY[s.modality];b+=text(460,65,`Applicable evidence: ${s.modality}`,16,C.ink,600);
+   items.forEach(([title,desc],i)=>{
+     const y=92+i*77;b+=`<rect x="460" y="${y}" width="470" height="66" rx="7" fill="${i%2?C.pale:'#f6f7f8'}"/>`+text(474,y+23,title,15,C.ink,650);
+     // Short domains are wrapped in two accessible, legible lines if necessary.
+     const words=desc.split(' ');let a='',parts=[];for(const word of words){if((a+' '+word).trim().length>58){parts.push(a);a=word;}else a=(a+' '+word).trim();}parts.push(a);
+     parts.slice(0,2).forEach((t,j)=>b+=text(474,y+43+j*15,t,11.6,C.muted));
+   });
+   b+=chip(460,338,142,'DoRA: candidate',C.teal)+chip(612,338,153,'QDoRA: candidate',C.blue)+chip(775,338,153,'QLoRA: baseline',C.muted);
+   b+=text(460,390,'64 × 64 fixture, rank 8:',13,C.muted)+text(460,418,`LoRA ${M.adapterParameterCount(64,64,8,'lora')} · DoRA ${M.adapterParameterCount(64,64,8,'dora')} trainable parameters`,15,C.ink,650);
+   b+=text(460,444,'Row-norm convention. Not the native model parameter count.',11.8,C.muted);
+   b+=chip(25,467,905,'Unknown ≠ failed. Predicted confidence ≠ experimental stability. Co-expression ≠ causation.',C.amber);
+   return shell('Contextual quality evidence precedes preference training','Matched-context GraphCG exploration is assessed through modality-appropriate evidence. DoRA and QDoRA are candidates, QLoRA is the reference baseline, and no outcome is guaranteed.',b);
+ }
+ function campaign(){
+   let b=text(25,65,'Predeclared native proxy grid',16,C.ink,600)+text(651,65,'Downstream target / later stages',16,C.ink,600);
+   const lrs=['1e−4','3e−4','1e−3'];
+   for(let lr=0;lr<3;lr++){
+     b+=text(25,112+lr*95,`LR ${lrs[lr]}`,14,C.ink,650);
+     for(let j=0;j<8;j++){
+       const x=130+j*59,y=87+lr*95;const id=lr*8+j+1;
+       b+=`<rect x="${x}" y="${y}" width="48" height="50" rx="6" fill="#f3f5f6" stroke="${C.line}"/>`+text(x+24,y+24,String(id).padStart(2,'0'),14,C.ink,650,'middle')+text(x+24,y+41,'—',11,C.muted,400,'middle');
+     }
+   }
+   b+=text(130,379,'Each row: 2 readout × 2 attention × 2 seeds',12.5,C.muted);
+   b+=text(25,426,'— = no verified actual outcome in this snapshot',13,C.muted);
+   b+=box(650,88,280,71,'Target run 25','Selected HPs · native μP retained','blocked');
+   b+=box(650,183,280,71,'Target run 26','Independent predeclared seed','blocked');
+   b+=line(790,159,790,174,C.muted,1.6,'',true);
+   b+=box(650,298,280,99,'Later optimization stages','Distillation · preference · baseline','blocked');
+   b+=text(665,374,'No allocated extra training slots',12,C.amber,650);
+   b+=chip(25,463,905,'Snapshot: full_dataset_ready=false · owner attestations absent · no readiness override',C.amber);
+   return shell('The 26-run cap is not silently expanded','Twenty-four proxy slots and two target slots remain the full authorized training campaign. Additional fine-tuning stages are planned but budget-blocked.',b);
+ }
+ function renderSvg(tab,state){const s={...M.parseState(''),...state};const f={architecture,forest,topology,decode,fewstep,quality,campaign}[tab];if(!f)throw new Error('unknown view');return canonicalSvgCoordinates(f(s));}
+ function rewardSvg(temperature){
+   const e=[.2,.8,1.4,2.1],q=[.4,.3,.2,.1],p=M.rewardProbabilities(e,temperature,q);let b=text(25,60,'Finite illustration: Rᵢ = q₀ᵢ exp(−Eᵢ / temperature)',14,C.muted);
+   for(let i=0;i<4;i++){const y=94+i*58;b+=text(25,y+18,`Forest ${i+1}`,14,C.ink,600)+`<rect x="130" y="${y}" width="${p[i]*650}" height="30" rx="3" fill="${C.teal}"/>`+text(140+p[i]*650,y+21,(100*p[i]).toFixed(1)+'%',13,C.ink,600)+text(800,y+21,`E=${e[i]} · q₀=${q[i]}`,12,C.muted);}
+   b+=text(25,354,'Normalized exactly on four fixture objects. This is not a trained GFlowNet distribution.',13,C.amber);
+   return canonicalSvgCoordinates(shell('Reward-proportional mass is a distribution, not a top-score choice','A four-object finite example uses an explicit base mass and nonnegative energies. Probabilities sum to one.',b,375));
+ }
+ return Object.freeze({META,QUALITY,C,renderSvg,rewardSvg});
+});
+</script>
+<script>
+'use strict';
+(()=>{
+const M=window.MoraMath,V=window.MoraViews;
+let state=M.parseState(location.hash),criteria=['unknown','unknown','unknown'];
+const $=id=>document.getElementById(id),esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function range(id,label,key,min,max,step){return `<div class="control"><label for="${id}">${label}</label><input id="${id}" data-key="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${state[key]}"><output for="${id}" data-output="${key}">${Number(state[key]).toFixed(2)}</output></div>`;}
+function controls(){
+ switch(state.tab){
+ case 'forest':return range('flow-time','Solver time s','s',0,1,.01)+range('temperature','Reward temperature','temperature',.2,3,.1);
+ case 'topology':return `<div class="control"><input id="square" type="checkbox" ${state.square?'checked':''}><label for="square">Supply target relation square</label></div>`+range('filtration','Rips radius ε','epsilon',0,1.6,.01);
+ case 'decode':return range('latent-x','Proposed z₁','x',-.1,1.9,.01)+range('latent-y','Proposed z₂','y',-.1,1.9,.01);
+ case 'fewstep':return `<div class="control"><label for="steps">Euler evaluations</label><select id="steps">${[1,2,4,8,16,32].map(n=>`<option value="${n}" ${n===state.steps?'selected':''}>${n} ${n===1?'step':'steps'}</option>`).join('')}</select></div><span class="pill">Exact flow map shown as an analytic oracle</span>`;
+ case 'quality':return `<div class="control"><label for="modality">Output modality</label><select id="modality">${Object.keys(V.QUALITY).map(n=>`<option ${n===state.modality?'selected':''} value="${n}">${n[0].toUpperCase()+n.slice(1)}</option>`).join('')}</select></div><span class="pill">No universal “bad direction” label</span>`;
+ case 'campaign':return '<span class="pill">24 proxies + 2 targets</span><span style="font-size:12px;color:var(--muted)">Snapshot, not live telemetry. No trial outcomes invented.</span>';
+ default:return '<span class="pill">Existing foundation</span><span class="pill" style="color:var(--blue)">Proposed extension</span><span class="pill" style="color:var(--amber)">Budget-blocked later stage</span>';
+ }
+}
+function extra(){
+ if(state.tab==='decode')return `<section class="token-panel"><h3>Finite control registry · 40 proposed symbols</h3><p>Names only, not allocated token IDs. These controls do not replace arbitrary biological identifiers or byte coverage.</p><label for="token-search" class="kicker">Filter the registry</label><br><input id="token-search" type="search" placeholder="Search tokens, e.g. HYPOTHESIS" autocomplete="off"><div class="token-groups">${Object.entries(M.CONTROLS).map(([k,v])=>`<div class="token-group"><strong>${k}</strong>${v.map(t=>`<code class="token-item">${esc(t)}</code>`).join('')}</div>`).join('')}</div></section>`;
+ if(state.tab==='quality')return `<section class="quality-panel"><h3>Evidence disposition exercise</h3><p>Interactive labeling logic only. No actual assay or protein is being scored; “pass” means the chosen criterion, not biological validation.</p>${V.QUALITY[state.modality].map(([title],i)=>`<div class="quality-row"><label for="criterion-${i}">${title}</label><select id="criterion-${i}" data-criterion="${i}">${['unknown','pass','fail'].map(v=>`<option value="${v}" ${criteria[i]===v?'selected':''}>${v==='unknown'?'Unknown / unevaluated':v==='pass'?'Criterion passed':'Criterion failed'}</option>`).join('')}</select></div>`).join('')}<div id="quality-result" class="result"></div></section>`;
+ return '';
+}
+function qualityResult(){if(!$('quality-result'))return;const r=M.adjudicate(criteria);$('quality-result').innerHTML=`Disposition: <strong>${r.status}</strong> · ${r.observed}/${r.total} criteria specified.<br>Biological validation: not established.`;}
+function render(rebuild=true){
+ const meta=V.META[state.tab];$('eyebrow').textContent=meta.eyebrow;$('view-title').textContent=meta.title;$('takeaway').textContent=meta.takeaway;
+ if(rebuild){$('controls').innerHTML=controls();$('extra').innerHTML=extra();}
+ $('diagram').innerHTML=V.renderSvg(state.tab,state);$('equation').textContent=meta.equation;$('caveat').textContent=meta.caveat;
+ $('secondary').hidden=state.tab!=='forest';$('secondary').innerHTML=state.tab==='forest'?V.rewardSvg(state.temperature):'';
+ $('inspector').innerHTML=`<h3>Interpretation</h3><span class="tag">${state.tab==='campaign'?'EVIDENCE SNAPSHOT':'SCHEMATIC / EXACT FIXTURE'}</span>${meta.detail.map(t=>`<p class="detail">${esc(t)}</p>`).join('')}<p class="method"><strong>Method / source</strong><br>${esc(meta.source)}</p>`;
+ document.querySelectorAll('[data-output]').forEach(o=>o.textContent=Number(state[o.dataset.output]).toFixed(2));
+ document.querySelectorAll('[role=tab]').forEach(b=>{const yes=b.dataset.tab===state.tab;b.setAttribute('aria-selected',yes);b.tabIndex=yes?0:-1;});
+ $('view-panel').setAttribute('aria-labelledby','tab-'+state.tab);qualityResult();
+ try{history.replaceState(null,'',M.stateHash(state));}catch(e){$('announce').textContent='URL updates unavailable; use Download view state.';}
+}
+function choose(tab){state.tab=tab;criteria=['unknown','unknown','unknown'];render(true);$('announce').textContent='';}
+$('tabs').innerHTML=M.TABS.map(t=>`<button role="tab" id="tab-${t}" data-tab="${t}" aria-controls="view-panel" aria-selected="false" tabindex="-1">${V.META[t].name}</button>`).join('');
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)choose(b.dataset.tab);});
+$('tabs').addEventListener('keydown',e=>{const b=e.target.closest('[data-tab]');if(!b)return;let i=M.TABS.indexOf(b.dataset.tab);if(e.key==='ArrowRight')i=(i+1)%M.TABS.length;else if(e.key==='ArrowLeft')i=(i+M.TABS.length-1)%M.TABS.length;else if(e.key==='Home')i=0;else if(e.key==='End')i=M.TABS.length-1;else return;e.preventDefault();choose(M.TABS[i]);$('tab-'+M.TABS[i]).focus();});
+$('controls').addEventListener('input',e=>{const key=e.target.dataset.key;if(key){state[key]=Number(e.target.value);render(false);}});
+$('controls').addEventListener('change',e=>{if(e.target.id==='square'){state.square=e.target.checked;render(false);}else if(e.target.id==='steps'){state.steps=Number(e.target.value);render(false);}else if(e.target.id==='modality'){state.modality=e.target.value;criteria=['unknown','unknown','unknown'];render(true);}});
+$('extra').addEventListener('input',e=>{if(e.target.id==='token-search'){const value=e.target.value.toLowerCase();document.querySelectorAll('.token-item').forEach(x=>x.hidden=!x.textContent.toLowerCase().includes(value));}});
+$('extra').addEventListener('change',e=>{if(e.target.dataset.criterion!==undefined){criteria[Number(e.target.dataset.criterion)]=e.target.value;qualityResult();}});
+function download(name,data,type){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);$('announce').textContent='Exported '+name;}
+$('export-svg').addEventListener('click',()=>download('mora3-flow-forest-'+state.tab+'.svg',V.renderSvg(state.tab,state),'image/svg+xml'));
+$('export-state').addEventListener('click',()=>download('mora3-flow-forest-view.json',JSON.stringify({schema:'Mora3.FlowForestIllustrationState/v1',state,qualityCriteria:criteria,trainedModel:false,trainingAdmission:false},null,2),'application/json'));
+$('reset').addEventListener('click',()=>{const tab=state.tab;state=M.parseState('');state.tab=tab;criteria=['unknown','unknown','unknown'];render(true);$('announce').textContent='Reset this illustrative view.';});
+addEventListener('hashchange',()=>{state=M.parseState(location.hash);render(true);});
+try{render(true);window.MoraExplorer={ready:true,state:()=>({...state}),renderSvg:(t,s)=>V.renderSvg(t,s)};}catch(error){$('diagram').innerHTML='<p class="error">The reference view failed to initialize: '+esc(error.message)+'</p>';throw error;}
+})();
+</script></body></html>

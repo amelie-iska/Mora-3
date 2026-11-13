@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from hashlib import sha256
 from io import BytesIO
+from pathlib import Path
 import json
 import re
 
@@ -19,6 +20,11 @@ from .primary_native_routes import (
     FiniteNativeTrainRoute, NativeRouteBinding, NativeRouteWindow, PreparedNativeTargets,
     finite_view_policy_sha256,
 )
+
+
+def _sidecar_file_identity(path):
+    stat = path.stat()
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
 
 
 FAMILY = 'Rfam15.1-source-family-prior'
@@ -64,6 +70,9 @@ class RfamCampaignAdapter:
         object.__setattr__(self, '_axis', tuple(manifest['family_ids']))
         object.__setattr__(self, '_shards', shards)
         object.__setattr__(self, '_paths', tuple(sorted(relevant)))
+        # One immutable, SHA-verified sidecar per shard per adapter instance.
+        # Reject replacement during use; do not silently adopt changed source.
+        object.__setattr__(self, '_verified_group_cache', {})
 
     @property
     def task_key(self):
@@ -90,6 +99,26 @@ class RfamCampaignAdapter:
         target = 'observed positive source family assignments' if self.direction == 'prediction' else 'native nucleotide symbols and EOS'
         return NativeRouteBinding(route, self.prepare, 'native conditional negative log likelihood in nats', target)
 
+    def _verified_groups(self, source_path):
+        side = self._manifest['effective_group_lookup'][source_path]
+        root = Path(self.view.root).resolve()
+        path = (root / side['path']).resolve()
+        if not path.is_relative_to(root):
+            raise ValueError('Original Rfam groups escaped the source root')
+        identity = _sidecar_file_identity(path)
+        existing = self._verified_group_cache.get(source_path)
+        if existing is not None:
+            if existing[0] != identity:
+                raise ValueError('Original Rfam group sidecar changed after immutable verification')
+            return existing[1]
+        groups = tuple(pq.read_table(BytesIO(read_exact(side, root=root))).to_pylist())
+        if (_sidecar_file_identity(path) != identity or len(groups) != side['rows']
+                or any(type(row) is not dict or set(row) != {'task_id', 'effective_groups_json'}
+                       for row in groups)):
+            raise ValueError('Original Rfam group sidecar changed or schema differs')
+        self._verified_group_cache[source_path] = (identity, groups)
+        return groups
+
     def prepare(self, window):
         self.executable_binding()
         if type(window) is not NativeRouteWindow or not 1 <= window.original_source_rows <= self.batch_size:
@@ -99,7 +128,7 @@ class RfamCampaignAdapter:
         path = batch.source_shard['path']
         shard = self._shards[path]
         side = self._manifest['effective_group_lookup'][path]
-        groups = pq.read_table(BytesIO(read_exact(side, root=self.view.root))).to_pylist()
+        groups = self._verified_groups(path)
         if len(groups) != shard['rows']:
             raise ValueError('Complete original Rfam group sidecar required')
         rows = batch.native_rows.to_pylist()
@@ -115,9 +144,16 @@ class RfamCampaignAdapter:
         count = (sum(len(packet.targets()['source_Rfam_family_ids']) for packet in packets) if prediction
                  else sum(len(packet.targets()['source_native_sequence']) + 1 for packet in packets))
 
+        # Capture the route's source identity when targets are prepared. A
+        # same-axis Rfam head in another admitted owner is not the same source
+        # campaign; neither matching head shape nor generic admission proves it.
+        source_snapshot = self.source_snapshot_sha256
+
         def evaluate(owner):
             if type(owner) is not SourceBoundOwner:
                 raise ValueError('Exact registered source-bound owner required')
+            if owner.get_extra_state()['source_snapshot_sha256'] != source_snapshot:
+                raise ValueError('Rfam route and native owner source snapshots differ')
             owner.require_training_admission()
             branch = owner.core.parent.parent.rfam
             if (type(branch) is not RfamFamilyModel or branch.family_axis != self._axis

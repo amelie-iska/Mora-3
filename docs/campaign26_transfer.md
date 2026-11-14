@@ -134,3 +134,24 @@ training-start rather than24-trial/transfer completion. No new agent/supervisor 
 training loop was launched in this package. Any continuation must preserve the
 latest user restrictions and existing ownership rather than blindly replaying
 that old prompt or the superseded44-run plan.
+
+
+## Production launch wiring correction — 2026-11-14
+
+The production CLI previously called `execute_one_pinned_trial` directly even
+though the separate `execute_counted_proxy_trial` wrapper had already implemented
+the 24+2 accounting. The launch boundary now requires
+`Mora3.PrimaryCampaignWorkerLaunch/v2`, binding an existing counted budget, its
+exact v2 genesis digest, the pre-sweep target blueprint and a fresh failure
+artifact. It validates the current user directive, actual declared target family,
+and agreement with the native terminal prefix before reading source payloads or
+constructing the owner. The counted worker alone reserves and enters the next
+slot; a failed entered attempt remains consumed.
+
+Legacy v1 launch metadata remains inspectable, but neither the CLI nor the Python
+execution entry can use it for uncounted training. No fallback silently bypasses
+the budget. The reviewed launch also pins the counted-budget, counted-worker and
+target-transfer implementations. Production source/model admission is unchanged;
+this repair does not turn a source candidate or test fixture into an approved
+training release. Tests use temporary metadata accounting and orchestration
+doubles, not real campaign results or newly trained checkpoints.

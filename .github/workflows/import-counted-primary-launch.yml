@@ -1,0 +1,88 @@
+name: Import reviewed counted primary-launch repair
+
+on:
+  push:
+    branches:
+      - publication/import-counted-primary-launch-20261114
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mora3-reviewed-import-85dcfdc2
+  cancel-in-progress: false
+
+jobs:
+  import-reviewed-source:
+    if: github.repository == 'amelie-iska/Mora-3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact public prerequisite
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: bbd4140c4509ec14159e9a0f8947c7f2a68dfb46
+          fetch-depth: 0
+          persist-credentials: true
+          set-safe-directory: false
+      - name: Verify and import source without executing downloaded code
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          import json
+          import subprocess
+          import urllib.request
+          base = 'bbd4140c4509ec14159e9a0f8947c7f2a68dfb46'
+          target = '85dcfdc2a8d9c3c774e71bbbeda5ffc7c34b9b29'
+          tree = '866002cbbabcdf088486b7b434335ba4bbb02cbf'
+          branch = 'publication/counted-primary-launch-20261114'
+          root = 'https://huggingface.co/datasets/AmelieSchreiber/GRH-Mora-ConformerResponse-20261104/resolve/e7a1553ae5dec946c980fb9ee1dccdbf5091a078/integration_sources/mora3/' + target + '/'
+          expected = {'src/mora3/research/primary_campaign_entrypoint.py',
+                      'tests/research/test_counted_primary_entrypoint.py',
+                      'docs/campaign26_transfer.md'}
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True, timeout=90).strip()
+          def download(name, size, digest):
+              with urllib.request.urlopen(root + name, timeout=45) as response:
+                  raw = response.read(size + 1)
+              assert len(raw) == size and sha256(raw).hexdigest() == digest, name
+              return raw
+          assert git('rev-parse', 'HEAD') == base
+          assert git('ls-remote', 'origin', 'refs/heads/main').split()[0] == base, 'Main moved; reconcile instead of overwriting'
+          manifest = json.loads(download('source-manifest.json', 1015, '1a6a19418b851575ace9d42200d0829468e7da80a3db610bced86fc987f03ffc'))
+          assert manifest['public_parent'] == base and manifest['public_commit'] == target and manifest['public_tree'] == tree
+          assert manifest['review_branch'] == branch and manifest['private_history_included'] is False
+          assert manifest['training_started'] is False and manifest['dataset_payloads_added'] is False
+          assert manifest['optimizer_updates'] == 0 and manifest['isolated_passed'] == manifest['active_passed'] == 134
+          bundle = Path('.mora3-reviewed-counted-launch.bundle')
+          with bundle.open('xb') as stream:
+              stream.write(download('mora3-source.bundle', 8716, '74c3413e841d482ab51839c1fa1e306f7987dc402de24e5646eb43f9b5c07fa4'))
+          assert git('bundle', 'list-heads', str(bundle)).split() == [target, 'refs/heads/' + branch]
+          subprocess.run(['git', 'bundle', 'verify', str(bundle)], check=True, timeout=60)
+          subprocess.run(['git', 'fetch', '--no-tags', str(bundle), 'refs/heads/' + branch], check=True, timeout=90)
+          assert git('rev-parse', 'FETCH_HEAD') == target and git('rev-parse', target + '^{tree}') == tree
+          assert git('rev-list', '--parents', '-n', '1', target).split() == [target, base]
+          assert git('rev-list', '--count', base + '..' + target) == '1'
+          assert not git('diff', '--name-only', '--diff-filter=D', base, target)
+          changed = set(git('diff', '--name-only', base, target).splitlines())
+          assert changed == expected == set(manifest['changed_paths']) == set(manifest['changed_sha256'])
+          for name in sorted(changed):
+              raw = subprocess.check_output(['git', 'show', target + ':' + name], timeout=30)
+              assert sha256(raw).hexdigest() == manifest['changed_sha256'][name], name
+          paths = git('ls-tree', '-r', '--name-only', target).splitlines()
+          assert len(paths) == manifest['source_path_count'] == 1753
+          assert not any({'initial_specs_prompt.md', 'keys.txt', '.env', 'AGENTS.md'}.intersection(Path(name).parts) for name in paths)
+          current = git('ls-remote', 'origin', 'refs/heads/' + branch)
+          if current:
+              assert current.split()[0] == target, 'Review branch contains other work'
+          else:
+              subprocess.run(['git', 'push', 'origin', target + ':refs/heads/' + branch], check=True, timeout=90)
+          assert git('ls-remote', 'origin', 'refs/heads/' + branch).split()[0] == target
+          assert git('ls-remote', 'origin', 'refs/heads/main').split()[0] == base
+          print(json.dumps({'commit': target, 'tree': tree, 'review_branch': branch,
+                            'main_unchanged': True, 'downloaded_code_executed': False,
+                            'training_started': False, 'changed_files_verified': len(changed)}))
+          PY

@@ -186,6 +186,27 @@ class NativeForestWindowContinuation(nn.Module):
         return dict(schema='Mora3.CausalWindowDecode/v1',tokens=tuple(result),
                     complete=False,reason='token-budget-exhausted',training_admission=False)
 
+    def teacher_logits_prefix(self,record,task,template,node_index,known_prefix,target):
+        """Source-bound ancestor-only causal teacher logits (unadmitted)."""
+        from .forest_causal_prefix import causal_node_view
+        state,prefix,local_index=causal_node_view(self.decoder,template,node_index,known_prefix)
+        self._validate_target(target)
+        if len(target)*len(self.decoder.codebook)>self.spec.max_score_elements:
+            raise ValueError('Dense prefix output exceeds exact score capacity')
+        return torch.cat([scores for scores,_ in self._window_scores(
+            record,task,state,prefix,local_index,target)],dim=0)
+
+    def teacher_loss_prefix(self,record,task,template,node_index,known_prefix,target):
+        """Streamed teacher loss without sibling/future/target state inputs."""
+        from .forest_causal_prefix import causal_node_view
+        state,prefix,local_index=causal_node_view(self.decoder,template,node_index,known_prefix)
+        self._validate_target(target)
+        total=None
+        for score,label in self._window_scores(record,task,state,prefix,local_index,target):
+            part=F.cross_entropy(score,label,reduction='sum')
+            total=part if total is None else total+part
+        return total/len(target)
+
     def teacher_logits(self,record,task,state,template,node_index,target):
         self._validate_target(target)
         if len(target)*len(self.decoder.codebook)>self.spec.max_score_elements:

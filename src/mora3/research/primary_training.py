@@ -42,6 +42,39 @@ def _trajectory_freeze_wire(binding):
 
 
 
+def _forest_freeze_wire(binding):
+    """Pin the optional known-skeleton forest objective, source segment and trial."""
+    expected={'schema','trial_id','task_key','source_snapshot_sha256','route_sha256',
+              'objective_sha256','heads_sha256','sampling_method','skeleton_policy','total_windows'}
+    if (type(binding)is not dict or set(binding)!=expected
+            or binding.get('schema')!='Mora3.NativeForestObjectiveBinding/v1'
+            or any(type(binding.get(k))is not str or not 0<len(binding[k])<=4096
+                   for k in ('trial_id','task_key'))
+            or any(type(binding.get(k))is not str or not _SHA.fullmatch(binding[k])
+                   for k in ('source_snapshot_sha256','route_sha256','objective_sha256','heads_sha256'))
+            or type(binding.get('total_windows'))is not int or not 1<=binding['total_windows']<=1_024_000_000
+            or binding.get('sampling_method')!='engine-owned-gaussian-and-uniform-time-v1'
+            or binding.get('skeleton_policy')!='source-declared-fixed-skeleton'):
+        raise ValueError('Exact frozen native forest source/objective/trial binding required')
+    return json.dumps(binding,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
+
+
+def _require_forest_cursor(binding,cursor):
+    """Reject malformed/wrong-source/out-of-range positions before state copy."""
+    if type(cursor)is not bytes or len(cursor)>4096:
+        raise ValueError('Bounded exact forest source cursor bytes required')
+    try:
+        value=json.loads(cursor)
+    except (ValueError,UnicodeError,RecursionError)as exc:
+        raise ValueError('Malformed forest source cursor')from exc
+    if (type(value)is not dict or set(value)!={'schema','route_sha256','position'}
+            or value['schema']!='Mora3.ForestTrainingCursor/v1'
+            or value['route_sha256']!=binding['route_sha256']or type(value['position'])is not int
+            or not 0<=value['position']<=binding['total_windows']
+            or json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()!=cursor):
+        raise ValueError('Exact canonical frozen forest source cursor required')
+
+
 def _rng_state():
     state=np.random.get_state()
     return dict(python=random.getstate(),numpy=(state[0],state[1].tolist(),state[2],state[3],state[4]),
@@ -90,7 +123,7 @@ class NativeMuUpdateEngine:
     """
     def __init__(self,model,optimizer,*,binding_sha256,task_cycle,source_cursors,scheduler=None,
                  profile_stage_controller=None,gradient_clip_max_norm=None,sampler_generator=None,
-                 trajectory_objective_binding=None):
+                 trajectory_objective_binding=None,forest_objective_binding=None):
         if (not isinstance(model,nn.Module) or type(optimizer)is not MuAdamW
                 or optimizer._mup_model()is not model or type(binding_sha256)is not str
                 or not _SHA.fullmatch(binding_sha256)
@@ -116,6 +149,14 @@ class NativeMuUpdateEngine:
             trajectory_freeze_wire=_trajectory_freeze_wire(trajectory_objective_binding)
         else:
             trajectory_freeze_wire=None
+        if forest_objective_binding is not None:
+            if (sampler_generator is None or type(forest_objective_binding)is not dict
+                    or forest_objective_binding.get('task_key')not in task_cycle):
+                raise ValueError('Frozen forest task requires a checkpoint-owned sampler and native task cycle')
+            forest_freeze_wire=_forest_freeze_wire(forest_objective_binding)
+            _require_forest_cursor(forest_objective_binding,source_cursors[forest_objective_binding['task_key']])
+        else:
+            forest_freeze_wire=None
         optimizer._validate_live()
         if type(scheduler) is NativeMuWarmupCosine:
             scheduler.state_dict()
@@ -139,6 +180,8 @@ class NativeMuUpdateEngine:
         self._sampler_device=None if sampler_generator is None else str(sampler_generator.device)
         self._trajectory_objective_binding=copy.deepcopy(trajectory_objective_binding)
         self._trajectory_frozen_wire=trajectory_freeze_wire
+        self._forest_objective_binding=copy.deepcopy(forest_objective_binding)
+        self._forest_frozen_wire=forest_freeze_wire
         self._scheduler_constants=None if type(scheduler) is not torch.optim.lr_scheduler.StepLR else {
             k:copy.deepcopy(v) for k,v in scheduler.state_dict().items()
             if k not in ('last_epoch','_step_count','_last_lr')}
@@ -158,6 +201,23 @@ class NativeMuUpdateEngine:
         frozen=self._trajectory_state()
         if frozen is None or not exact_wire(frozen,actual):
             raise ValueError('Exact predeclared frozen trajectory source/guide/method/trial binding required')
+
+    def _forest_state(self):
+        binding=self._forest_objective_binding
+        if binding is None:
+            if self._forest_frozen_wire is not None:
+                raise ValueError('Frozen forest objective was removed')
+            return None
+        if (_forest_freeze_wire(binding)!=self._forest_frozen_wire
+                or self.sampler_generator is None or binding['task_key']not in self.task_cycle):
+            raise ValueError('Frozen forest source/objective/task binding changed')
+        _require_forest_cursor(binding,self.source_cursors[binding['task_key']])
+        return copy.deepcopy(binding)
+
+    def require_forest_objective_binding(self,**actual):
+        frozen=self._forest_state()
+        if frozen is None or not exact_wire(frozen,actual):
+            raise ValueError('Exact checkpoint-bound forest source/objective/trial required')
 
     def _sampler_state(self):
         """Exact independent on-policy sampler cursor, separate from global Torch RNG."""
@@ -288,6 +348,9 @@ class NativeMuUpdateEngine:
         if trajectory_state is not None:
             state.update(schema='Mora3.NativeMuUpdateState/v5',
                          trajectory_objective_binding=trajectory_state)
+        forest_state=self._forest_state()
+        if forest_state is not None:
+            state.update(schema='Mora3.NativeMuUpdateState/v6',forest_objective_binding=forest_state)
         return copy.deepcopy(state)
 
     def save_checkpoint(self,path):
@@ -312,6 +375,10 @@ class NativeMuUpdateEngine:
         if trajectory_state is not None:
             keys.add('trajectory_objective_binding')
             schema='Mora3.NativeMuUpdateState/v5'
+        forest_state=self._forest_state()
+        if forest_state is not None:
+            keys.add('forest_objective_binding')
+            schema='Mora3.NativeMuUpdateState/v6'
         if (type(state)is not dict or set(state)!=keys or state['schema']!=schema
                 or state['binding_sha256']!=self.binding_sha256 or state['task_cycle']!=self.task_cycle
                 or type(state['steps'])is not int or state['steps']<0
@@ -326,6 +393,10 @@ class NativeMuUpdateEngine:
         if trajectory_state is not None and not exact_wire(
                 state['trajectory_objective_binding'],trajectory_state):
             raise ValueError('Checkpoint frozen trajectory source/guide/method binding differs')
+        if forest_state is not None and not exact_wire(state['forest_objective_binding'],forest_state):
+            raise ValueError('Checkpoint frozen forest source/objective/trial binding differs')
+        if forest_state is not None:
+            _require_forest_cursor(forest_state,state['source_cursors'][forest_state['task_key']])
         # Native Adam moments are allocated only by completed optimizer updates.
         # A checkpoint cannot carry moments at step zero or moments from a later
         # step than its durable source-cursor/update counter. Reject before the

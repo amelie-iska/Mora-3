@@ -1,0 +1,54 @@
+{
+  "schema": "Mora3.NativeForestTrainingIntegrationVerification/v1",
+  "utc": "2026-11-14T00:29:50.219786+00:00",
+  "scope": "source-declared-known-skeleton four-objective native engine integration",
+  "tests": {
+    "isolated_focused_passed": 212,
+    "active_focused_passed": 212,
+    "new_tests_included": 37,
+    "skipped": 0,
+    "optimizer_step_attempts": 0,
+    "device": "cpu",
+    "native_on_disk_zero_update_replay": true,
+    "full_repository_suite": false
+  },
+  "browser": {
+    "engine": "Chrome 157.0.8103.38",
+    "interaction_workflows": 6,
+    "pages": 3,
+    "viewports": [
+      "1280x960",
+      "390x844"
+    ],
+    "console_errors": 0,
+    "console_warnings": 0,
+    "body_overflow": 0
+  },
+  "source_files_sha256": {
+    "src/mora3/model/forest_training.py": "3c1f2aeb09d65d6828b179b2af414a9817c744cf16d9645dacbabc20e406efe8",
+    "src/mora3/research/forest_training_routes.py": "743ec8062ec44af8f5aedafb4aab88c3f7f061b806f0043bc770743ced4f8c64",
+    "src/mora3/research/primary_training.py": "a8c84d379a4f772b77bf66705e52ae56baab0c76a324eb21c786416befd0e145",
+    "tests/model/test_forest_training.py": "76e12e3bc4c41819c2a422fe7768c61b45599eb4f114b1eb5c83001ceab9e5be",
+    "tests/research/test_forest_training_routes.py": "d9c8a3c1bad351693de5755ec31b092ad7ce773d45509f095111987a2492c6e0",
+    "docs/forest_training_integration_20261113.md": "dcfec1df969641bf0996ce2d928f05b558dc30b858778007a408e16d499d35e2",
+    "paper/forest_training_methods.md": "660f2fcf750ff892fbd0148e0efaaa4e34a40ca3d06390a11ef84b3ad34c3266",
+    "planning/forest_training_integration_20261113.md": "241320aed7309401549dd8e131b418c94a62aece9e1bf706b1361165bb5f1699",
+    "docs/index.html": "15b50dc250cb6d74b61a5cb8037bebb7d1ebea9c489670890f34d0a6bf398884",
+    "docs/paper.html": "e7cf7f5f207b581e3f36b21f58150cf2795ad5ba1a26e0d7fc6a4b1339348daa",
+    "docs/project/native-forest-heads.html": "2321da3fb4efd59d31d331d2fdfd720966937a02fa64f0aeabc047534f28df87",
+    "tools/build_native_forest_head_page.py": "61a51e4a81fd1340c01065f2c15d3257aaf5d6ef6b1e013ad50f067408887140"
+  },
+  "protected_source_ledgers_unchanged": true,
+  "training_admission_implementation_unchanged": true,
+  "optimizer_updates": 0,
+  "substantive_training_runs_started": 0,
+  "new_training_examples_published": 0,
+  "complete_project": false,
+  "remaining": [
+    "Source-populated qualified trajectory, encoder/codebook, criterion and analogy correspondence exports with global source/split review",
+    "Normalized unknown-topology generation and full hybrid teacher/student protocol",
+    "Enrollment in a genuine complete-project counted-run release, including the enabled forest heads",
+    "Final width/operator/context-resource and completed-update recovery qualification",
+    "Actual24proxy outcomes, validation-only transfer, two target runs and heldout evaluations"
+  ]
+}

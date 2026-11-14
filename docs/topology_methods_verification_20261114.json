@@ -1,0 +1,59 @@
+{
+  "schema": "Mora3.TopologyMethodsVerifiedCheckpoint/v1",
+  "date": "2026-11-14",
+  "source_base": "03adc68c297c4596b20d65368ed42672efb1a5ef",
+  "implementation": [
+    "Complete source-prefix forest export with explicit native payload capacity",
+    "Normalized ordered variable-topology generation from given roots",
+    "Native shared-owner topology loss and source-route integration",
+    "Complete reachable-support attention preflight and checkpoint versioning"
+  ],
+  "tests": {
+    "isolated_passed": 399,
+    "active_passed": 399,
+    "skipped": 0,
+    "optimizer_step_attempts": 0,
+    "full_repository_suite": false,
+    "device": "cpu"
+  },
+  "paper": {
+    "pages": 28,
+    "words": 9886,
+    "formal_statements_with_proofs": 12,
+    "primary_references": 18,
+    "typeset_equations": 16,
+    "interactive_diagrams": 6,
+    "empty_empirical_tables": 5,
+    "empty_empirical_charts": 4,
+    "empirical_values_populated": false,
+    "pdf_sha256": "61994f7dc6e76d3af39e4d7f4e7e74e6b9186d2098519e21fe15f8476fe480e9"
+  },
+  "browser": {
+    "viewports": [
+      1440,
+      390
+    ],
+    "keyboard": true,
+    "topology_replay": true,
+    "directed_square_toggle": true,
+    "svg_export": true,
+    "network_assets": false,
+    "console_errors": 0,
+    "horizontal_overflow": false
+  },
+  "training": {
+    "substantive_runs_started": 0,
+    "optimizer_updates": 0,
+    "full_dataset_ready": false,
+    "construction_owner_signature_present": false,
+    "model_owner_signature_present": false,
+    "reviewed_training_release_present": false
+  },
+  "limitations": [
+    "Scoped software verification is not empirical muTransfer or biological validation",
+    "Complete hybrid GFlowNet teacher/flow-student integration and production supervision remain unfinished",
+    "Final enabled full-owner resource/recovery/width qualification and source admission remain required"
+  ],
+  "publication_policy": "User-authorized reviewed progress checkpoints independently of training start",
+  "reference_book_redistributed": false
+}

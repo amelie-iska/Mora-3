@@ -47,14 +47,15 @@ def _forest_freeze_wire(binding):
     expected={'schema','trial_id','task_key','source_snapshot_sha256','route_sha256',
               'objective_sha256','heads_sha256','sampling_method','skeleton_policy','total_windows'}
     if (type(binding)is not dict or set(binding)!=expected
-            or binding.get('schema')!='Mora3.NativeForestObjectiveBinding/v1'
+            or (binding.get('schema'),binding.get('skeleton_policy'))not in(
+                ('Mora3.NativeForestObjectiveBinding/v1','source-declared-fixed-skeleton'),
+                ('Mora3.NativeForestObjectiveBinding/v2','source-declared-flow-skeleton-plus-prefix-topology-NLL-v1'))
             or any(type(binding.get(k))is not str or not 0<len(binding[k])<=4096
                    for k in ('trial_id','task_key'))
             or any(type(binding.get(k))is not str or not _SHA.fullmatch(binding[k])
                    for k in ('source_snapshot_sha256','route_sha256','objective_sha256','heads_sha256'))
             or type(binding.get('total_windows'))is not int or not 1<=binding['total_windows']<=1_024_000_000
-            or binding.get('sampling_method')!='engine-owned-gaussian-and-uniform-time-v1'
-            or binding.get('skeleton_policy')!='source-declared-fixed-skeleton'):
+            or binding.get('sampling_method')!='engine-owned-gaussian-and-uniform-time-v1'):
         raise ValueError('Exact frozen native forest source/objective/trial binding required')
     return json.dumps(binding,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
 

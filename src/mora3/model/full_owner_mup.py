@@ -127,6 +127,7 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
     from .forest_analogy import NativeForestAnalogyHead,forest_analogy_parameter_roles
     from .forest_token_decoder import NativeForestTokenDecoder,forest_decoder_parameter_roles
     from .forest_quality import NativeForestQualityHead,forest_quality_parameter_roles
+    from .forest_topology import NativeForestTopologyHead,forest_topology_parameter_roles
     def visit(module):
         if id(module)in seen:return
         seen.add(id(module));t=type(module);roles=None
@@ -177,6 +178,7 @@ def full_owner_mup_parameter_roles(model,*,identifier_axis=('context','observati
         elif t is NativeForestAnalogyHead:roles=forest_analogy_parameter_roles(module,identifier_axis=geometry_identifier_axis)
         elif t is NativeForestTokenDecoder:roles=forest_decoder_parameter_roles(module,identifier_axis=geometry_identifier_axis)
         elif t is NativeForestQualityHead:roles=forest_quality_parameter_roles(module,identifier_axis=geometry_identifier_axis)
+        elif t is NativeForestTopologyHead:roles=forest_topology_parameter_roles(module,identifier_axis=geometry_identifier_axis)
         elif t is SharedLincsInverseModel:roles=lincs_inverse_parameter_roles(module,identifier_axis=identifier_axis)
         elif t is SharedSourceTextModel:
             module.get_extra_state()

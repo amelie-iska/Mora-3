@@ -140,6 +140,7 @@ class SourceAssemblyInputs:
     forest_decoder_spec: object | None=None
     forest_decoder_codebook: object | None=None
     forest_quality_spec: object | None=None
+    forest_topology_spec: object | None=None
 
 
 def _exact(left,right):
@@ -184,7 +185,7 @@ def unique_parameter_inventory(model):
 class SourceBoundOwner(nn.Module):
     """One registered owner; extension branches reuse exact cooperative objects."""
     def __init__(self,core,*,source_snapshot_sha256,configuration,admet=None,mcsa=None,
-                 pubchem=None,cartesian=None,source_annotations=None,cell=None,text=None,lincs_inverse=None,native_priors=None,scalar=None,pdb=None,rosetta_flow=None,gray_reverse=None,bioelectric=None,nci=None,expansionrx=None,cema_trajectory=None,reactzyme=None,tox21_source=None,hcn4_laterality=None,reactome_static=None,biogrid_chemical=None,lincx_fetch=None,string_score=None,uniprot_native_annotation=None,uniprot_full_record=None,gray_forward=None,betse=None,raw_cell=None,scri=None,forest_flow=None,forest_analogy=None,forest_decoder=None,forest_quality=None):
+                 pubchem=None,cartesian=None,source_annotations=None,cell=None,text=None,lincs_inverse=None,native_priors=None,scalar=None,pdb=None,rosetta_flow=None,gray_reverse=None,bioelectric=None,nci=None,expansionrx=None,cema_trajectory=None,reactzyme=None,tox21_source=None,hcn4_laterality=None,reactome_static=None,biogrid_chemical=None,lincx_fetch=None,string_score=None,uniprot_native_annotation=None,uniprot_full_record=None,gray_forward=None,betse=None,raw_cell=None,scri=None,forest_flow=None,forest_analogy=None,forest_decoder=None,forest_quality=None,forest_topology=None):
         super().__init__()
         from .instance_cooperative import InstanceCooperativeModel
         from .admet_model import SharedAdmetModel
@@ -350,6 +351,13 @@ class SourceBoundOwner(nn.Module):
                 raise ValueError('Quality head must share the exact registered forest field')
             forest_quality.get_extra_state()
         self.forest_quality=forest_quality
+        if forest_topology is not None:
+            from .forest_topology import NativeForestTopologyHead
+            if (forest_flow is None or type(forest_topology)is not NativeForestTopologyHead
+                    or forest_topology.field is not forest_flow):
+                raise ValueError('Topology head must share the exact registered forest field')
+            forest_topology.get_extra_state()
+        self.forest_topology=forest_topology
         self.scri=scri
         self.core=core
         self.admet=admet
@@ -381,7 +389,7 @@ class SourceBoundOwner(nn.Module):
         self.uniprot_native_annotation=uniprot_native_annotation
         self.uniprot_full_record=uniprot_full_record
         self.raw_cell=raw_cell
-        self._owners=(core,admet,mcsa,pubchem,cartesian,source_annotations,cell,text,lincs_inverse,native_priors,scalar,pdb,rosetta_flow,gray_reverse,gray_forward,bioelectric,nci,expansionrx,cema_trajectory,reactzyme,tox21_source,hcn4_laterality,reactome_static,biogrid_chemical,lincx_fetch,string_score,uniprot_native_annotation,uniprot_full_record,betse,raw_cell,scri,forest_flow,forest_analogy,forest_decoder,forest_quality)
+        self._owners=(core,admet,mcsa,pubchem,cartesian,source_annotations,cell,text,lincs_inverse,native_priors,scalar,pdb,rosetta_flow,gray_reverse,gray_forward,bioelectric,nci,expansionrx,cema_trajectory,reactzyme,tox21_source,hcn4_laterality,reactome_static,biogrid_chemical,lincx_fetch,string_score,uniprot_native_annotation,uniprot_full_record,betse,raw_cell,scri,forest_flow,forest_analogy,forest_decoder,forest_quality,forest_topology)
         self._configuration=copy.deepcopy(dict(schema='mora3-source-bound-owner-v1',
             primary_arm='ordinary-attention-mup-primary-v1',source_snapshot_sha256=source_snapshot_sha256,
             primary_configuration=configuration,core=core.get_extra_state(),
@@ -476,13 +484,15 @@ class SourceBoundOwner(nn.Module):
             self._configuration['forest_decoder']=forest_decoder.get_extra_state()
         if forest_quality is not None:
             self._configuration['forest_quality']=forest_quality.get_extra_state()
+        if forest_topology is not None:
+            self._configuration['forest_topology']=forest_topology.get_extra_state()
         self._module_topology=tuple((name,type(module).__module__+'.'+type(module).__qualname__)
             for name,module in self.named_modules(remove_duplicate=False))
         self._parameter_topology=tuple((row['aliases'],row['shape'],row['trainable'])
             for row in unique_parameter_inventory(self)['parameters'])
 
     def get_extra_state(self):
-        if any(a is not b for a,b in zip((self.core,self.admet,self.mcsa,self.pubchem,self.cartesian,self.source_annotations,self.cell,self.text,self.lincs_inverse,self.native_priors,self.scalar,self.pdb,self.rosetta_flow,self.gray_reverse,self.gray_forward,self.bioelectric,self.nci,self.expansionrx,self.cema_trajectory,self.reactzyme,self.tox21_source,self.hcn4_laterality,self.reactome_static,self.biogrid_chemical,self.lincx_fetch,self.string_score,self.uniprot_native_annotation,self.uniprot_full_record,self.betse,self.raw_cell,self.scri,self.forest_flow,self.forest_analogy,self.forest_decoder,self.forest_quality),self._owners)):
+        if any(a is not b for a,b in zip((self.core,self.admet,self.mcsa,self.pubchem,self.cartesian,self.source_annotations,self.cell,self.text,self.lincs_inverse,self.native_priors,self.scalar,self.pdb,self.rosetta_flow,self.gray_reverse,self.gray_forward,self.bioelectric,self.nci,self.expansionrx,self.cema_trajectory,self.reactzyme,self.tox21_source,self.hcn4_laterality,self.reactome_static,self.biogrid_chemical,self.lincx_fetch,self.string_score,self.uniprot_native_annotation,self.uniprot_full_record,self.betse,self.raw_cell,self.scri,self.forest_flow,self.forest_analogy,self.forest_decoder,self.forest_quality,self.forest_topology),self._owners)):
             raise ValueError('registered owner identity drift')
         if self._module_topology!=tuple((name,type(module).__module__+'.'+type(module).__qualname__)
                 for name,module in self.named_modules(remove_duplicate=False)):
@@ -547,6 +557,8 @@ class SourceBoundOwner(nn.Module):
             current['forest_decoder']=self.forest_decoder.get_extra_state()
         if self.forest_quality is not None:
             current['forest_quality']=self.forest_quality.get_extra_state()
+        if self.forest_topology is not None:
+            current['forest_topology']=self.forest_topology.get_extra_state()
         if any(not _exact(value,self._configuration[key])for key,value in current.items()):
             raise ValueError('source-bound assembly component configuration drift')
         return copy.deepcopy(self._configuration)
@@ -636,6 +648,15 @@ def construct_primary_owner(configuration,sources):
     if type(configuration)is not PrimaryConfiguration or type(sources)is not SourceAssemblyInputs:
         raise ValueError('exact primary configuration and native source assembly inputs required')
     configuration.__post_init__()
+    if sources.forest_topology_spec is not None:
+        from .forest_topology import ForestTopologySpec
+        from .forest_flow import ForestFlowSpec
+        if (type(sources.forest_topology_spec)is not ForestTopologySpec
+                or type(sources.forest_flow_spec)is not ForestFlowSpec):
+            raise ValueError('Native topology requires exact registered flow and topology specifications')
+        sources.forest_topology_spec.__post_init__()
+        if sources.forest_topology_spec.bounds.max_nodes>sources.forest_flow_spec.max_nodes:
+            raise ValueError('Topology support must fit the full native forest owner')
     if sources.forest_quality_spec is not None:
         from .forest_quality import ForestQualitySpec
         if type(sources.forest_quality_spec)is not ForestQualitySpec or sources.forest_flow_spec is None:
@@ -1148,6 +1169,10 @@ def construct_primary_owner(configuration,sources):
     if sources.forest_quality_spec is not None:
         from .forest_quality import NativeForestQualityHead
         forest_quality=NativeForestQualityHead(forest_flow,sources.forest_quality_spec)
+    forest_topology=None
+    if sources.forest_topology_spec is not None:
+        from .forest_topology import NativeForestTopologyHead
+        forest_topology=NativeForestTopologyHead(forest_flow,sources.forest_topology_spec)
     declared=dict(width=configuration.width,heads=2,layers=2,
         **numeric,flow_version=configuration.flow_version,sigma_min=configuration.sigma_min,
         payload_vocabulary_sha256=hashlib.sha256(sources.vocabulary.specification_json.encode()).hexdigest())
@@ -1157,4 +1182,4 @@ def construct_primary_owner(configuration,sources):
                             gray_reverse=gray_reverse,gray_forward=gray_forward,bioelectric=bioelectric,nci=nci,expansionrx=expansionrx,cema_trajectory=cema_trajectory,reactzyme=reactzyme,
                             tox21_source=tox21_source,hcn4_laterality=hcn4_laterality,
                             reactome_static=reactome_static,biogrid_chemical=biogrid_chemical,lincx_fetch=lincx_fetch,
-                            string_score=string_score,uniprot_native_annotation=uniprot_native_annotation,uniprot_full_record=uniprot_full_record,betse=betse,raw_cell=raw_cell,scri=scri,forest_flow=forest_flow,forest_analogy=forest_analogy,forest_decoder=forest_decoder,forest_quality=forest_quality)
+                            string_score=string_score,uniprot_native_annotation=uniprot_native_annotation,uniprot_full_record=uniprot_full_record,betse=betse,raw_cell=raw_cell,scri=scri,forest_flow=forest_flow,forest_analogy=forest_analogy,forest_decoder=forest_decoder,forest_quality=forest_quality,forest_topology=forest_topology)

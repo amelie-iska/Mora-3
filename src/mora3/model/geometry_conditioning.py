@@ -15,7 +15,8 @@ from mora3.tokenization.shortest_path import ByteTokenizer
 
 
 class GeometryConditioner(nn.Module):
-    def __init__(self, backbone, *, id_width,parameterization_policy='legacy',base_width=None):
+    def __init__(self, backbone, *, id_width,parameterization_policy='legacy',base_width=None,
+                 payload_max_tokens=8192):
         super().__init__()
         if type(id_width) is not int or id_width <= 0:
             raise ValueError('positive integer identifier width required')
@@ -32,11 +33,16 @@ class GeometryConditioner(nn.Module):
             raise ValueError('explicit applied native geometry backbone/base required')
         if not new and len(backbone._native_configuration)!=10:
             raise ValueError('new native initializer requires explicit geometry parameterization')
+        if type(payload_max_tokens) is not int or not 1 <= payload_max_tokens <= 262144:
+            raise ValueError('Exact positive bounded payload token capacity required')
+        if payload_max_tokens != 8192 and not new:
+            raise ValueError('Nondefault payload capacity requires explicit native muP configuration')
         self.parameterization_policy=parameterization_policy
         self._source_backbone_reference=(backbone,)
         feature_width=backbone.feature.in_features
         width=backbone.feature.out_features
         self.payload=PayloadEncoder(ByteTokenizer(controls=('pad','node','edge')),feature_width,
+            max_tokens=payload_max_tokens,
             **(dict(parameterization_policy='mup-payload-v1',base_width=base_width) if new else {}))
         # Only incidence is independent. Preserve every selected reference layer,
         # including attention variant; never construct a replacement attention.
@@ -58,6 +64,9 @@ class GeometryConditioner(nn.Module):
         if new:
             self.config.update(version=2,parameterization_policy=parameterization_policy,
                 native_graph=self.graph.configuration(),payload=self.payload._payload_mup_configuration())
+            if payload_max_tokens != 8192:
+                self.config.update(version=3,payload_max_tokens=payload_max_tokens,
+                    payload_input_policy='complete-explicit-token-cap-v1')
             self._mup_configuration=copy.deepcopy(self.config)
 
     def get_extra_state(self):

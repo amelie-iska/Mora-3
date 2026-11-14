@@ -20,7 +20,7 @@ def heads_from_owner(owner):
     if type(owner) is not SourceBoundOwner:
         raise ValueError('Exact registered full native source owner required')
     heads = ForestTrainingHeads(owner.forest_flow, owner.forest_decoder,
-                                owner.forest_quality, owner.forest_analogy)
+                                owner.forest_quality, owner.forest_analogy, owner.forest_topology)
     heads.binding()
     return heads
 
@@ -96,13 +96,13 @@ class ForestTrainingRoute:
         return self.spec.source_snapshot_sha256
 
     def _declaration(self):
-        return dict(schema='Mora3.FiniteForestTrainingRoute/v1', task_key=self.task_key,
+        return dict(schema='Mora3.FiniteForestTrainingRoute/v2'if self.spec.topology_weight else'Mora3.FiniteForestTrainingRoute/v1', task_key=self.task_key,
             trial_id=self.trial_id, objective_sha256=self.spec.sha256,
             heads_sha256=self.spec.heads_sha256, source_snapshot_sha256=self.spec.source_snapshot_sha256,
             batch_sha256=self._batch_pins, max_passes=self.max_passes,
             max_resident_bytes=self.max_resident_bytes, split='train',
             sampler='engine-owned-gaussian-and-uniform-time-v1',
-            skeleton_policy='source-declared-fixed-skeleton')
+            skeleton_policy=self.spec.skeleton_policy)
 
     def _verify(self):
         if (_wire(self._declaration()) != self._frozen_declaration
@@ -112,12 +112,12 @@ class ForestTrainingRoute:
 
     def binding(self):
         self._verify()
-        return dict(schema='Mora3.NativeForestObjectiveBinding/v1', trial_id=self.trial_id,
+        return dict(schema='Mora3.NativeForestObjectiveBinding/v2'if self.spec.topology_weight else'Mora3.NativeForestObjectiveBinding/v1', trial_id=self.trial_id,
             task_key=self.task_key, source_snapshot_sha256=self.source_snapshot_sha256,
             route_sha256=self.route_sha256, objective_sha256=self.spec.sha256,
             heads_sha256=self.spec.heads_sha256, total_windows=len(self._batches)*self.max_passes,
             sampling_method='engine-owned-gaussian-and-uniform-time-v1',
-            skeleton_policy='source-declared-fixed-skeleton')
+            skeleton_policy=self.spec.skeleton_policy)
 
     def _cursor(self, position):
         return _wire(dict(schema='Mora3.ForestTrainingCursor/v1',

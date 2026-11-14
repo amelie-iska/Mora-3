@@ -18,6 +18,9 @@ from mora3.data.schema import GraphRecord
 from mora3.data.tasks import ConditionalTask
 from mora3.reasoning.flow_forest_refinement import ForestState
 
+from .forest_topology import NativeForestTopologyHead,forest_topology_loss
+from mora3.reasoning.forest_topology import canonical_forest_actions
+
 OBJECTIVES = ('flow', 'tokens', 'quality', 'analogy')
 
 
@@ -27,6 +30,7 @@ class ForestTrainingHeads:
     decoder: NativeForestTokenDecoder
     quality: NativeForestQualityHead
     analogy: NativeForestAnalogyHead
+    topology: NativeForestTopologyHead | None = None
 
     def binding(self):
         expected = (NativeForestFlowHead, NativeForestTokenDecoder,
@@ -36,14 +40,18 @@ class ForestTrainingHeads:
             raise ValueError('Four exact native forest heads required')
         if any(x.field is not self.flow for x in values[1:]):
             raise ValueError('All forest objectives must share the registered field')
+        if self.topology is not None:
+            if type(self.topology)is not NativeForestTopologyHead or self.topology.field is not self.flow:
+                raise ValueError('Optional topology must share the exact native forest field')
+            values += (self.topology,)
         ref = self.flow.readout.weight
         for head in values:
             for tensor in tuple(head.parameters()) + tuple(head.buffers()):
                 if tensor.device != ref.device or tensor.is_floating_point() and tensor.dtype != ref.dtype:
                     raise ValueError('All native forest operators must share exact dtype and device')
-        return dict(schema='Mora3.NativeForestTrainingHeads/v1',
-                    heads={name: value.get_extra_state() for name, value in
-                           zip(('flow', 'decoder', 'quality', 'analogy'), values)})
+        names=('flow','decoder','quality','analogy')+(()if self.topology is None else('topology',))
+        return dict(schema='Mora3.NativeForestTrainingHeads/v1'if self.topology is None else'Mora3.NativeForestTrainingHeads/v2',
+                    heads={name:value.get_extra_state()for name,value in zip(names,values)})
 
     @property
     def sha256(self):
@@ -60,15 +68,18 @@ class ForestTrainingSpec:
     heads_sha256: str
     weights: tuple[float, float, float, float]
     max_tensor_elements: int = 8_000_000
+    topology_weight: float = 0.
 
     def __post_init__(self):
         for name in ('source_snapshot_sha256', 'coordinate_sha256', 'encoder_sha256',
                      'group_policy_sha256', 'skeleton_policy_sha256', 'heads_sha256'):
             _sha(getattr(self, name))
+        if (type(self.topology_weight)not in(int,float)or not math.isfinite(self.topology_weight)or self.topology_weight<0):
+            raise ValueError('Finite nonnegative topology weight required')
         if (type(self.weights) is not tuple or len(self.weights) != 4
                 or any(type(x) not in (int, float) or not math.isfinite(x) or x < 0
                        for x in self.weights)
-                or not 0 < sum(self.weights) < float('inf')
+                or not 0 < sum(self.weights)+self.topology_weight < float('inf')
                 or type(self.max_tensor_elements) is not int
                 or not 1 <= self.max_tensor_elements <= 16_777_216):
             raise ValueError('Exact finite nonnegative four-objective weights and capacity required')
@@ -76,11 +87,18 @@ class ForestTrainingSpec:
     @property
     def sha256(self):
         self.__post_init__()
-        return sha256(_wire(dict(schema='Mora3.ForestTrainingObjective/v1', **asdict(self),
+        values=asdict(self)
+        if not self.topology_weight:values.pop('topology_weight')
+        return sha256(_wire(dict(schema='Mora3.ForestTrainingObjective/v2'if self.topology_weight else'Mora3.ForestTrainingObjective/v1', **values,
             reduction='fixed-weight-sum-of-active-head-means-no-renormalization',
-            topology='source-declared-fixed-skeleton',
+            topology=self.skeleton_policy,
             decoder_input='separate-detached-source-encoder-export',
             quality_input='separate-detached-scored-candidate'))).hexdigest()
+
+    @property
+    def skeleton_policy(self):
+        return ('source-declared-flow-skeleton-plus-prefix-topology-NLL-v1'if self.topology_weight
+                else'source-declared-fixed-skeleton')
 
 
 def _texts(values):
@@ -152,6 +170,14 @@ class AnalogySupervision:
 
 
 @dataclass(frozen=True)
+class ForestTopologySupervision:
+    root_count: int
+    forests: tuple[tuple[int, ...], ...]
+    construction_policy_sha256: str
+    evidence_sha256: str
+
+
+@dataclass(frozen=True)
 class ForestTrainingBatch:
     identity: ForestBatchIdentity
     record: GraphRecord
@@ -161,6 +187,7 @@ class ForestTrainingBatch:
     tokens: TokenSupervision | None = None
     quality: QualitySupervision | None = None
     analogy: AnalogySupervision | None = None
+    topology: ForestTopologySupervision | None = None
 
 
 def _tensor(value, shape, dtype, device, *, detached=False, finite=False):
@@ -219,6 +246,28 @@ def preflight_forest_batch(heads, spec, batch):
     probe = batch.template.states.detach()[None].expand(b, -1, -1)
     heads.flow._validate(batch.record, batch.task, probe, probe.new_zeros(b), batch.template)
     counts = dict.fromkeys(OBJECTIVES, 0)
+    if batch.topology is not None and type(batch.topology)is not ForestTopologySupervision:
+        raise ValueError('Exact source topology supervision required')
+    if spec.topology_weight:
+        if type(heads.topology)is not NativeForestTopologyHead:
+            raise ValueError('Topology objective requires its registered native policy')
+        counts['topology']=0
+        if batch.topology is not None:
+            x=batch.topology;_sha(x.construction_policy_sha256);_sha(x.evidence_sha256)
+            if (x.construction_policy_sha256!=heads.topology.spec.construction_policy_sha256
+                    or type(x.root_count)is not int
+                    or x.root_count!=sum(p==-1 for p in batch.template.parents)
+                    or type(x.forests)is not tuple or len(x.forests)!=b
+                    or not 1<=b<=heads.topology.spec.max_batch_size):
+                raise ValueError('Complete original topology batch and given root policy required')
+            traces=tuple(canonical_forest_actions(heads.topology.spec.bounds,p,root_count=x.root_count)for p in x.forests)
+            count=sum(len(z.actions)for z in traces)
+            if count>heads.topology.spec.max_total_decisions:
+                raise ValueError('Complete topology labels exceed decision budget')
+            for trace in traces:
+                for i in range(len(trace.actions)):
+                    heads.topology.preflight(batch.record,batch.task,root_count=x.root_count,actions=trace.actions[:i])
+            counts['topology']=count
     for name, kind in zip(OBJECTIVES, (FlowSupervision, TokenSupervision, QualitySupervision, AnalogySupervision)):
         value = getattr(batch, name)
         if value is not None and type(value) is not kind:
@@ -323,7 +372,12 @@ def forest_joint_loss(heads, spec, batch, *, noise=None, time=None):
     if counts['analogy']:
         x = batch.analogy
         losses['analogy'] = forest_analogy_loss(heads.analogy, x.queries, x.memories, x.positive, x.known)['loss']
-    loss = sum(spec.weights[OBJECTIVES.index(k)] * v for k, v in losses.items()) if losses else None
+    if counts.get('topology',0):
+        x=batch.topology
+        losses['topology']=forest_topology_loss(heads.topology,r,t,x.forests,
+            root_count=x.root_count,split=batch.identity.split)['loss']
+    loss = sum((spec.topology_weight if k=='topology'else spec.weights[OBJECTIVES.index(k)]) * v
+               for k,v in losses.items()) if losses else None
     if loss is not None and (loss.ndim != 0 or not torch.isfinite(loss)):
         raise ValueError('Finite scalar combined native forest objective required')
     return dict(loss=loss, component_losses=losses, counts=counts,
@@ -334,7 +388,8 @@ def _identity(value):
     if type(value) is torch.Tensor:
         return dict(tensor_sha256=_tensor_sha(value), shape=list(value.shape), dtype=str(value.dtype))
     if is_dataclass(value):
-        return dict(type=type(value).__name__, fields={f.name: _identity(getattr(value, f.name)) for f in fields(value)})
+        return dict(type=type(value).__name__, fields={f.name: _identity(getattr(value, f.name)) for f in fields(value)
+            if not(type(value)is ForestTrainingBatch and f.name=='topology'and value.topology is None)})
     if type(value) in (tuple, list):
         return dict(type=type(value).__name__, values=[_identity(x) for x in value])
     if type(value) is dict:

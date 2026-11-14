@@ -1,0 +1,94 @@
+name: Import reviewed forest training integration
+
+on:
+  push:
+    branches:
+      - publication/import-forest-training-20261113
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mora3-reviewed-import-75ac2d69
+  cancel-in-progress: false
+
+jobs:
+  import-reviewed-source:
+    if: github.repository == 'amelie-iska/Mora-3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the exact public prerequisite
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: f2056c5d0ffc5459ac11bab52e518177b0aabb34
+          fetch-depth: 0
+          persist-credentials: true
+          set-safe-directory: false
+      - name: Verify source bundle and publish only its review branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          import json
+          import subprocess
+          import urllib.request
+
+          base = 'f2056c5d0ffc5459ac11bab52e518177b0aabb34'
+          target = '75ac2d696f42da0a673fc43a20d84686a2ceed40'
+          tree = 'e0e3dadb3987a4b20108873977b0332febdb1d5c'
+          branch = 'publication/forest-training-20261113'
+          expected_hash = '27574c70f2602459ed4ff6e3b71ec18845e58e2a049e94d5eef3fcdfcc1cc2c6'
+          url = 'https://huggingface.co/datasets/AmelieSchreiber/GRH-Mora-ConformerResponse-20261104/resolve/07bb486e035307d688a9c08f3208b5763df40eff/integration_sources/mora3/75ac2d696f42da0a673fc43a20d84686a2ceed40/mora3-source.bundle'
+          changed_paths = {
+              'src/mora3/model/forest_training.py',
+              'src/mora3/research/forest_training_routes.py',
+              'src/mora3/research/primary_training.py',
+              'tests/model/test_forest_training.py',
+              'tests/research/test_forest_training_routes.py',
+              'docs/forest_training_integration_20261113.md',
+              'paper/forest_training_methods.md',
+              'planning/forest_training_integration_20261113.md',
+              'planning/forest_training_verification_20261113.json',
+              'docs/index.html', 'docs/paper.html',
+              'docs/project/native-forest-heads.html',
+              'tools/build_native_forest_head_page.py',
+          }
+
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True, timeout=90).strip()
+
+          assert git('rev-parse', 'HEAD') == base
+          assert git('ls-remote', 'origin', 'refs/heads/main').split()[0] == base, 'Main moved; reconcile rather than overwrite'
+          with urllib.request.urlopen(url, timeout=45) as response:
+              raw = response.read(27125)
+          assert len(raw) == 27124 and sha256(raw).hexdigest() == expected_hash
+          bundle = Path('.mora3-reviewed-forest-source.bundle')
+          with bundle.open('xb') as stream:
+              stream.write(raw)
+          assert git('bundle', 'list-heads', str(bundle)).split() == [target, 'refs/heads/' + branch]
+          subprocess.run(['git', 'bundle', 'verify', str(bundle)], check=True, timeout=60)
+          subprocess.run(['git', 'fetch', '--no-tags', str(bundle), 'refs/heads/' + branch], check=True, timeout=90)
+          assert git('rev-parse', 'FETCH_HEAD') == target
+          assert git('rev-parse', target + '^{tree}') == tree
+          assert git('rev-list', '--parents', '-n', '1', target).split() == [target, base]
+          assert git('rev-list', '--count', base + '..' + target) == '1'
+          assert not git('diff', '--name-only', '--diff-filter=D', base, target)
+          assert set(git('diff', '--name-only', base, target).splitlines()) == changed_paths
+          paths = git('ls-tree', '-r', '--name-only', target).splitlines()
+          assert len(paths) == 1648
+          forbidden = {'initial_specs_prompt.md', 'keys.txt', '.env', 'AGENTS.md'}
+          assert not any(forbidden.intersection(Path(path).parts) for path in paths)
+          existing = git('ls-remote', 'origin', 'refs/heads/' + branch)
+          if existing:
+              assert existing.split()[0] == target, 'Review branch already contains different work'
+          else:
+              subprocess.run(['git', 'push', 'origin', target + ':refs/heads/' + branch], check=True, timeout=90)
+          assert git('ls-remote', 'origin', 'refs/heads/' + branch).split()[0] == target
+          assert git('ls-remote', 'origin', 'refs/heads/main').split()[0] == base
+          print(json.dumps({'review_branch': branch, 'commit': target, 'tree': tree,
+                            'bundle_sha256': expected_hash, 'main_unchanged': True,
+                            'training_started': False, 'downloaded_code_executed': False}))
+          PY
